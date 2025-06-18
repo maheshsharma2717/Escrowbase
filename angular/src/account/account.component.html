@@ -1,0 +1,85 @@
+<div class="main ">
+    <div class="row  row-with-margin ">
+    <div class="col-md-7 login-main" style="display: inline-flex; overflow-y: auto;">
+    
+    <div [ngClass]="{' login-form kt-grid kt-grid--ver kt-grid--root': !useFullWidthLayout(), 'kt-content': useFullWidthLayout() }" [style.text-align]="useFullWidthLayout() ? 'center' : 'center' " style="margin-left: 10%; width: 79%;height: 100%; text-align: center !important;">
+        
+        <div [ngClass]="{'kt-grid kt-grid--hor kt-grid--root  kt-login kt-login--v1': !useFullWidthLayout(), 'row':useFullWidthLayout()}" id="kt_login">
+            <div [ngClass]="{'kt-grid__item kt-grid__item--fluid kt-grid kt-grid--desktop kt-grid--ver-desktop kt-grid--hor-tablet-and-mobile': !useFullWidthLayout(), 'col-md-12': useFullWidthLayout()}" style="height: 650px;">
+       
+                 
+                <div class="kt-grid__item kt-grid__item--fluid  kt-grid__item--order-tablet-and-mobile-1  kt-login__wrapper d-block " style="height: 650px;">
+                    <div class="kt-login__head d-block mt-3 mr-auto ml-auto text-right">
+                        <language-switch></language-switch>
+                    </div>
+    
+                    <div class="kt-login__body d-block mt-3 mr-auto ml-auto">
+                        
+                        <router-outlet></router-outlet>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    <div class="col-md-5 login-image">
+        </div>
+    <div style="clear: both;" ></div>
+    
+    <div style="clear: both;" ></div>
+</div>
+    </div>
+     
+    <style>
+    .main{
+    
+        background:url('/assets/metronic/common/images/bg/EscrowBase.jpg') no-repeat !important ;
+        background-size: cover !important;
+        background-repeat:no-repeat;
+    height: 100vh;
+    width: 100%;
+        
+    }
+    .login-main
+    {
+        background-color:white !important;
+        border-radius: 20px 0px 0px 20px;
+        /* position:absolute;
+        width:80%;
+       
+        
+        height: 75vh;
+        top:10%;
+        left:10%; */
+         
+    }
+    .row-with-margin {
+    margin-top: 5%;
+    margin-right: 20%;
+    margin-bottom: 5%;
+    margin-left: 20%;
+    box-shadow: 4px 8px 5px #b9a8a8;
+    border-radius: 20px 20px 20px 20px;
+}
+    .login-image
+    {
+        background:url('/assets/metronic/common/images/bg/Login.jpg') !important ;
+        border-radius: 0px 20px 20px 0px;
+        /* width:100%;
+        float:left;
+        
+        
+        background-size:contain !important;
+        background-repeat:no-repeat !important; */
+        
+        }
+       
+        .kt-pricing-1 .kt-pricing-1__items {
+    
+        padding: 0rem 0 0rem 0 !important; 
+    }
+    .kt-portlet .kt-portlet__body {
+      
+        padding: 0px !important;
+        }
+    </style>
