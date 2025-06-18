@@ -1,0 +1,86 @@
+﻿<div [@routerTransition]>
+  <div class="kt-content  kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor">
+  
+  
+                <div class="kt-subheader kt-grid__item">
+                  <div [class]="containerClass">
+                    <div class="kt-subheader__main">
+                        <h3 class="kt-subheader__title">
+            				<span *ngIf="active && escrowClient.id">{{"EditEscrowClient" }}</span>
+            				<span *ngIf="active && !escrowClient.id">{{l("CreateEscrowClient")}}</span>
+            			</h3>
+            			<span class="kt-subheader__separator kt-subheader__separator--v"></span>
+            			<div class="kt-subheader__breadcrumbs">
+            				<a [routerLink]="['/app/admin/srEscrowClient/escrowClients']"
+            					class="kt-subheader__breadcrumbs-home"><i
+            						class="flaticon2-shelter"></i>{{l("EscrowClient")}}</a>
+            				<span class="kt-subheader__breadcrumbs-separator"></span>
+            				<a 
+            					class="kt-subheader__breadcrumbs-link kt-subheader__breadcrumbs-link--active">
+            					<span *ngIf="active && escrowClient.id">{{l("Edit")}}</span>
+            					<span *ngIf="active && !escrowClient.id">{{l("Create")}}</span>
+            				</a>
+            			</div>
+                    </div>
+                  </div>
+                </div>
+            
+    
+    <div [class]="containerClass + ' kt-grid__item kt-grid__item--fluid'">
+        <div class="kt-portlet kt-portlet--mobile">
+            <div class="kt-portlet__body">              
+                
+                
+								<div class="form-group">
+									<label for="EscrowClient_EscrowNumber">{{l("EscrowNumber")}}</label>
+									<input type="text" id="EscrowClient_EscrowNumber" class="form-control" [(ngModel)]="escrowClient.escrowNumber" name="EscrowNumber"    />
+								</div>
+					
+								<div class="form-group">
+									<label for="EscrowClient_Name">{{l("Name")}}</label>
+									<input type="text" id="EscrowClient_Name" class="form-control" [(ngModel)]="escrowClient.name" name="Name"    />
+								</div>
+					
+								<div class="form-group">
+									<label for="EscrowClient_Email">{{l("Email")}}</label>
+									<input type="text" id="EscrowClient_Email" class="form-control" [(ngModel)]="escrowClient.email" name="Email"    />
+								</div>
+					
+								<div class="form-group">
+									<label for="EscrowClient_Phone">{{l("Phone")}}</label>
+									<input type="text" id="EscrowClient_Phone" class="form-control" [(ngModel)]="escrowClient.phone" name="Phone"    />
+								</div>
+					
+								<div class="form-group">
+									<label for="EscrowClient_Address">{{l("Address")}}</label>
+									<input type="text" id="EscrowClient_Address" class="form-control" [(ngModel)]="escrowClient.address" name="Address"    />
+								</div>
+					
+								<div class="form-group">
+									<label for="EscrowClient_State">{{l("State")}}</label>
+									<input type="text" id="EscrowClient_State" class="form-control" [(ngModel)]="escrowClient.state" name="State"    />
+								</div>
+					
+								<div class="form-group">
+									<label for="EscrowClient_Pincode">{{l("Pincode")}}</label>
+									<input type="text" id="EscrowClient_Pincode" class="form-control" [(ngModel)]="escrowClient.pincode" name="Pincode"    />
+								</div>
+					
+            </div>
+              <div class="kt-portlet__foot">
+				<div class="col-lg-12">
+					<button (click)="save()" class="btn btn-primary blue float-right"
+                        [buttonBusy]="saving" [busyText]="l('SavingWithThreeDot')"><i class="fa fa-save"></i> 
+                        <span>{{l("Save")}}</span>
+                    </button>
+                    <button *ngIf="!this.escrowClient.id" (click)="saveAndNew()" class="btn btn-primary blue float-right"
+                        [buttonBusy]="saving" [busyText]="l('SavingWithThreeDot')"><i class="fa fa-save"></i> 
+                        <span>{{l("SaveAndNew")}}</span>
+                    </button>
+				</div>
+		    </div>
+        </div>
+    </div>
+  </div>
+  
+</div>

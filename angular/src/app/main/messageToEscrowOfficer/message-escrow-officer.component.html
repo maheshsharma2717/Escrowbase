@@ -1,0 +1,130 @@
+<div bsModal #createOrEditModal="bs-modal" class="modal fade" tabindex="-1" style="z-index: 1;" role="dialog" aria-labelledby="createOrEditModal" aria-hidden="true" >
+    <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Send Direct Message to the Escrow Officer</h5>
+            <button type="button" class="close"  (click)="close()" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <tabset>
+                <tab heading="{{'DirectMessage' | localize}}" (select)="directMessageTabEvent($event)">
+
+                    <br />
+                  
+                    <div class="row">
+                      
+
+                        <div class="col-md-4  reminder-checkbox">
+                            <input type="checkbox" [checked]="toMessage" (change)="onCheckboxChange('message',$event)"
+                                style="width: 20px;height: 20px;" />&nbsp;&nbsp;&nbsp;
+                            <h5>Text Message</h5>
+                        </div>
+                        <div class="col-md-4  reminder-checkbox">
+                            <input type="checkbox" [checked]="email" (change)="onCheckboxChange('email',$event)"
+                                style="width: 20px;height: 20px; float: left;" />&nbsp;&nbsp;&nbsp;
+                            <h5>E-mail</h5>
+                        </div>
+                        <div class="col-md-4  reminder-checkbox">
+                            <input type="checkbox" [checked]="directMessage"
+                                (change)="onCheckboxChange('directMessage',$event)"
+                                style=" width: 20px;height: 20px; float: left;" />&nbsp;&nbsp;
+                            <h5>Direct Message</h5>
+                        </div>
+                    </div>
+                    <div class="row text-danger" *ngIf="checkMessageType">Please choose at least one type of reminder.
+                    </div>
+                    <br>
+
+
+
+                    <textarea class="form-control" [(ngModel)]="escrowDirectMeesage"
+                        placeholder="Enter your reminder here..." style="height: 250px; background: #ededed;">
+        </textarea>
+                </tab>
+
+                <tab heading="{{'MessageHistory' | localize}}" (select)="historyTabEvent($event)">
+                    <div  class="row align-items-center" >
+                    <!--<Primeng-Datatable-Start>-->
+                    <div style="height: 60vh !important; overflow-y: scroll;" class="primeng-datatable-container col-12" [busyIf]="primengTableHelper.isLoading" >
+                        <p-table #dataTable (onLazyLoad)="loadMessageHistory($event)"
+                            [value]="primengTableHelper.records"
+                            rows="{{primengTableHelper.defaultRecordsCountPerPage}}" [paginator]="false" [lazy]="true"
+                            [scrollable]="true" ScrollWidth="100%" [responsive]="primengTableHelper.isResponsive"
+                            [resizableColumns]="primengTableHelper.resizableColumns" >
+                            <ng-template pTemplate="header">
+                                <tr>
+                                    <th  pSortableColumn="escrowNumber">
+                                        {{l('EOX')}}
+                                        <!-- <p-sortIcon field="escrowClient.escrowNumber"></p-sortIcon> -->
+                                    </th>
+                                    <th   pSortableColumn="name">
+                                        {{l('Message')}}
+                                        <!-- <p-sortIcon field="escrowClient.name"></p-sortIcon> -->
+                                    </th>
+                                    <th   pSortableColumn="email">
+                                        Created Date
+                                        <!-- <p-sortIcon field="escrowClient.email"></p-sortIcon> -->
+                                    </th>
+                                    <th    pSortableColumn="messageType">
+                                       Message Type
+                                    </th>
+                                    <th   pSortableColumn="phone">
+                                        {{l('Status')}}
+                                        <!-- <p-sortIcon field="escrowClient.phone"></p-sortIcon> -->
+                                    </th>
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-record="$implicit">
+                                <tr>
+                                    <td >
+                                        {{record.userName}}
+                                    </td>
+                                    <td >
+                                        {{record.escrowDirectMessageDetails.message}}
+                                    </td>
+                                    <td >
+
+                                        {{record.escrowDirectMessageDetails.createdDate | date:'yyyy-MM-dd HH:mm'}}
+                                    </td>
+                                    <td > 
+
+                                        {{record.escrowDirectMessageDetails.messageType}}
+                                    </td>
+                                    <td >
+
+                                        <label *ngIf="record.escrowDirectMessageDetails.status =='Sent Sucessfully'"
+                                            style="color: green;">{{record.escrowDirectMessageDetails.status}}</label>
+                                        <label *ngIf="record.escrowDirectMessageDetails.status !='Sent Sucessfully'"
+                                            style="color: red;">{{record.escrowDirectMessageDetails.status}}</label>
+                                    </td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                        <div class="primeng-no-data" *ngIf="primengTableHelper.totalRecordsCount == 0">
+                            {{l('NoData')}}
+                        </div>
+                        <div class="primeng-paging-container">
+                            <p-paginator [rows]="primengTableHelper.defaultRecordsCountPerPage" #paginator
+                                (onPageChange)="loadMessageHistory($event)"
+                                [totalRecords]="primengTableHelper.totalRecordsCount"
+                                [rowsPerPageOptions]="primengTableHelper.predefinedRecordsCountPerPage">
+                            </p-paginator>
+                            <span class="total-records-count">
+                                {{l('TotalRecordsCount', primengTableHelper.totalRecordsCount)}}
+                            </span>
+                        </div>
+                    </div>
+                    <!--<Primeng-Datatable-End>-->
+                    </div>
+                </tab>
+            </tabset>
+        </div>
+        <div class="modal-footer">
+            <button type="button" *ngIf="!historyTabActive" class="btn btn-primary"  (click)="sendReminderToEscrow()" [disabled]="isSaving">Save</button>
+            <button type="button" class="btn btn-danger" (click)="close()">Close</button>
+        </div>
+    </div>
+    </div>
+</div>

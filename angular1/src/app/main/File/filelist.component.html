@@ -1,0 +1,579 @@
+ 
+<div>
+  <div class="row user-type-sec" style="margin-right: auto;">
+    <div class="col-md-12" style="display: inline-flex;">
+      <div class="usertypes col-md-9" style="margin: 0px -57px 0px 0px;">
+        <!-- <a href='/app/main/Userdashboard'><button class="btn" type="button" style="position: absolute;margin: 20px 0px 0px 0px;top: -15px;height: 28px;width: 56px;padding: 0px;font-size: 15px;color: whitesmoke;
+          background-color: rgb(109, 156, 245);"><b>&laquo;</b>Back</button></a><br> -->
+        <div style="font-size: large;margin: 20px 0px 0px 0px;">{{'Escrow#'}} <b>{{escrowname}}</b></div>
+        <!-- <button (click)="sendMessage($event)">Send Message</button> -->
+      </div>
+      <span style="float: right;margin: 46px -70px 0px 0px;"><i
+          style="color: black;font-weight: 600;">Calendar/Notes</i></span>
+      <button type="button" class="btn btn-primary" style="height: 40px;margin-top: 6px;" (click)="openModal(template)">
+        <a>
+          <i class="fa fa-calendar fa-1x" aria-hidden="true"></i></a></button><br>
+
+      <select name="usertypes" (change)="selectChangeHandler($event)" style="height: 50px !important;margin-left: 50px;"
+        class=" col-md-2 sqdesign form-control form-control-solid h-auto py-4 px-8 rounded-lg font-size-h6"
+        placeholder="Please Select" [ngModelOptions]="{standalone:true}" [(ngModel)]="UsertypeModel">
+        <option *ngFor="let item of userTypes" [ngValue]="item">{{item}}</option>
+
+      </select>
+
+      <span style="float: right;margin: 48px 0px 0px -332px;position: relative;z-index: 1;">
+        <i style="margin: 0px 0px 0px 145px;color: black;font-weight: 600;">Access Level Type(s)</i></span>
+    </div>
+  </div>
+  <div>
+    <span style="font-size: large;padding: 14px;"><b>Escrow Generated Documents <i style="color: royalblue;">(This is
+          the area where the escrow officer will download documents that you are required to give attention to.)</i></b>
+    </span><br><span style="font-size: large;padding: 14px;"><i style="color: royalblue; font-weight: 600;">Select
+        Document below you need to do work on and then choose the action required from the 4 buttons below to start that
+        action.</i></span>
+    <div class="navbar-header" style="background-color: white;"></div>
+  </div>
+
+  <div style="background-color: white;">
+    <div
+      style="margin: 15px 0px 0px 6px;position: absolute;float: inherit;z-index: 1;font-size: larger;font-weight: bold;">
+      Total Items -: {{itemCount}}</div>
+
+    <div id="hideDiv" *ngIf="signPopup" class="card"
+      style="float: inherit !important;position: absolute !important;margin: 90px 0px 0px 605px !important;z-index: 1 !important;background-color: #FFF;padding: 20px;width: 400px;">
+      <table id="signtable" style="border: none;background: none;width: 350px;">
+        <tbody>
+          <tr style="background: none; background-color: none;">
+            <th style="padding: 12px 12px;">Name</th>
+            <th style="padding: 12px 12px;">Status</th>
+          </tr>
+          <tr style="background: none;" *ngFor="let item of Sign">
+            <td>{{item.name}}</td>
+            <td>{{item.status}}</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+
+    <dx-file-manager #data id="fileManager" [fileSystemProvider]="remoteProvider" height="600"
+      rootFolderName="Companies" selectionMode="single" (onContextMenuItemClick)="onItemClick($event)"  (onSelectionChanged)="handleShownEvent($event)"
+      (onSelectedFileOpened)="displayImagePopup($event)" [currentPath]="currentpath">
+
+      <dxo-item-view [showParentFolder]="false">
+        <dxo-details>
+
+          <dxi-column dataField="name" width="600"></dxi-column>
+          <dxi-column dataField="access" caption="Access Level" width="120"></dxi-column>
+          <dxi-column dataField="action" caption="Action Required" style="font-weight: 800 !important;" width="150"></dxi-column>
+          <dxi-column dataField="status" caption="Status" width="150"></dxi-column>
+          <dxi-column dataField="signing" caption="Signing Status" width="150"></dxi-column>
+          <dxi-column dataField="update" caption="UpdateOn"></dxi-column>
+        </dxo-details>
+      </dxo-item-view>
+      <dxo-context-menu    (onClick)="handleShowingEvent($event)">
+        <dxi-item name="View/Edit" text="View/Edit" visible="true" [options]="{view: temp}"></dxi-item>
+        <dxi-item name="E-Sign" text="E-Sign" visible="true" [options]="{esign: temp}"></dxi-item>
+        <dxi-item name="History" text="View/History" visible="true" [options]="{history: Historyunique}"> </dxi-item>
+        <dxi-item name="Rename" text="Rename" [visible]="isRename"  [options]="{Rename: Rename}"> </dxi-item>
+        <dxi-item name="Delete" text="Delete" visible="true" [options]="{delete: 'a'}"> </dxi-item>
+        <dxi-item name="Download" visible="true" text="Download a File" [options]="{download: 'a'}"></dxi-item>
+        <dxi-item name="View FullName" text="View FullName" visible="true" [options]="{full: FullName}"></dxi-item>
+        <dxi-item name="refresh" beginGroup="true"></dxi-item>
+      </dxo-context-menu>
+</dx-file-manager>
+
+
+    <div class="col-md-12 " *ngIf="ErrorMessage">
+      <div class="errorMessage">{{ErrorMessage}}</div>
+
+    </div>
+  </div>
+  <!-- <div id="hideDiv1" style="font-size: large;" *ngIf="fullnamepopup">{{fileFullName}}</div>
+<div class="row escrowRow" style="background: beige;">
+    <button class="btn btn-warning" (click)="openHistoryModal(Historyunique)">History</button>
+    <button class="btn btn-info" (click)="ViewFullName($event)">View FullName</button>
+    <button class="btn btn-warning" (click)="e_Sign(temp)">E-Sign</button>
+    <button class="btn btn-primary" (click)="View(temp)">View/Edit</button>
+    <button class="btn btn-success" (click)="Download($event)">Download</button>
+    <button class="btn btn-danger" (click)="Delete($event)">Delete</button>
+  </div> -->
+
+
+  <hr style="margin-top: 0 !important;">
+
+  <div style="font-size: large;"><b>
+      <span style="padding: 14px;">Other Documents <i style="color: royalblue;">(This is a area you will upload
+          documents for escrow officer when register.)</i></span></b>
+  </div>
+  <div class="navbar-header" style="background-color: white;">
+  </div>
+  <div
+    style="margin: 15px 0px 0px 6px;position: absolute;float: inherit;z-index: 1;font-size: larger;font-weight: bold;">
+    Total Items -: {{itemCount1}}</div>
+  <div>
+    <dx-file-manager id="fileManager1" #targetDataGrid [fileSystemProvider]="remoteProvider1" height="300"
+      (onContextMenuItemClick)="onItemClick1($event)" rootFolderName="Companies" selectionMode="single"
+      [currentPath]="currentpath1">
+
+      <dxo-item-view [showParentFolder]="false" placeholder="Hello">
+        <dxo-details>
+
+          <dxi-column dataField="name"></dxi-column>
+          <dxi-column dataField="thumbnail" caption="Type" width="95"></dxi-column>
+        </dxo-details>
+      </dxo-item-view>
+      <dxo-context-menu>
+        <dxi-item name="View/Edit" text="View/Edit" visible="true" [options]="{view: temp}"></dxi-item>
+        <dxi-item name="rename" visible="true"></dxi-item>
+        <dxi-item name="Delete" text="Delete" visible="true" [options]="{delete: 'a'}"> </dxi-item>
+        <dxi-item name="Download" visible="true" text="Download a File" [options]="{download: 'a'}"></dxi-item>
+        <dxi-item name="View FullName" text="View FullName" visible="true" [options]="{full: FullName1}"></dxi-item>
+        <dxi-item name="Move" text="Move to Main" visible="true" [options]="{Move: Move}"></dxi-item>
+        <dxi-item name="refresh" beginGroup="true"></dxi-item>
+      </dxo-context-menu>
+    </dx-file-manager>
+
+
+  </div>
+
+  <!-- <div id="hideDiv1" style="font-size: large;" *ngIf="fullnamepopup1">{{fileFullName1}}</div> -->
+  <table style="height:150px;">
+    <thead>
+      <tr>
+
+        <th>
+          <div style="height:150px;width:600px;text-align:center;padding-top:80px;" class="uploadfilecontainer"
+            (click)="fileInput.click()" appDragDrop (onFileDropped)="uploadFile($event)">
+            <div style="margin: -40px 0px 0px 0px;"><img height="50px" width="50px"
+                src="\assets\common\images\drop.png">
+              <h5 style="text-align:Centre; color: black;">Drag And Drop Here</h5>
+            </div>
+            <input hidden type="file" #fileInput (change)="select($event)">
+          </div>
+
+        </th>
+        <!-- <div style="margin-top: 55px; margin-left: 1rem;">
+          <button class="btn btn-warning" (click)="ViewFullName1($event)">View FullName</button>
+          <button class="btn btn-primary" (click)="View1(temp)">View</button>
+          <button class="btn btn-danger" (click)="Delete1($event)">Delete</button>
+       <button class="btn btn-info" (click)="Edit($event)">Forward</button>  
+          <button class="btn btn-success" (click)="Download1($event)">Download</button>
+        </div> -->
+      </tr>
+
+    </thead>
+
+  </table>
+  <!-- <div style="height:150px;width:600px;text-align:center;padding-top:80px;" class="uploadfilecontainer"
+            (click)="fileInput.click()" appDragDrop (onFileDropped)="uploadFile($event)">
+            <div style="margin: -40px 0px 0px 0px;"><img height="50px" width="50px" src="\assets\common\images\drop.png">
+            <h5 style="text-align:Centre; color: black;">Drag And Drop Here</h5></div>
+            <input hidden type="file" #fileInput (change)="select($event)">
+          </div> -->
+  <ng-template #temp >
+
+    <div class="modal-header">
+
+      <img style="
+     position: fixed;
+     height: 35px;
+    width: 42px;
+    padding: 0px;
+    margin: 0px 0px 0px -18px;
+" src="\assets\common\images\cross.png" class="btn btn-danger" (click)="Hide()" />
+
+      <button *ngIf="docx" style="
+      height: 35px;
+      width: 20vh;
+      right: 0px;
+      position: absolute;
+      margin: 0px 5px 0px 170px;
+    " type="button" class="btn btn-info" (click)="SaveChanges()">Save Changes</button>
+    </div>
+    <div id="modal-content" style="height:100vh;"  class="modal-content" >
+      <ngx-extended-pdf-viewer *ngIf="docx" [src]="source" height="88vh" [useBrowserLocale]="true" [textLayer]="true"
+        [showHandToolButton]="true" [showFindButton]="false" [showPagingButtons]="false"
+        [showPresentationModeButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
+        [showBookmarkButton]="false" [showSecondaryToolbarButton]="false" [showRotateButton]="false" [showSpreadButton]="false" [showPropertiesButton]="false"
+        [showDownloadButton]="false"></ngx-extended-pdf-viewer>
+      <!-- <div id="page5" class="page5" *ngIf="!docx">
+      <div id="headerH" class="headerH">WebViewer</div>
+    <div id="viewer" class="viewer"></div>
+    </div> -->
+      <div *ngIf="eSign" style="height: 100%; width: 100%; overflow: hidden;" data-role="content">
+        <iframe *ngIf="eSign" id="esignIframe" [src]="EMBED_SESSION_URL"
+          style="width: 100% !important;height: 100% !important;" frameborder="0"></iframe>
+        <iframe *ngIf="eSign" id="esignIframe" style="width: 100% !important;height: 100% !important;" [src]="embedUrl"
+          frameborder="0"></iframe>
+      </div>
+      <div *ngIf="msgShow">
+        <div class="msg-info" style="display: none;">
+          <div class="info-box wizard-msg">
+            2. MSG info <span class="msg-file-name"></span>
+          </div>
+          <div class="field-block">
+            <div class="field-label">From</div>
+            <div class="msg-from"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">To</div>
+            <div class="msg-to"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Date (from Headers, example)</div>
+            <div class="msg-date"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Subject</div>
+            <div class="msg-subject"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Body</div>
+            <div class="msg-body"></div>
+          </div>
+          <div class="field-block" style="display: none;">
+            <div class="field-label">HTML Body</div>
+            <div class="msg-body-html"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Attachments</div>
+            <div class="msg-attachment"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-template>
+  <!-- </div> -->
+
+</div>
+
+<ng-template #Historyunique>
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      History of file
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span style="display:block; font-size: 29px;
+      color: black;" (click)="HideHistory()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Status</th>
+          <th scope="col">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of ItemsArray">
+          <td>{{ item.Name }}</td>
+          <td>{{ item.Status }}</td>
+          <td>{{ item.updateOn}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="modal-footer">
+
+  </div>
+</ng-template>
+
+
+<ng-template #Rename>
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      Rename
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span style="display:block; font-size: 29px;
+      color: black;" (click)="HideRename()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input style="width:100%; height:35px;" type="text" required="required" name="Rename" [(ngModel)]="filenames" /></td>
+        </tr>
+       
+      <tr>
+       
+        <table style="width:50%;">
+          <thead>
+            <th>User Type</th>
+            <th>Read</th>
+            <th>Edit</th>
+            <th>Alert</th>
+            <th>Delete</th>
+            <th>Sign</th>
+          </thead>
+          <tbody >
+            <tr class="indec"   *ngFor="let item of userpermissionsall; let i = index">
+            <td>
+              <select #mySelect (change) = "ddldata(mySelect.value, i, 'empty')"  style="PADDING: 8PX 0PX; WIDTH: 100%; BORDER-RADIUS: 5PX;">
+                <option selected [value]="item.first">{{item.first}}</option>
+                <option *ngFor="let itemq of myuser;" [value]="itemq">{{itemq}}</option>
+              </select>
+              <!--<input type="text" readonly name="SR1" value="{{item}}"/>-->
+             </td>
+            <td style="PADDING: 20PX;"><input type="checkbox" [checked]="item.R" (change) = "ddldata(mySelect.value, i, 'R')"></td>
+            <td style="PADDING: 20PX;"><input type="checkbox" [checked]="item.E" (change) = "ddldata(mySelect.value, i, 'E')"></td>
+            <td style="PADDING: 20PX;"><input type="checkbox" [checked]="item.A" (change) = "ddldata(mySelect.value, i, 'A')"></td>
+            <td style="PADDING: 20PX;"><input type="checkbox" [checked]="item.D" (change) = "ddldata(mySelect.value, i, 'D')"></td>
+            <td style="PADDING: 20PX;"><input type="checkbox" [checked]="item.S" (change) = "ddldata(mySelect.value, i, 'S')"></td>
+            <td style="display: none;"> <button class="btn btn-success" (click)="addItem(i)">Add Row</button> </td>
+          </tr>
+          
+         
+          
+          </tbody>
+        </table>
+       
+      </tr>
+        <tr>
+          <td> <button [disabled]="btnstate" style="float:right;" type="button" class="btn btn-primary" aria-label="Save"><span style= "cursor: pointer; padding: 11px 19px; margin: -13px;"   (click)="Renamee()" >Save</span></button></td>
+        </tr>
+      </tbody>
+    </table>
+    
+  </div>
+  <div class="modal-footer">
+
+  </div>
+</ng-template>
+
+
+<ng-template #Move>
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      Move To Main
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span style="display:block; font-size: 29px;
+      color: black;" (click)="HideRename()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">First Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input style="width:100%; height:35px;" type="text" required="required" name="Rename" [(ngModel)]="filenames" /></td></tr>
+          <tr>
+       
+            <table style="width:50%;">
+              <thead>
+                <th>User Type</th>
+                <th>Read</th>
+                <th>Edit</th>
+                <th>Alert</th>
+                <th>Delete</th>
+                <th>Sign</th>
+              </thead>
+              <tbody >
+                <tr class="indec"   *ngFor="let item of userpermissionsall; let i = index">
+                <td>
+                  <select #mySelect (change) = "ddldata(mySelect.value, i, 'empty')"  style="PADDING: 8PX 0PX; WIDTH: 100%; BORDER-RADIUS: 5PX;">
+                    <option selected [value]="item.first">{{item.first}}</option>
+                    <option *ngFor="let itemq of myuser;" [value]="itemq">{{itemq}}</option>
+                  </select>
+                  <!--<input type="text" readonly name="SR1" value="{{item}}"/>-->
+                 </td>
+                <td style="PADDING: 20PX;"><input type="checkbox" [checked]="item.R" (change) = "ddldata(mySelect.value, i, 'R')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" [checked]="item.E" (change) = "ddldata(mySelect.value, i, 'E')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" [checked]="item.A" (change) = "ddldata(mySelect.value, i, 'A')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" [checked]="item.D" (change) = "ddldata(mySelect.value, i, 'D')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" [checked]="item.S" (change) = "ddldata(mySelect.value, i, 'S')"></td>
+                <td style="display: none;"> <button class="btn btn-success" (click)="addItem(i)">Add Row</button> </td>
+              </tr>
+              
+             
+              
+              </tbody>
+            </table>
+           
+          </tr>
+            <tr>
+              <td> 
+                <button [disabled]="btnstate" style="float:right;" type="button" class="btn btn-primary" aria-label="Save">
+                  <span style= "cursor: pointer; padding: 11px 19px; margin: -13px;"   (click)="Moved()" >Save</span>
+                </button>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+    
+  </div>
+  <div class="modal-footer">
+
+  </div>
+</ng-template>
+
+
+
+
+
+
+
+
+<ng-template #FullName>
+  <!-- <img style="
+  position: absolute;
+    width: 32px;
+    padding: 0px;
+    right: 0;
+" src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideHistory()" /> -->
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      View Full Name
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span aria-hidden="true" style="display: block; font-size: 29px;
+      color: black;" (click)="HideHistory()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{fileFullName}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="modal-footer">
+
+  </div>
+</ng-template>
+
+<ng-template #FullName1>
+  <!-- <img style="
+  position: absolute;
+    width: 32px;
+    padding: 0px;
+    right: 0;
+" src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideHistory()" /> -->
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      View Full Name
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span aria-hidden="true" style="display: block; font-size: 29px;
+      color: black;" (click)="HideHistory()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{fileFullName1}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="modal-footer">
+
+  </div>
+</ng-template>
+<ng-template #template>
+
+  <div class="modal-header">
+    <div class="modal-dialog">
+      <div class="col rightCol"><img style="height: 100%;width: 100%;"
+          src="https://help.syncfusion.com/wpf/scheduler/gettingstarted_images/event-week-view.png">
+
+
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="clearfix"></div>
+  <div class="modal-footer">
+
+    <!--<button type="button" class="btn btn-default" (click)="modalRef.hide()">Close</button>-->
+
+  </div>
+  <!-- </div> -->
+</ng-template>
+
+<script type="text/javascript" src="https://esigngenie.com/esign/js/esignGeniePostMessageParent.js"></script>
+<script src="~/lib/signalr-client/signalr.min.js"></script>
+<script src="~/lib/abp-web-resources/Abp/Framework/scripts/libs/abp.signalr-client.js"></script>
+<script>
+  abp.signalr = abp.signalr || {};
+  abp.signalr.autoConnect = false;
+  abp.signalr.reconnectTime = 5000;
+  abp.signalr.maxTries = 8;
+  abp.signalr.increaseReconnectTime = function (time) { //anytime reconnection request gets fail abp will increase the time to wait before next request with using that function. 
+    return time * 2; //(default is twice of previous time)
+  };
+
+
+
+ 
+</script>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: "Lucida Grande", Helvetica, Arial, Verdana, sans-serif;
+    font-size: 14px;
+  }
+
+  .dx-datagrid-content,
+  .dx-scrollable-container {
+    background-color: white;
+  }
+  .drag-signfield{
+  position: absolute !important;
+  top: -18px !important;
+  left: 10px !important;
+}
+</style>

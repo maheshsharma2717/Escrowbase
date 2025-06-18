@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head id="ctl00_Head1"><meta charset="utf-8" /><meta id="ctl00_Viewport" name="viewport" content="initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no" /><meta http-equiv="X-UA-Compatible" content="IE=edge" /><link href="../App_Themes/skyblue/default.css" rel="stylesheet" type="text/css" /><link href="../include/bootstrap/bootstrap.css" rel="stylesheet" /><link href="../include/bootstrap/style_bootstrap.css" rel="stylesheet" /><title>
+	HPU Student Portal
+</title>
+    <style>
+        .wrapper {
+            padding: 0 !important;
+        }
+
+        #sidebar ul li.active > a {
+            background: #f39c12 !important;
+        }
+
+        .secondmaintab {
+            width: auto !important;
+        }
+    </style>
+<link href="../App_Themes/darktheme/css/bootstrap.min.css" type="text/css" rel="stylesheet" /><link href="../App_Themes/darktheme/css/default.css" type="text/css" rel="stylesheet" /><link href="../App_Themes/darktheme/css/facebox.css" type="text/css" rel="stylesheet" /><link href="../App_Themes/darktheme/css/font-awesome.css" type="text/css" rel="stylesheet" /><link href="../App_Themes/darktheme/css/scroll.css" type="text/css" rel="stylesheet" /><link href="../App_Themes/darktheme/css/style_responsive.css" type="text/css" rel="stylesheet" /><link href="../App_Themes/darktheme/css/weather.css" type="text/css" rel="stylesheet" /></head>
+<body class="studentmasterbg">
+    <form name="aspnetForm" method="post" action="./SMS_StudentResult.aspx" id="aspnetForm">
+<div>
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="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" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['aspnetForm'];
+if (!theForm) {
+    theForm = document.aspnetForm;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script type="text/javascript">
+//<![CDATA[
+var Anthem_FormID = "aspnetForm";
+//]]>
+</script>
+<script src="/WebResource.axd?d=CzYKWie1D7NIA8tyS2lb3R3NnaWzjwIXkRcxziRjwiVkzNEQlmDAeUPnpSn8JsTrN20sKzJMPiS5Avk9uIeKyAgmGgI-ZPXVUjoYmwYil_B_vb7f7zzT12nQgomxdaVt0&amp;t=635297138940000000" type="text/javascript"></script>
+<div>
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="ADD0A264" />
+	<input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="xTUNkNM5FzOkTowK+21mequabWjCYD4FzcUuLYtq8vLlw0d7j/i/zXrh59oM+VVEE+deM2sWCeHsYP7S/gG//5vzA/rBHPyFm93u/1nqK232JOL3P6pK03BKW/tBBwrfmcHkqMlYBnfqemUCXaXr0Q==" />
+</div>
+        <div class="wrapper">
+            <!-- Sidebar Holder -->
+            <nav id="sidebar">
+                <div class="sidebar-header">
+                    <h3>
+                        <div class="logo">
+                            <span class="logoimg">
+                                <img src='/App_Themes/darktheme/Images/logo-inside.png' /></span>
+                        </div>
+                    </h3>
+                </div>
+                <ul class="list-unstyled components">
+                    <p class="centered user_image">
+                        
+                        <span id="Anthem_ctl00_imgprofile__"><img id="ctl00_imgprofile" class="img-circle" Class="img-responsive" src="https://nexams.hpushimla.in/FTPSITE/HPU\Photos\PreExamPG_PP_655101211_3000aeec-15e8-4198-833c-a45379a41134_783761_20211126221501634PP_20582132_5885487.jpeg" style="height:100px;width:100px;border-width:0px;" /></span>
+                        
+                    </p>
+                    <h5 class="centered user_name">Welcome:
+                    <span id="ctl00_lblEnrollment">21-MA-953 (REENA THAKUR)</span></h5>
+                    <h5 class="centered logout_btn"><a href='/Logout.aspx' id="qlnk"><i class="fa fa-sign-out"></i>Logout
+                    <span id="ctl00_Label2"></span></a></h5>
+                    <p class="nav-head">Main Naviagtion</p>
+                    <li id="ctl00_Li1" class="help"><a target="_blank" href="#">How To Use Student Portal</a></li>
+                    <li id="ctl00_homeid" class="hometab"><a class="hvr-shutter-in-vertical" href='/UMM/Default.aspx'>Home</a></li>
+                    <li id="ctl00_myprofileid" class="myprofile"><a class="hvr-shutter-in-vertical" href='/SMS/SMS_Student_Mst.aspx'>My Profile</a></li>
+                    
+                    
+                    
+                    <li id="ctl00_coursedtlid" class="coursedtl"><a class="hvr-shutter-in-vertical" href='/SMS/SMS_StudentCourse_Dtl.aspx'>Course Details</a></li>
+                    
+                    
+                    <li id="ctl00_Li2"><a class="hvr-shutter-in-vertical" href='/SMS/sms_studentExamFormDetails.aspx'>Exam Form Details</a></li>
+                    <li id="ctl00_Li3"><a class="hvr-shutter-in-vertical" href='/SMS/Sms_studentAllpaymentDetails.aspx'>Student Payment Details</a></li>
+                    <li id="ctl00_downloadadmitcardid" class="admit"><a class="hvr-shutter-in-vertical" href='/SMS/ACD_Student_SuppleAdmitCard_Register.aspx'>Admit Card</a></li>
+                    
+                    
+                    
+                    
+                    
+                    <li id="ctl00_studentrsltid" class="result active"><a class="hvr-shutter-in-vertical" href='/SMS/SMS_StudentResult.aspx'>Student Result</a></li>
+                    <li id="ctl00_studentapplyexamformid"><a class="hvr-shutter-in-vertical" href='/SMS/SMS_StudentApplyExamForm.aspx'>Apply Exam Form</a></li>
+
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                </ul>
+            </nav>
+            <div id="content">
+                <nav class="navbar navbar-default">
+                    <div class="container-fluid">
+                        <div class="navbar-header">
+                            <button type="button" id="sidebarCollapse" class="btn btn-info navbar-btn"><i class="glyphicon glyphicon-align-left"></i><span></span></button>
+                        </div>
+                        <ul class="secondmaintab">
+                            <li class="logindtl">
+                                <span id="ctl00_lblPLogin">Last Login - 30/08/2023 08:58:31 AM</span>
+                            </li>
+                            <li class="logindtl">
+                                <span id="ctl00_lblCLogin">Current Login - 30/08/2023 09:41:36 AM</span>
+                            </li>
+                            <li>University helpline No.  0177-2832019, 2832026</li>
+                        </ul>
+                    </div>
+                </nav>
+                <div class="content-wrapper">
+                    <div class="col-sm-12 col-md-12 col-lg-12">
+                        <div class="row">
+                            <div class="student-portal">
+                                
+
+      <script type="text/javascript">
+        function isNumberKey(evt) {
+            var charCode = (evt.which) ? evt.which : event.keyCode
+            if (charCode > 31 && (charCode < 48 || charCode > 57))
+                return false;
+
+            return true;
+        }
+
+        ////////////////////////////////////////////////////////
+
+        function ShowSearch(obj) {
+            document.getElementById('ViewDiv').style.display = 'block';
+        }
+        function HideSearch(obj) {
+            document.getElementById('ViewDiv').style.display = 'none';
+        }
+
+        /////////////////////////////////////////////////////////////
+
+    </script>
+
+    <style type="text/css">
+        .blink {
+            -webkit-animation: blink .75s linear infinite;
+            -moz-animation: blink .75s linear infinite;
+            -ms-animation: blink .75s linear infinite;
+            -o-animation: blink .75s linear infinite;
+            animation: blink .75s linear infinite;
+        }
+
+        @-webkit-keyframes blink {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            50.01% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @-moz-keyframes blink {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            50.01% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @-ms-keyframes blink {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            50.01% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @-o-keyframes blink {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            50.01% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            50.01% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+    </style>
+    <table id="ctl00_ContentPlaceHolder1_tblmain" style="width: 100%">
+	<tr>
+		<td class="tableheading">Student Result </td>
+	</tr>
+	<tr>
+		<td style="color: red; font-weight: bold; text-align: left"><span style="font-family: Calibri; font-size: 13px">
+               Note: Click on Download to Get Result !!
+                                            
+            </span>
+                <span id="Anthem_ctl00_ContentPlaceHolder1_txtpath__"></span>
+            </td>
+	</tr>
+	<tr>
+		<td colspan="8">
+                <div>
+                    <table width="100%" border="0" class="table">
+                        <tr>
+                            <td colspan="4">
+                                <div>
+			<table cellspacing="0" cellpadding="1" rules="all" AutoUpdateAfterCallBack="True" UpdateAfterCallBack="True" border="1" id="ctl00_ContentPlaceHolder1_gvresultdetails" style="color:#333333;font-family:Calibri;font-size:10px;width:100%;border-collapse:collapse;font-family:verdana, arial, ms sans serif; border: 1px solid #D4D4D4;">
+				<tr class="header-style">
+					<th scope="col">S.No.</th><th align="center" scope="col" style="width:22%;">Degree Name</th><th align="center" scope="col" style="width:10%;">Degree Type</th><th align="center" scope="col" style="width:10%;">Exam Type</th><th align="center" scope="col" style="width:10%;">Sem/Year</th><th align="center" scope="col" style="width:8%;">Exam Year</th><th align="center" scope="col" style="width:15%;">Exam Month</th><th align="center" scope="col" style="width:15%;">RollNo</th><th scope="col">DMC</th>
+				</tr><tr class="item-style" style="background-color:White;">
+					<td align="center" style="width:5%;">
+                                                1
+                                            </td><td align="left">BA (Annual)</td><td align="left">Year</td><td align="left">Fresh</td><td align="left">BA (Annual) -  IInd Year</td><td align="center">2023</td><td align="center">APRIL</td><td align="center">1210560909</td><td align="center" style="width:15%;">
+                                             <span id="Anthem_ctl00_ContentPlaceHolder1_gvresultdetails_ctl02_lnkView__"><a id="ctl00_ContentPlaceHolder1_gvresultdetails_ctl02_lnkView" title="Click here to Download Result" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$gvresultdetails$ctl02$lnkView&#39;,&#39;&#39;)" style="font-weight:bold;">Download</a></span>
+                                            </td>
+				</tr>
+			</table>
+		</div> 
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+            </td>
+	</tr>
+	<tr>
+		<td align="left">
+                <div style="margin: 10px; padding: 10px 10px 10px 10px;">
+                    
+                    <span id="Anthem_ctl00_ContentPlaceHolder1_btnfirst__"></span>
+                </div>
+                <div class="col-sm-8">
+                    <span id="Anthem_ctl00_ContentPlaceHolder1_txtRollNo__"></span>
+                </div>
+
+            </td>
+	</tr>
+	<tr>
+	</tr>
+	<tr>
+		<td>
+                <center>
+                    <span id="Anthem_ctl00_ContentPlaceHolder1_lblMsg__"><span id="ctl00_ContentPlaceHolder1_lblMsg" class="lblmessage" style="font-weight:bold;"></span></span>
+                </center>
+            </td>
+	</tr>
+</table>
+
+     <div id="ViewDiv" class="white_content-new-1" style="display: none;">
+        <div class="popupboxouter">
+            <div class="popupbox">
+                <div onclick="document.getElementById('ViewDiv').style.display='none';" class="close-1">
+                    X
+                </div>
+                <div style="height: 300px; width:auto;  overflow-y: scroll;">
+                    <table  width="100%;" border="0" >
+                        <tr>
+                            <td class="tablesubheading" colspan="6">List of Paper Details (RLA/UMC/DISCREPANCY) 
+                            </td>
+                        </tr>
+                        <tr >
+                            <td colspan="6">
+                                <fieldset >
+                                    <div id="Anthem_ctl00_ContentPlaceHolder1_gv_StudresultDetails__"><div>
+
+</div></div>
+                                </fieldset>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                     
+            </div>
+        </div>
+
+    </div>
+
+
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <img src="../App_Themes/deepblue/Images/iti_white.png" />
+        </div>
+    
+HideSearch();</form>
+</body>
+<script language="javascript" type="text/javascript">
+    var newwindow;
+    function poptastic(url) {
+        newwindow = window.open(url, 'name', 'height=400,width=700');
+        if (window.focus) { newwindow.focus() }
+    }
+</script>
+
+<script language="javascript" src='//include/CommonJS.js'
+    type="text/javascript"></script>
+<script language="javascript" src='//include/jquery.js'
+    type="text/javascript"></script>
+<script src="../include/jquery-1.12.0.min.js"></script>
+
+
+
+<script src="../include/bootstrap/bootstrap.js"></script>
+
+<link href="//include/jquery-ui.css" rel="stylesheet" />
+<script src="//include/jquery-1.9.1.js"></script>
+<script src="//include/jquery-ui.js"></script>
+<link rel="stylesheet" href="/resources/demos/style.css" />
+<script src="../App_Themes/darktheme/css/bootstrap.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#sidebarCollapse').on('click', function () {
+            $('#sidebar').toggleClass('active');
+        });
+    });
+</script>
+
+
+<script>
+    $(document).ready(function () {
+        $('.right-menu').click(function () {
+            $('.navbar-right-main').slideToggle();
+        });
+    });
+</script>
+<script>
+    $(function () {
+        $("#tabs").tabs();
+    });
+</script>
+</html>

@@ -1,0 +1,11 @@
+Email, User Name, Company, Invitee, Esc#, Access Types
+"Recons@softwarerealityinc.com","MIGUEL ADAME","AGENCY ESCROW, INC.","JEANNIE MILLER","07-6549","{BR1}" x
+"reconstatements@softwarerealityinc.com","ESTHER ARIAS","AGENCY ESCROW, INC.","JEANNIE MILLER","07-6549","{SR1}" x
+"pcreality@earthlink.net","GINA DI VINCENZO ","AGENCY ESCROW, INC.","JEANNIE MILLER","07-6549","{RAL}" x
+"softwarereality@gmail.com","PATRICIA VILLANUEVA ","AGENCY ESCROW, INC.","JEANNIE MILLER","07-6549","{RAS}" x
+"support@virtualbestteam.com","MARIA FISCHER ","AGENCY ESCROW, INC.","JEANNIE MILLER","07-6549","{RAO}" x
+"sales@softwarerealityinc.com","Jane Txr1","AGENCY ESCROW, INC.","JEANNIE MILLER","07-6549","{LTC}" x
+"2ndrequest@virtualbestteam.com ","Mike Txr2","AGENCY ESCROW, INC.","JEANNIE MILLER","07-6549","{STC}" x
+"admin@virtualbestteam.com","Joan Txr3","AGENCY ESCROW, INC.","JEANNIE MILLER","07-6549","{OTC}" ?
+"chrisford@softwarerealityinc.com","JEANNIE MILLER","AGENCY ESCROW, INC.","Web Administrator","07-6549","{EOX}" x
+

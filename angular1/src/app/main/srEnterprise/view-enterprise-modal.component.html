@@ -1,0 +1,62 @@
+﻿<div bsModal #createOrEditModal="bs-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="createOrEditModal" aria-hidden="true" [config]="{backdrop: 'static'}">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <span>{{l("Details")}}</span>
+                </h4>
+                <button type="button" class="close" (click)="close()" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <h6>{{l("EnterpriseName")}} :</h6>
+                        {{ item.enterprise.enterpriseName }}
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h6>{{l("Email")}} :</h6>
+                        {{ item.enterprise.email }}
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h6>{{l("Phone")}} :</h6>
+                        {{ item.enterprise.phone }}
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h6>{{l("Address1")}} :</h6>
+                        {{ item.enterprise.address1 }}
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h6>{{l("Address2")}} :</h6>
+                        {{ item.enterprise.address2 }}
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h6>{{l("City")}} :</h6>
+                        {{ item.enterprise.city }}
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h6>{{l("State")}} :</h6>
+                        {{ item.enterprise.state }}
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h6>{{l("PinCode")}} :</h6>
+                        {{ item.enterprise.pinCode }}
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h6>{{l("Contry")}} :</h6>
+                        {{ item.enterprise.contry }}
+                    </div>
+
+
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button [disabled]="saving" type="button" class="btn btn-primary blue" (click)="close()">{{l("Close")}}</button>
+            </div>
+        </div>
+    </div>
+
+</div>

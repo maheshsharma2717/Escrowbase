@@ -1,0 +1,8 @@
+Email, User Name, Company, Invitee, Esc#, Access Types
+"decoba8225@tupanda.com","Maheshh","demo000","JEANNIE MILLER","009","{BR1}"
+"narendersharma7116@gmail.com","Maheshh","demo000","JEANNIE MILLER","009","{BR2}"
+"narendersha1998@gmail.com","Maheshh","demo000","JEANNIE MILLER","009","{BR3}"
+"jitender@mandavconsultancy.com","Maheshh","demo000","JEANNIE MILLER","009","{BR4}"
+"narender@mandavconsultancy.com","Maheshh","demo000","JEANNIE MILLER","009","{BR5}"
+"yisilec767@laymro.com","Maheshh","demo000","JEANNIE MILLER","009","{BR6}"
+"fespasorki@gufum.com","Maheshh","demo000","JEANNIE MILLER","009","{BR7}"

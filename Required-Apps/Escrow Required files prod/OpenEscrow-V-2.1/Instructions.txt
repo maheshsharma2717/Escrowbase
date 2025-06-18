@@ -1,0 +1,2 @@
+OpenEscrow.exe EscrowTextFileLocation URL
+OpenEscrow.exe OpenEscrow.txt https://api.escrowbaseweb.com:22742/ 

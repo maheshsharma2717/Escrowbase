@@ -1,0 +1,2 @@
+SRTansferfiles.exe SourceFolder DestinationFolder URL USERNAME PASSWORD
+Ebwebftr.exe "D:\*.pdf" "Escrow nInc.\Escrow nInc.\07-6549" "https://api.escrowbaseweb.com:22742/" "EbwTransferAdmn" "Ebw135!"

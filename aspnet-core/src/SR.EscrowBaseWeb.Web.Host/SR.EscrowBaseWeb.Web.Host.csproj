@@ -1,0 +1,81 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <Import Project="..\..\common.props"></Import>
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <AssetTargetFallback>$(AssetTargetFallback);portable-net45+win8+wp8+wpa81;</AssetTargetFallback>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <AssemblyName>SR.EscrowBaseWeb.Web.Host</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PackageId>SR.EscrowBaseWeb.Web.Host</PackageId>
+    <UserSecretsId>SR-EscrowBaseWeb-894FDFC1-6482-4A56-926A-3C46C9FE0329</UserSecretsId>
+    <RootNamespace>SR.EscrowBaseWeb.Web</RootNamespace>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="App_Data\**" />
+    <Content Remove="App_Data\**" />
+    <EmbeddedResource Remove="App_Data\**" />
+    <None Remove="App_Data\**" />
+  </ItemGroup>
+<ItemGroup>
+    <Compile Remove="Controllers\MessageController.cs" />
+    <Compile Remove="ITypedHubClient.cs" />
+    <Compile Remove="Message.cs" />
+    <Compile Remove="Models\PhysicalFileProvider.cs" />
+    <Compile Remove="NotifyHub.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="wwwroot\swagger\ui\index.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="wwwroot\Plugins\.gitkeep" />
+    <None Update="Dockerfile">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="log4net.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Update="wwwroot\**\*">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SR.EscrowBaseWeb.Web.Core\SR.EscrowBaseWeb.Web.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Abp.Castle.Log4Net" Version="6.4.0" />
+    <PackageReference Include="AspNetCore.HealthChecks.UI" Version="5.0.1" />
+    <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="5.0.1" />
+    <PackageReference Include="CsvHelper" Version="15.0.5" />
+    <PackageReference Include="Foxit.SDK.Dotnet" Version="10.0.0" />
+    <PackageReference Include="FreeSpire.Doc" Version="7.1.13" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.70" />
+    <PackageReference Include="Independentsoft.Msg" Version="2.0.760" />
+    <PackageReference Include="Microsoft.Office.Interop.Word" Version="15.0.4797.1004" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.8" />
+    <PackageReference Include="MsgReader" Version="5.7.0" />
+    <PackageReference Include="Spire.Doc" Version="13.1.4" />
+    <PackageReference Include="System.IO" Version="4.3.0" />
+  </ItemGroup>
+<ItemGroup>
+    <ProjectReference Include="..\SR.EscrowBaseWeb.Application.Shared\SR.EscrowBaseWeb.Application.Shared.csproj" />
+    <ProjectReference Include="..\SR.EscrowBaseWeb.Application\SR.EscrowBaseWeb.Application.csproj" />
+    <ProjectReference Include="..\SR.EscrowBaseWeb.Web.Core\SR.EscrowBaseWeb.Web.Core.csproj" />
+    <PackageReference Include="RestSharp" Version="106.11.7" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\swagger\ui\index.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="wwwroot\Plugins\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="FoxitESignStandard">
+      <HintPath>..\..\..\..\Users\Admin.Programmer1\Downloads\Foxit+eSign-CS_NET_STANDARD_LIB-CSharp\CS_NET_STANDARD_LIB\FoxitESign.Standard\bin\Debug\netstandard2.0\FoxitESignStandard.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,1102 @@
+<div>
+  <div class="row user-type-sec" style="margin-right: auto; font-size: 14px;">
+
+    <div class="col-md-12"
+      style="display: flex; justify-content: space-between; align-items: center; padding: 3 0 0 0;">
+
+      <!-- Escrow Info -->
+      <div class="usertypes col-md-6">
+        <div style="margin-left: 8">
+          {{'Escrow#'}} <b>{{escrowname}}</b>
+        </div>
+      </div>
+
+      <!-- Buttons & Dropdown -->
+      <div class="usertypes col-md-6" style="display: flex; gap: 12px; justify-content: flex-end; align-items: center;">
+
+        <!-- Message Button -->
+        <div *ngIf="isEscrowOfficerUserExist && UsertypeModel != 'EOX'" style="text-align: center; cursor: pointer;">
+          <button type="button" class="btn btn-primary" style="height: 30px; padding: 0 10px;"
+            (click)="openMessagePopup()">
+            <i class="fa fa-envelope" aria-hidden="true"></i>
+          </button>
+          <div style="margin-top: 2px;">
+            <i style="color: black; font-weight: 400; font-size: 11px;">Message to Escrow Officer</i>
+          </div>
+        </div>
+
+        <!-- Notes Button -->
+        <div style="text-align: center; cursor: pointer;">
+          <button type="button" class="btn btn-primary" style="height: 32px; padding: 0 10px;"
+            (click)="openNotesPopup()">
+            <i class="fa fa-calendar" aria-hidden="true"></i>
+          </button>
+          <div style="margin-top: 2px;">
+            <i style="color: black; font-weight: 400; font-size: 11px;">Notes</i>
+          </div>
+        </div>
+
+        <!-- Access Level Dropdown -->
+        <div style="text-align: center;">
+          <select name="usertypes" (change)="selectChangeHandler($event)" [(ngModel)]="UsertypeModel"
+            style="height: 32px; font-size: 13px;" class="form-control form-control-solid rounded font-size-sm">
+            <option *ngFor="let item of userTypes" [ngValue]="item">{{item}}</option>
+          </select>
+          <div style="margin-top: 2px;">
+            <i style="color: black; font-weight: 600; font-size: 11px;">Access Level Type(s)</i>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div
+      style="background: linear-gradient(to right, #57cbeb, #24cdd9, #25a9d1, #4e8ec6, #019da8, #03506c); height: 2px; margin-top: 6px;">
+    </div>
+
+  </div>
+
+  <div class="file-manager-area">
+    <!-- BACKDROP -->
+    <div *ngIf="signPopup" class="sign-popup-backdrop"></div>
+
+    <div id="hideDiv" *ngIf="signPopup" class="my-special-div" style="float: inherit !important;position: absolute !important; box-shadow: 5px 5px 8px 5px #888888;margin: 20px 0px 0px 107px !important;z-index: 1 !important;background-color: #FFF;padding: 20px; top: 150px; overflow: scroll;
+      min-height: 250px; width:85%">
+      <div class="d-flex justify-content-between w-100">
+        <h4>File Signing Status</h4>
+        <i class="fa fa-times" (click)="closeSignPopup()" style="font-size: 25px;"></i>
+      </div>
+      <table id="signtable" style="border: none;background: none;width: 100%;">
+        <tbody>
+          <tr style="background: none; font-size: smaller; background-color: none">
+            <th style="padding: 12px 12px;">Sign Order</th>
+            <th style="padding: 12px 12px;">Name </th>
+            <th style="padding: 12px 12px;">Type</th>
+            <th style="padding: 12px 12px;">Email</th>
+            <th style="padding: 12px 12px;">Total Signatures</th>
+            <th style="padding: 12px 12px;">Total Initials</th>
+            <th style="padding: 12px 12px;">Total Mandatory Signatures</th>
+            <th style="padding: 12px 12px;">Total Mandatory Initials</th>
+            <th style="padding: 12px 12px;">Total Optional Signatures</th>
+            <th style="padding: 12px 12px;">Total Optional Initials</th>
+            <th style="padding: 12px 12px;">Status</th>
+          </tr>
+          <tr style="font-size: smaller; background: none;" *ngFor="let item of Sign">
+            <td>{{item.signing_order}}</td>
+            <td>{{item.name}}</td>
+            <td>{{item.userType}}</td>
+            <td>{{item.email}}</td>
+            <td>{{item.totalSignatureCount}}</td>
+            <td>{{item.totalinitialsCount}}</td>
+            <td>{{item.totalMandatorySignatureCount}}</td>
+            <td>{{item.totalMandatoryInitialsCount}}</td>
+            <td>{{item.totalOptinalSignatureCount}}</td>
+            <td>{{item.totalOptinalInitialsCount}}</td>
+            <td>
+              <i class="fa fa-check" [ngClass]="{'green-icon': item.zohoSignSignature}"></i>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display: none;">
+      <div>
+        <span style="font-size: large;padding: 14px;"><b>Escrow Generated Documents <i style="color: royalblue;">(This
+              is
+              the area where the escrow officer will download documents that you are required to give attention
+              to.)</i></b>
+        </span><br><span style="font-size: large;padding: 14px;"><i style="color: royalblue; font-weight: 600;">Select
+            Document below you need to do work on and then choose the action required from the 4 buttons below to start
+            that
+            action.</i></span>
+
+      </div>
+
+      <div style="background-color: white;">
+        <div
+          style="margin: 15px 0px 0px 0px;float: inherit;z-index: 1;font-size: larger;font-weight: bold;background-color: #adcde9;">
+          &nbsp;&nbsp; Total Items -: {{itemCount}}</div>
+
+        <dx-file-manager #data id="fileManager" [fileSystemProvider]="remoteProvider" height="600"
+          rootFolderName="Companies" selectionMode="single" (onContextMenuItemClick)="onItemClick($event)"
+          (onSelectionChanged)="handleShownEvent($event)" (onSelectedFileOpened)="displayImagePopupFromMain($event)"
+          [currentPath]="currentpath">
+
+          <dxo-item-view [showParentFolder]="false">
+            <dxo-details>
+
+              <dxi-column dataField="name" width="600">
+              </dxi-column>
+              <dxi-column dataField="access" caption="Access Level" width="120">
+                <ng-template cellTemplate="let data of 'cellTemplate'">
+
+                </ng-template>
+              </dxi-column>
+              <dxi-column dataField="action" caption="Action Required" style="font-weight: 800 !important;"
+                width="150"></dxi-column>
+              <dxi-column dataField="signStatus" caption="signStatus" width="150"></dxi-column>
+              <dxi-column dataField="signing" caption="Signing Status" width="150"> </dxi-column>
+              <dxi-column dataField="updateOn" caption="Update On"> </dxi-column>
+            </dxo-details>
+          </dxo-item-view>
+
+          <dxo-context-menu (onClick)="handleShowingEvent($event)">
+            <dxi-item *ngIf=" editPermission == false" name="View/Edit" text="View" [visible]="readPermission"
+              [options]="{view: popupesign}"></dxi-item>
+            <dxi-item *ngIf=" editPermission == true" name="View/Edit" text="View/Edit" [visible]="readPermission"
+              [options]="{view: popupesign}"></dxi-item>
+            <dxi-item name="E-Sign" text="E-Sign" [visible]="esignPermission" [options]="{esign: popupesign}">
+            </dxi-item>
+            <dxi-item name="E-SignDetalis" text="E-Sign Details" [visible]="esignPermission"
+              [options]="{esignDetails: displayImagePopupFromMain}"> </dxi-item>
+            <dxi-item name="History" text="View/History" [visible]="viewHistoryPermission"
+              [options]="{history: Historyunique}"> </dxi-item>
+            <dxi-item name="Reminder" text="Send Reminder/Message" [visible]="reminderPermission"
+              [options]="{reminder: reminderModel}"> </dxi-item>
+            <dxi-item name="Rename" text="Rename" [visible]="renamePermission" [options]="{RenameMain: RenameMain}">
+            </dxi-item>
+            <dxi-item name="RenameFileName" text="Rename" [visible]="renameFileName"
+              [options]="{renameFileName: renameFileNameModel}"> </dxi-item>
+            <dxi-item name="Delete" text="Delete" [visible]="deletePermission" [options]="{delete: 'a'}"> </dxi-item>
+            <dxi-item name="Download" [visible]="downloadPermission" text="Download File"
+              [options]="{download: 'a'}"></dxi-item>
+            <dxi-item name="View FullName" text="View FullName" [visible]="viewFullNamePermission"
+              [options]="{full: FullNameMain}"></dxi-item>
+            <dxi-item name="refresh" beginGroup="true"></dxi-item>
+          </dxo-context-menu>
+        </dx-file-manager>
+
+
+        <div class="col-md-12 " *ngIf="ErrorMessage">
+          <div class="errorMessage">{{ErrorMessage}}</div>
+
+        </div>
+      </div>
+
+      <hr style="margin-top: 0 !important;">
+    </div>
+    <div>
+
+      <div *ngIf="inputPerson">
+        <app-file-main #fileMainComponent [inputPerson]="inputPerson" (onRefresh)="onRefresh($event)"
+          (saveEvent)="handelSaveMainFile($event)"> </app-file-main>
+      </div>
+
+      <app-file-other #fileOtherComponent [inputPerson]="inputPerson" (saveEvent)="handleSave($event)"></app-file-other>
+      <div style="display: none;">
+        <dx-file-manager id="fileManager1" #targetDataGrid [fileSystemProvider]="remoteProvider1" height="300"
+          (onContextMenuItemClick)="onItemClick1($event)" rootFolderName="Companies" selectionMode="single"
+          [currentPath]="currentpath1" restoreDirectory="True" (onSelectionChanged)="handleShownEventOtherArea($event)">
+
+          <dxo-item-view [showParentFolder]="false" placeholder="Hello">
+
+            <dxo-details>
+              <!-- <div> <dxi-column dataField="name" [cellTemplate]="nameTemplate"></dxi-column></div> -->
+              <dxi-column dataField="name"></dxi-column>
+              <dxi-column value="#f05b41" dataField="tags" caption="Tags" width="95"></dxi-column>
+              <dxi-column dataField="fileType" caption="Type" width="95"></dxi-column>
+            </dxo-details>
+          </dxo-item-view>
+
+          <dxo-context-menu>
+            <dxi-item text="Total Items -:"></dxi-item>
+          </dxo-context-menu>
+
+          <dxo-context-menu>
+            <dxi-item name="View" text="View" [visible]="readPermissionOtherArea"
+              [options]="{view: otherAreaFileAction}"></dxi-item>
+            <dxi-item name="View/Edit" text="View/Edit" [visible]="editPermissionOtherArea"
+              [options]="{view: otherAreaFileAction}"></dxi-item>
+            <dxi-item name="Rename" text="Rename" [visible]="true" [options]="{Rename1: Rename1}"> </dxi-item>
+            <dxi-item name="Delete" text="Delete" visible="true" [options]="{delete: 'a'}"> </dxi-item>
+            <dxi-item name="Download" visible="true" text="Download File" [options]="{download: 'a'}"> </dxi-item>
+            <dxi-item name="View FullName" text="View FullName" visible="true" [options]="{full: FullName1}">
+            </dxi-item>
+            <dxi-item name="Move" text="Move to Main" [visible]="editPermissionOtherArea"
+              [options]="{Move: Move}"></dxi-item>
+            <dxi-item name="Tags" text="Tags" visible="true" [options]="{Tags: Opentags}"></dxi-item>
+            <!-- <dxi-item tags="Tags" text="Tags"  visible="true" [options]="{tags: Opentags}"></dxi-item> -->
+            <dxi-item name="refresh" beginGroup="true"></dxi-item>
+          </dxo-context-menu>
+
+        </dx-file-manager>
+
+
+      </div>
+    </div>
+
+    <!-- <div id="hideDiv1" style="font-size: large;" *ngIf="fullnamepopup1">{{fileFullName1}}</div> -->
+    <table style="width:100% ">
+      <thead>
+        <tr>
+
+          <th style="display: flex; justify-content: center">
+            <div id="appDragDropAreaContent" tabindex="0"
+              style="height:150px;width:100%;text-align:center;padding-top:80px;background-color:gainsboro"
+              class="uploadfilecontainer" (click)="fileInput.click()" appDragDrop
+              (contextmenu)="onRightClickPaste($event)" (paste)="onPaste($event)" (onFileDropped)="uploadFile($event)">
+              <div style="margin: -40px 0px 0px 0px;"><img height="50px" width="50px"
+                  src="\assets\common\images\drop.png">
+                <h5 style="text-align:Centre; color: black;">Drag And Drop Here</h5>
+                <p *ngIf="UsertypeModel =='EOX'">Press Ctrl+V to paste the file </p>
+              </div>
+              <input hidden type="file" #fileInput (change)="select($event)">
+            </div>
+          </th>
+
+        </tr>
+
+      </thead>
+
+    </table>
+
+  </div>
+  <footer-bar></footer-bar>
+  <app-message-escrow-officer #messageToEscrowOfficerModal></app-message-escrow-officer>
+  <app-sticky-notes #stickyNotesComponent></app-sticky-notes>
+  <app-escrow-usertags #escrowUsertagsComponent></app-escrow-usertags>
+
+  <!-- <app-escrow-usertags> </app-escrow-usertags> -->
+
+  <ng-template #popupesign>
+
+    <div class="modal-header">
+
+      <img *ngIf="!eSign" style="
+     position: fixed;
+     height: 35px;
+    width: 42px;
+    padding: 0px;
+    margin: 0px 0px 0px -18px;
+ " src="\assets\common\images\cross.png" class="btn btn-danger" (click)="Hide()" />
+      <img *ngIf="eSign" style="
+  position: fixed;
+  height: 35px;
+ width: 42px;
+ padding: 0px;
+ margin: 0px 0px 0px -18px;
+" src="\assets\common\images\cross.png" class="btn btn-danger" (click)="Hide();DownloadEsignedPdf()" />
+
+      <button *ngIf="editPermission && !docx &&  !eSign" style="
+      height: 35px;
+      width: 20vh;
+      right: 0px;
+      position: absolute;
+      margin: 0px 5px 0px 170px;
+    " type="button" class="btn btn-info" (click)="SaveChanges()">Save Changes</button>
+      <button *ngIf="docx" class="btn btn-success" style="
+      height: 35px;
+      width: 20vh;
+      right: 0px;
+      position: absolute;
+      margin: 0px 5px 0px 170px;" (click)="SaveFileDoc()">Save</button>
+    </div>
+
+    <div id="modal-content" style="height:100vh;" class="modal-content">
+
+      <app-richedit *ngIf="docx" [changing]="changingValue"></app-richedit>
+      <ngx-extended-pdf-viewer *ngIf="!docx && !eSign" [src]="source" height="88vh" [useBrowserLocale]="true"
+        [textLayer]="true" [showHandToolButton]="true" [showFindButton]="false" [showPagingButtons]="false"
+        [showPresentationModeButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
+        [showBookmarkButton]="false" [showSecondaryToolbarButton]="false" [showRotateButton]="false"
+        [showSpreadButton]="false" [showPropertiesButton]="false"
+        [showDownloadButton]="false"></ngx-extended-pdf-viewer>
+
+
+      <div *ngIf="eSign" style="height: 100%; width: 100%; overflow: hidden;" data-role="content">
+        <iframe *ngIf="eSign" id="esignIframe" [src]="EMBED_SESSION_URL"
+          style="width: 100% !important;height: 100% !important;" frameborder="0"></iframe>
+        <iframe *ngIf="eSign" id="esignIframe" style="width: 100% !important;height: 100% !important;" [src]="embedUrl"
+          frameborder="0"></iframe>
+      </div>
+      <div *ngIf="msgShow">
+        <div class="msg-info" style="display: none;">
+          <div class="info-box wizard-msg">
+            2. MSG info <span class="msg-file-name"></span>
+          </div>
+          <div class="field-block">
+            <div class="field-label">From</div>
+            <div class="msg-from"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">To</div>
+            <div class="msg-to"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Date (from Headers, example)</div>
+            <div class="msg-date"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Subject</div>
+            <div class="msg-subject"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Body</div>
+            <div class="msg-body"></div>
+          </div>
+          <div class="field-block" style="display: none;">
+            <div class="field-label">HTML Body</div>
+            <div class="msg-body-html"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Attachments</div>
+            <div class="msg-attachment"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-template>
+  <!-- </div> -->
+
+</div>
+
+<ng-template #Historyunique>
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      History of file
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span style="display:block; font-size: 29px;
+      color: black;" (click)="HideHistory()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col" style="width: 18% !important;"><b>Action</b></th>
+          <th scope="col" style="width: 33% !important;"><b>Message</b></th>
+          <th scope="col"><b>User Email</b></th>
+          <th scope="col"><b>Created At</b></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of ItemsArray">
+          <td><b>{{ item.escrowFileHistory.actionType }}</b></td>
+          <td>{{ item.escrowFileHistory.message }}</td>
+          <td>{{ item.userName}}</td>
+          <td>{{ item.escrowFileHistory.createdAt | date: 'MM-dd-yyyy HH:mm'}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="modal-footer">
+
+  </div>
+</ng-template>
+
+
+<ng-template #RenameMain>
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      Rename
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span style="display:block; font-size: 29px;
+      color: black;" (click)="HideRename()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input style="width:100%; height:35px;" type="text" required="required" name="Rename"
+              [(ngModel)]="filenames" /></td>
+        </tr>
+
+        <tr>
+
+          <table style="width:80%;">
+            <thead>
+              <th colspan="2">User Type</th>
+
+              <th>Select all</th>
+              <th>Read</th>
+              <th>Edit</th>
+              <th>Alert</th>
+              <th>Delete</th>
+              <th>Sign</th>
+            </thead>
+
+            <tbody>
+              <tr class="indec" *ngFor="let item of userpermissionsall; let i = index">
+                <td colspan="2">
+                  <select #mySelect (change)="ddldata(mySelect.value, i, 'empty')"
+                    style="PADDING: 8PX 0PX; WIDTH: 100%; BORDER-RADIUS: 5PX;">
+                    <option [value]="">Please Select</option>
+                    <option *ngIf="item.first && item.isChanged != true" selected [value]="item.first">{{item.first}}
+                    </option>
+                    <option *ngFor="let itemq of myuser;" [value]="itemq.usertype">
+                      {{itemq.usertype}} - {{itemq.name}}
+                    </option>
+                  </select>
+
+                  <!--<input type="text" readonly name="SR1" value="{{item}}"/>-->
+                </td>
+
+                <td class="d-flex justify-content-center" style="PADDING: 20PX;">
+                  <input type="checkbox" class="checkbox-width" (change)="checkBoxChange(mySelect.value, i, 'All')"
+                    [checked]="item.All" (click)="selectAll(i)">
+                </td>
+                <td style="PADDING: 20PX;"><input type="checkbox" class="checkbox-width" [checked]="item.R"
+                    (change)="checkBoxChange(mySelect.value, i, 'R')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" class="checkbox-width" [checked]="item.E"
+                    (change)="checkBoxChange(mySelect.value, i, 'E')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" class="checkbox-width" [checked]="item.A"
+                    (change)="checkBoxChange(mySelect.value, i, 'A')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" class="checkbox-width" [checked]="item.D"
+                    (change)="checkBoxChange(mySelect.value, i, 'D')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" class="checkbox-width" [checked]="item.S"
+                    (change)="checkBoxChange(mySelect.value, i, 'S')"></td>
+                <td *ngIf="i >0"> <button class="btn btn-danger" (click)="deleteItem(i)">Delete</button> </td>
+                <td *ngIf="i == (userpermissionsall.length-1)"> <button class="btn btn-success" (click)="addItem(i)">Add
+                    Row</button> </td>
+
+              </tr>
+
+            </tbody>
+          </table>
+
+
+        </tr>
+        <tr>
+          <td> <button [disabled]="btnstate" style="float:right;" type="button" class="btn btn-primary"
+              aria-label="Save"><span style="cursor: pointer; padding: 11px 19px; margin: -13px;"
+                (click)="Renamee()">Save</span></button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="modal-footer">
+
+  </div>
+</ng-template>
+
+
+<ng-template #Rename1>
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      Rename
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span style="display:block; font-size: 29px;
+      color: black;" (click)="HideRename()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input style="width:100%; height:35px;" type="text" required="required" name="Rename1"
+              [(ngModel)]="filenames" /></td>
+        </tr>
+        <tr>
+        </tr>
+        <tr>
+          <td> <button [disabled]="btnstate" style="float:right;" type="button" class="btn btn-primary"
+              aria-label="Save"><span style="cursor: pointer;
+               padding: 11px 19px; margin: -13px;" (click)="Renamee1()">Save</span></button></td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="modal-footer">
+
+  </div>
+</ng-template>
+
+
+<ng-template #Move>
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      Move To Main
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span style="display:block; font-size: 29px;
+      color: black;" (click)="HideRename()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">First Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input style="width:100%; height:35px;" type="text" required="required" name="Rename"
+              [(ngModel)]="filenames" /></td>
+        </tr>
+        <tr>
+
+          <table style="width:80%;">
+            <thead>
+              <th colspan="2">User Type</th>
+              <th>Select All</th>
+              <th>Read</th>
+              <th>Edit</th>
+              <th>Alert</th>
+              <th>Delete</th>
+              <th>Sign</th>
+              <th>Action</th>
+              <th></th>
+            </thead>
+            <tbody>
+
+              <tr class="indec" *ngFor="let item of userpermissionsall; let i = index">
+                <td colspan="2">
+                  <select #mySelect (change)="ddldata(mySelect.value, i, 'empty')"
+                    style="PADDING: 8PX 0PX; WIDTH: 100%; ">
+                    <option [value]="">Please Select</option>
+                    <option *ngIf="item.first && item.isChanged != true" selected [value]="item.first">{{item.first}}
+                    </option>
+
+                    <option *ngFor="let itemq of myuser;" [value]="itemq.usertype">{{itemq.usertype}} - {{itemq.name}}
+                    </option>
+                  </select>
+
+                  <!--<input type="text" readonly name="SR1" value="{{item}}"/>-->
+                </td>
+                <td class="d-flex justify-content-center" style="PADDING: 20PX;">
+                  <input type="checkbox" class="checkbox-width" (click)="selectAllup(i)">
+                </td>
+                <td style="PADDING: 20PX;"><input type="checkbox" class="checkbox-width" [checked]="item.R"
+                    (change)="checkBoxChange(mySelect.value, i, 'R')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" class="checkbox-width" [checked]="item.E"
+                    (change)="checkBoxChange(mySelect.value, i, 'E')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" class="checkbox-width" [checked]="item.A"
+                    (change)="checkBoxChange(mySelect.value, i, 'A')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" class="checkbox-width" [checked]="item.D"
+                    (change)="checkBoxChange(mySelect.value, i, 'D')"></td>
+                <td style="PADDING: 20PX;"><input type="checkbox" class="checkbox-width" [checked]="item.S"
+                    (change)="checkBoxChange(mySelect.value, i, 'S')"></td>
+                <td *ngIf="i >0"> <button class="btn btn-danger" (click)="deleteItem(i)">Delete</button> </td>
+                <td *ngIf="i == (userpermissionsall.length-1)"> <button class="btn btn-success" (click)="addItem(i)">Add
+                    Row</button> </td>
+              </tr>
+
+            </tbody>
+          </table>
+
+        </tr>
+        <tr>
+          <td>
+            <button [disabled]="btnstate" style="float:right;" type="button" class="btn btn-primary" aria-label="Save">
+              <span style="cursor: pointer; padding: 11px 19px; margin: -13px;" (click)="Moved()">Save</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="modal-footer">
+
+  </div>
+</ng-template>
+
+<ng-template #Viewmore></ng-template>
+
+
+<ng-template #FullNameMain>
+  <!-- <img style="
+  position: absolute;
+    width: 32px;
+    padding: 0px;
+    right: 0;
+"src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideHistory()" /> -->
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      View Full Name
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span aria-hidden="true" style="display: block; font-size: 29px;
+      color: black;" (click)="HideHistory()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{fileFullName}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="modal-footer">
+
+  </div>
+</ng-template>
+
+
+<ng-template #ViewEmlFile>
+
+  <div class="modal-header">
+
+    <img style="
+    position: fixed;
+    height: 35px;
+   width: 42px;
+   padding: 0px;
+   margin: 0px 0px 0px -18px;
+ " src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideOtherAreaFileAction()" />
+  </div>
+  <div id="modal-content" style="height:80vh;" class="modal-content d-flex align-items-center">
+    <div *ngIf="emailContent">
+      <div [innerHTML]="emailContent"></div>
+      <!-- <iframe [srcdoc]="emailContent" width="100%" height="100%"></iframe> -->
+
+    </div>
+
+  </div>
+
+</ng-template>
+
+<ng-template #ViewMsgFile>
+  <div class="modal-header d-flex align-items-center justify-content-between">
+    <img style="
+    position: fixed;
+    height: 35px;
+   width: 42px;
+   padding: 0px;
+   margin: 0px 0px 0px -18px;
+ " src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideOtherAreaFileAction()" />
+  </div>
+
+  <div id="modal-content" class="modal-body" style="max-height: calc(100vh - 60px); overflow-y: auto;">
+    <div *ngIf="emailContent; else noContent">
+      <div [innerHTML]="emailContent" style="white-space: pre-wrap; word-wrap: break-word"></div>
+    </div>
+    <ng-template #noContent>
+      <p class="text-muted text-center">No email content available to display.</p>
+    </ng-template>
+  </div>
+</ng-template>
+
+
+<ng-template #FullName1>
+  <!-- <img style="
+  position: absolute;
+    width: 32px;
+    padding: 0px;
+    right: 0;
+" src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideHistory()" /> -->
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      View Full Name
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span aria-hidden="true" style="display: block; font-size: 29px;
+      color: black;" (click)="HideHistory()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{fileFullName}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="modal-footer">
+
+  </div>
+</ng-template>
+<ng-template #template>
+
+  <div class="modal-header">
+    <h4 class="modal-title">Create Sticky Note</h4>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body">
+    <!-- <textarea rows="4" class="form-control" placeholder="Write your note here..."></textarea> -->
+    <textarea [(ngModel)]="noteMessage" rows="4" class="form-control" placeholder="Write your note here..."></textarea>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeModal()">Close</button>
+    <button type="button" class="btn btn-primary" (click)="saveNote()">Save</button>
+  </div>
+
+
+
+  <div class="clearfix"></div>
+  <div class="modal-footer">
+
+    <!--<button type="button" class="btn btn-default" (click)="modalRef.hide()">Close</button>-->
+
+  </div>
+  <!-- </div> -->
+</ng-template>
+
+<ng-template #renameFileNameModel>
+  <!-- <img style="
+  position: absolute;
+    width: 32px;
+    padding: 0px;
+    right: 0;
+"src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideHistory()"/> -->
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      Rename File Name
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span aria-hidden="true" style="display: block; font-size: 29px;
+      color: black;">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input style="width:100%; height:35px;" type="text" required="required" name="Rename1"
+              [(ngModel)]="fileFullName" /></td>
+
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-primary" (click)="saveRenameFileName()">Save</button>
+    <button type="button" class="btn btn-danger" (click)="modalRef.hide()">Close</button>
+  </div>
+</ng-template>
+<ng-template #reminderModel>
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      Add New Reminder
+    </h4>
+    <button type="button" (click)="modalRef.hide()" class="close" aria-label="Close">
+
+      <span aria-hidden="true" style="display: block; font-size: 29px;
+      color: black;">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="container">
+
+      <div class="row">
+        <h5>Send Reminder By </h5>
+
+      </div>
+      <div class="row">
+        <div class="col-md-4  reminder-checkbox">
+          <input type="checkbox" [checked]="toMessage" (change)="onCheckboxChange('message',$event)"
+            style="width: 20px;height: 20px;" />&nbsp;&nbsp;&nbsp;
+          <h5>Text Message</h5>
+        </div>
+        <div class="col-md-4  reminder-checkbox">
+          <input type="checkbox" [checked]="email" (change)="onCheckboxChange('email',$event)"
+            style="width: 20px;height: 20px; float: left;" />&nbsp;&nbsp;&nbsp;
+          <h5>E-mail</h5>
+        </div>
+        <div class="col-md-4  reminder-checkbox">
+          <input type="checkbox" [checked]="directMessage" (change)="onCheckboxChange('directMessage',$event)"
+            style=" width: 20px;height: 20px; float: left;" />&nbsp;&nbsp;
+          <h5>Direct Message</h5>
+        </div>
+      </div>
+      <div class="row text-danger" *ngIf="checkMessageType">Please choose at least one type of reminder.</div>
+      <br>
+      <div class="row">
+        <h5>Add your reminder text </h5>
+        <textarea class="form-control" [(ngModel)]="reminderDto.reminderText" placeholder="Enter your reminder here..."
+          style="height: 250px; background: #ededed;"></textarea>
+        <div class="row text-danger" *ngIf="checkReminderMessage">Please add reminder message.</div>
+      </div>
+      <br />
+
+      <h5 *ngIf="UsertypeModel === 'EOX'">Select the user to whom you want to send the reminder:</h5>
+      <h5 *ngIf="UsertypeModel != 'EOX'">Your escrow officer will receive this reminder.</h5>
+      <div class="row">
+        <table class="table">
+          <th>Select</th>
+          <th>Full Name</th>
+          <th>User Type</th>
+          <th>Mobile Number</th>
+          <th>Email </th>
+          <th *ngIf="reminderMessageResponse"> Text Message</th>
+          <th *ngIf="reminderMailResponse">Email </th>
+          <th *ngIf="reminderDirectMessageResponse">Direct Message </th>
+          <tbody>
+            <tr *ngFor="let item of reminderUserList">
+              <td>
+                <div class="reminder-checkbox">
+                  <input [disabled]="item.isChecked && UsertypeModel != 'EOX'" type="checkbox"
+                    [(ngModel)]="item.isChecked" [checked]="item.isChecked"
+                    style="width: 20px;height: 20px;" />&nbsp;&nbsp;&nbsp;
+                </div>
+              </td>
+              <td> {{item.fullName}}</td>
+              <td> {{item.userType}}</td>
+              <td> {{item.phoneNo}}</td>
+              <td> {{item.email}}</td>
+              <td *ngIf="reminderMessageResponse"> {{item.messageStatus}}</td>
+              <td *ngIf="reminderMailResponse"> {{item.emailStatus}}</td>
+              <td *ngIf="reminderDirectMessageResponse"> {{item.directMessageStatus}}</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="text-danger" *ngIf="!reminderUserList.length">
+      {{noUserMessage}}
+    </div>
+
+    <div *ngIf="reminderResponse?.length >0">
+      <table class="table">
+        <thead>
+          <th>Sent To Name</th>
+          <th>Sent To User Type</th>
+          <th>Reminder Type</th>
+          <th>Sent To Status</th>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of reminderResponse">
+            <td>{{item.userName}}</td>
+            <td>{{item.userType}}</td>
+            <td>{{item.reminderType}}</td>
+            <td>{{item.messageStatus}}</td>
+
+          </tr>
+        </tbody>
+      </table>
+      <div class="row text-danger" *ngIf="checkUserSelected">Please select at least one user.</div>
+    </div>
+
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-primary" [disabled]="!reminderUserList.length"
+      (click)="saveReminder()">Save</button>
+    <button type="button" class="btn btn-danger" (click)="modalRef.hide()">Close</button>
+  </div>
+</ng-template>
+
+<ng-template #otherAreaFileAction>
+
+  <div class="modal-header">
+
+    <img style="
+   position: fixed;
+   height: 35px;
+  width: 42px;
+  padding: 0px;
+  margin: 0px 0px 0px -18px;
+" src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideOtherAreaFileAction()" />
+
+    <button *ngIf="editPermissionOtherArea && !editPermissionDocOtherArea" style="
+    height: 35px;
+    width: 20vh;
+    right: 0px;
+    position: absolute;
+    margin: 0px 5px 0px 170px;
+  " type="button" class="btn btn-info" (click)="SaveChangesOtherArea()">Save Changes</button>
+    <button *ngIf="editPermissionDocOtherArea" class="btn btn-success" style="
+    height: 35px;
+    width: 20vh;
+    right: 0px;
+    position: absolute;
+    margin: 0px 5px 0px 170px;" (click)="SaveFileDoc()">Save</button>
+  </div>
+  <div id="modal-content" style="height:100vh;" class="modal-content">
+
+    <app-richedit *ngIf="docx" [changing]="changingValue"></app-richedit>
+
+    <ngx-extended-pdf-viewer *ngIf="!docx && !eSign" [src]="source" height="88vh" [useBrowserLocale]="true"
+      [textLayer]="true" [showHandToolButton]="true" [showFindButton]="false" [showPagingButtons]="false"
+      [showPresentationModeButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
+      [showBookmarkButton]="false" [showSecondaryToolbarButton]="false" [showRotateButton]="false"
+      [showSpreadButton]="false" [showPropertiesButton]="false" [showDownloadButton]="false"></ngx-extended-pdf-viewer>
+
+
+    <div *ngIf="eSign" style="height: 100%; width: 100%; overflow: hidden;" data-role="content">
+      <iframe *ngIf="eSign" id="esignIframe" [src]="EMBED_SESSION_URL"
+        style="width: 100% !important;height: 100% !important;" frameborder="0"></iframe>
+      <iframe *ngIf="eSign" id="esignIframe" style="width: 100% !important;height: 100% !important;" [src]="embedUrl"
+        frameborder="0"></iframe>
+    </div>
+    <div *ngIf="msgShow">
+      <div class="msg-info" style="display: none;">
+        <div class="info-box wizard-msg">
+          2. MSG info <span class="msg-file-name"></span>
+        </div>
+        <div class="field-block">
+          <div class="field-label">From</div>
+          <div class="msg-from"></div>
+        </div>
+        <div class="field-block">
+          <div class="field-label">To</div>
+          <div class="msg-to"></div>
+        </div>
+        <div class="field-block">
+          <div class="field-label">Date (from Headers, example)</div>
+          <div class="msg-date"></div>
+        </div>
+        <div class="field-block">
+          <div class="field-label">Subject</div>
+          <div class="msg-subject"></div>
+        </div>
+        <div class="field-block">
+          <div class="field-label">Body</div>
+          <div class="msg-body"></div>
+        </div>
+        <div class="field-block" style="display: none;">
+          <div class="field-label">HTML Body</div>
+          <div class="msg-body-html"></div>
+        </div>
+        <div class="field-block">
+          <div class="field-label">Attachments</div>
+          <div class="msg-attachment"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</ng-template>
+
+<!-- <ng-template #DirectMessageToEscrow>
+  
+</ng-template> -->
+
+
+
+<ng-template #Opentags>
+  <!-- <img style="
+  position: absolute;
+    width: 32px;
+    padding: 0px;
+    right: 0;
+" src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideHistory()" /> -->
+
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">
+      View Full Name
+    </h4>
+    <button type="button" class="close" aria-label="Close">
+
+      <span aria-hidden="true" style="display: block; font-size: 29px;
+      color: black;" (click)="HideHistory()">
+        ×
+      </span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{fileFullName1}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="modal-footer">
+
+  </div>
+
+</ng-template>
+<script type="text/javascript" src="https://esigngenie.com/esign/js/esignGeniePostMessageParent.js"></script>
+<script src="~/lib/signalr-client/signalr.min.js"></script>
+<script src="~/lib/abp-web-resources/Abp/Framework/scripts/libs/abp.signalr-client.js"></script>
+<script>
+  abp.signalr = abp.signalr || {};
+  abp.signalr.autoConnect = false;
+  abp.signalr.reconnectTime = 5000;
+  abp.signalr.maxTries = 8;
+  abp.signalr.increaseReconnectTime = function (time) { //anytime reconnection request gets fail abp will increase the time to wait before next request with using that function. 
+    return time * 2; //(default is twice of previous time)
+  };
+</script>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    /* font-family: "Lucida Grande", Helvetica, Arial, Verdana, sans-serif; */
+    font-family: roboto;
+    font-size: 14px;
+  }
+
+  .dx-datagrid-content,
+  .dx-scrollable-container {
+    background-color: white;
+  }
+
+  .drag-signfield {
+    position: absolute !important;
+    top: -18px !important;
+    left: 10px !important;
+  }
+</style>

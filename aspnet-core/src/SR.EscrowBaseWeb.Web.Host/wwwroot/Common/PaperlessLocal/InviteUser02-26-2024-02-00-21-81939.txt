@@ -1,0 +1,6 @@
+Email, User Name, Company, Invitee, Esc#, Access Types
+"narendersharma7116@gmail.com","naren","DemoCompanyNeww","JEANNIE MILLER","66999","{SR1}"
+"narendersha1998@gmail.com","naren","DemoCompanyNeww","JEANNIE MILLER","66999","{SR2}"
+"cawon97811@ricorit.com","naren","DemoCompanyNeww","JEANNIE MILLER","66999","{SR3}"
+"levewar555@molyg.com","naren","DemoCompanyNeww","JEANNIE MILLER","66999","{SR4}"
+

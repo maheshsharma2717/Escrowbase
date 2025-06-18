@@ -1,0 +1,25 @@
+<div [class]="footerStyle" id="kt_footer" style="bottom: 0;
+position: sticky;
+width: auto;">
+	<div [class]="containerClass + ' d-flex flex-column flex-md-row align-items-center justify-content-between'">
+		<div class="text-dark w-100 order-2 order-md-1">
+			<span class="text-muted font-weight-bold mr-2">
+                EscrowBaseWeb <span
+                    *ngIf="appSession.tenant && appSession.tenant.edition && appSession.tenant.edition.displayName">
+                    {{appSession.tenant.edition.displayName}}</span> | API: v{{appSession.application.version}} | Client: v{{webAppGuiVersion}}
+                [{{releaseDate}}]
+			</span>
+			<span style="position: relative;  padding: 0px; display: inline-flex; float: right; right:2%;">
+				<div>Delivered By:</div>
+				<img *ngIf="!appSession.tenant || !appSession.tenant.logoId" src="/assets/common/images/Escrow-logo.png"alt="logo" height="38" />
+				<!-- <img *ngIf="appSession.tenant && appSession.tenant.logoId"
+					[src]="remoteServiceBaseUrl + '/TenantCustomization/GetTenantLogo?skin=' + currentTheme.baseSettings.menu.asideSkin + '&tenantId=' + appSession.tenant.id + '&id=' + appSession.tenant.logoId"
+					alt="logo" height="38" /> -->
+			</span>
+			
+		</div>
+		<div class="nav nav-dark nav nav-dark order-1 order-md-2">
+            <a href="javascript:;" target="_blank" class="nav-link pl-0 pr-5">&nbsp;</a>
+		</div>
+	</div>
+</div>

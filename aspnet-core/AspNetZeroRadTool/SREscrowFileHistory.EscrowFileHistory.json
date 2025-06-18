@@ -1,0 +1,97 @@
+{
+  "IsRegenerate": false,
+  "MenuPosition": null,
+  "RelativeNamespace": "SREscrowFileHistory",
+  "EntityName": "EscrowFileHistory",
+  "EntityNamePlural": "EscrowFileHistories",
+  "TableName": "EscrowFileHistories",
+  "PrimaryKeyType": "long",
+  "BaseClass": "Entity",
+  "EntityHistory": true,
+  "AutoMigration": true,
+  "UpdateDatabase": true,
+  "CreateUserInterface": false,
+  "CreateViewOnly": true,
+  "CreateExcelExport": false,
+  "IsNonModalCRUDPage": false,
+  "IsMasterDetailPage": false,
+  "PagePermission": {
+    "Host": true,
+    "Tenant": false
+  },
+  "Properties": [
+    {
+      "Name": "Message",
+      "Type": "string",
+      "MaxLength": 500,
+      "MinLength": 2,
+      "Range": {
+        "IsRangeSet": false,
+        "MinimumValue": 0.0,
+        "MaximumValue": 0.0
+      },
+      "Required": false,
+      "Nullable": false,
+      "Regex": "",
+      "UserInterface": {
+        "AdvancedFilter": false,
+        "List": false,
+        "CreateOrUpdate": false
+      }
+    },
+    {
+      "Name": "ActionType",
+      "Type": "string",
+      "MaxLength": 250,
+      "MinLength": 0,
+      "Range": {
+        "IsRangeSet": false,
+        "MinimumValue": 0.0,
+        "MaximumValue": 0.0
+      },
+      "Required": false,
+      "Nullable": false,
+      "Regex": "",
+      "UserInterface": {
+        "AdvancedFilter": false,
+        "List": false,
+        "CreateOrUpdate": false
+      }
+    },
+    {
+      "Name": "CreatedAt",
+      "Type": "DateTime",
+      "MaxLength": 0,
+      "MinLength": 0,
+      "Range": {
+        "IsRangeSet": false,
+        "MinimumValue": 0.0,
+        "MaximumValue": 0.0
+      },
+      "Required": false,
+      "Nullable": false,
+      "Regex": "",
+      "UserInterface": {
+        "AdvancedFilter": false,
+        "List": false,
+        "CreateOrUpdate": false
+      }
+    }
+  ],
+  "NavigationProperties": [
+    {
+      "Namespace": "SR.EscrowBaseWeb.Authorization.Users",
+      "ForeignEntityName": "User",
+      "IdType": "long",
+      "IsNullable": true,
+      "PropertyName": "UserId",
+      "DisplayPropertyName": "Name",
+      "DuplicationNumber": 0,
+      "RelationType": "single",
+      "ViewType": "LookupTable"
+    }
+  ],
+  "NavigationPropertyOneToManyTables": [],
+  "EnumDefinitions": [],
+  "DbContext": null
+}

@@ -1,0 +1,81 @@
+.color-picker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px;
+  background-color: white;
+}
+
+.color-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 50%; 
+}
+
+.color-label {
+  min-width: 140px;
+  font-weight: bold;
+}
+
+.color-input {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 20%; 
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 0 5px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+}
+
+.color-input:hover {
+  transform: scale(1.1);
+  transition: all .3s ease-in;
+}
+
+.color-value {
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.add-color-btn {
+  align-self: start;
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.add-color-btn:hover {
+  background-color: #45a049;
+}
+.v{
+  border:none;
+}
+
+.color-display-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* adds fixed space between value and icon */
+  margin-top: 4px;
+}
+
+.color-value {
+  min-width: 70px; /* optional: to prevent layout shifts */
+  display: inline-block;
+}
+
+.close-icon {
+  color: #F64E60;
+  cursor: pointer;
+  font-size: 22px;
+  transition: color 0.2s ease;
+  margin-left: 77px;
+  margin-bottom: 0;
+}

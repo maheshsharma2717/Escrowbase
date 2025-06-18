@@ -1,0 +1,3 @@
+Email, User Name, Company, Invitee, Esc#, Access Types
+"narendersharma7116@gmail.com","narendersharma","narender1998","JEANNIE MILLER","12-123","{SR1}"
+"narendersharma7116@gmail.com","narendersharma","narender1998","JEANNIE MILLER","12-123","{BR2}"

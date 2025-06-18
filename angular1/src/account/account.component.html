@@ -1,0 +1,83 @@
+<div class="main">
+    <div class="login-main" style="display: inline-flex;">
+    
+    <div [ngClass]="{' login-form kt-grid kt-grid--ver kt-grid--root': !useFullWidthLayout(), 'kt-content': useFullWidthLayout() }" [style.text-align]="useFullWidthLayout() ? 'center' : 'center' " style="width: 70%;height: 100%; text-align: center !important;">
+        
+        <div [ngClass]="{'kt-grid kt-grid--hor kt-grid--root  kt-login kt-login--v1': !useFullWidthLayout(), 'row':useFullWidthLayout()}" id="kt_login">
+            <div [ngClass]="{'kt-grid__item kt-grid__item--fluid kt-grid kt-grid--desktop kt-grid--ver-desktop kt-grid--hor-tablet-and-mobile': !useFullWidthLayout(), 'col-md-12': useFullWidthLayout()}" style="height: 650px;">
+         <!-- <div class="kt-grid__item kt-grid__item--order-tablet-and-mobile-2 kt-grid kt-grid--hor kt-log666in__aside" *ngIf="!useFullWidthLayout()" style="background-image: url('/assets/metronic/common/images/bg/EscrowBase.jpg');">
+                    <div class="kt-grid__item">
+                        <a (click)="goToHome()" href="">
+                            <img *ngIf="!appSession.tenant || !appSession.tenant.logoId" [src]="appRootUrl() + 'assets/common/images/app-logo-on-dark.svg'" alt="logo" height="38" />
+                            <img *ngIf="appSession.tenant && appSession.tenant.logoId" [src]="remoteServiceBaseUrl + '/TenantCustomization/GetTenantLogo?skin=light&tenantId=' + appSession.tenant.id + '&id=' + appSession.tenant.logoId" alt="logo" height="38" />
+                        </a>
+                    </div>
+                    <div class="kt-grid__item kt-grid__item--fluid kt-grid kt-grid--ver">
+                        <div class="kt-grid__item kt-grid__item--middle">
+                            <h3 class="kt-login__title">AspNet Zero</h3>
+                            <h4 class="kt-login__subtitle">Base solution for your next web application.</h4>
+                        </div>
+                    </div>
+                </div>-->
+                <div class="kt-grid__item kt-grid__item--fluid  kt-grid__item--order-tablet-and-mobile-1  kt-login__wrapper d-block " style="height: 650px;">
+                    <div class="kt-login__head d-block mt-3 mr-auto ml-auto text-right">
+                        <language-switch></language-switch>
+                    </div>
+    
+                    <div class="kt-login__body d-block mt-3 mr-auto ml-auto">
+                        <!--<div *ngIf="showTenantChange()" class="kt-login__signup-label tenant-change-box text-center">
+                            <tenant-change></tenant-change>
+                        </div>-->
+                        <router-outlet></router-outlet>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="login-image">
+    <div style="clear: both;" ></div>
+    </div>
+    <div style="clear: both;" ></div>
+    </div>
+    <style>
+    .main{
+    
+        background:url('/assets/metronic/common/images/bg/EscrowBase.jpg') no-repeat !important ;
+        background-size: cover !important;
+        background-repeat:no-repeat;
+    height: 100vh;
+    width: 100%;
+        
+    }
+    .login-main
+    {
+        position:absolute;
+        width:60%;
+        background-color:white !important;
+        
+        height: 650px;
+        top:10%;
+        left:20%;
+         
+    }
+    .login-image
+    {
+        
+        width:100%;
+        float:left;
+        background:url('/assets/metronic/common/images/bg/Login.jpg') !important ;
+        
+        background-size:cover !important;
+        background-repeat:no-repeat !important;
+        height: 650px;
+        }
+       
+        .kt-pricing-1 .kt-pricing-1__items {
+    
+        padding: 0rem 0 0rem 0 !important; 
+    }
+    .kt-portlet .kt-portlet__body {
+      
+        padding: 0px !important;
+        }
+    </style>

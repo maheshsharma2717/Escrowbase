@@ -1,0 +1,16 @@
+body { widows:0; orphans:0; font-family:'Liberation Serif'; font-size:12pt }
+h1 { margin-top:12pt; margin-left:39.6pt; margin-bottom:6pt; text-indent:-21.6pt; page-break-after:avoid; widows:0; orphans:0; font-family:'Liberation Sans'; font-size:18pt; font-weight:bold; color:#000000 }
+h2 { margin-top:10pt; margin-left:46.8pt; margin-bottom:6pt; text-indent:-28.8pt; page-break-after:avoid; widows:0; orphans:0; font-family:'Liberation Sans'; font-size:16pt; font-weight:bold; color:#000000 }
+h3 { margin-top:7pt; margin-left:54pt; margin-bottom:6pt; text-indent:-36pt; page-break-after:avoid; widows:0; orphans:0; font-family:'Liberation Sans'; font-size:14pt; font-weight:bold; color:#808080 }
+.Heading { margin-top:12pt; margin-bottom:6pt; page-break-after:avoid; widows:0; orphans:0; font-family:'Liberation Sans'; font-size:14pt; color:#000000 }
+.TextBody { margin-top:0pt; margin-bottom:7pt; line-height:120%; widows:0; orphans:0; font-family:'Liberation Serif'; font-size:12pt; color:#000000 }
+.List { margin-top:0pt; margin-bottom:7pt; line-height:120%; widows:0; orphans:0; font-family:'Liberation Serif'; font-size:12pt; color:#000000 }
+.Caption { margin-top:6pt; margin-bottom:6pt; widows:0; orphans:0; font-family:'Liberation Serif'; font-size:12pt; font-style:italic; color:#000000 }
+.Index { widows:0; orphans:0; font-family:'Liberation Serif'; font-size:12pt; color:#000000 }
+.Quotations { margin:0pt 28.35pt 14.15pt; text-indent:0pt; widows:0; orphans:0; font-family:'Liberation Serif'; font-size:12pt; color:#000000 }
+.Title { margin-top:12pt; margin-bottom:6pt; text-align:center; page-break-after:avoid; widows:0; orphans:0; font-family:'Liberation Sans'; font-size:28pt; font-weight:bold; color:#000000 }
+.Subtitle { margin-top:3pt; margin-bottom:6pt; text-align:center; page-break-after:avoid; widows:0; orphans:0; font-family:'Liberation Sans'; font-size:18pt; color:#000000 }
+.TableContents { widows:0; orphans:0; font-family:'Liberation Serif'; font-size:12pt; color:#000000 }
+span.Bullets { font-family:OpenSymbol }
+span.InternetLink { text-decoration:underline; color:#000080 }
+span.VisitedInternetLink { text-decoration:underline; color:#800000 }

@@ -1,0 +1,126 @@
+
+
+<div>
+    <img style="width: 240px;" src="/assets/metronic/common/images/bg/EscrowBase-Logo.png">
+</div>
+<div class="kt-login__form" style="margin:0 !important;" [@routerTransition]>
+    
+    <div class="kt-login__title" style="margin: 0;">
+        <img style="width: 95px; border-radius: 50px;" src="/assets/metronic/common/images/bg/img_avatar.png">
+        <h3 class="m-0">
+            {{ 'LogIn' | localize }}
+        </h3>
+    </div>
+
+    <form #loginForm="ngForm" class="kt-form" method="post" novalidate (ngSubmit)="login()" style="margin: 0;">
+        <div class="input-icons"> 
+        <div class="form-group" style="text-align: left;">
+            <i class="fa fa-user icon"></i> 
+            <input id="username" #userNameOrEmailAddressInput="ngModel"  style="text-align: left;" [(ngModel)]="loginService.authenticateModel.userNameOrEmailAddress" autoFocus class="form-control m-input" type="text" autocomplete="new-password" placeholder="{{'  Email' | localize}} *" name="userNameOrEmailAddress" required />
+            <validation-messages [formCtrl]="userNameOrEmailAddressInput" *ngIf="!userNameOrEmailAddressInput.touched"></validation-messages>
+        </div>
+
+        <div class="form-group" style="text-align: left !important; ">
+            <i class="fa fa-key icon"></i>
+           
+            <input id="password" #passwordInput="ngModel" [(ngModel)]="loginService.authenticateModel.password" style="text-align: left;" class="form-control m-input "  [type]="fieldTextType ? 'text' : 'password'" autocomplete="new-password" placeholder="{{'  Password' | localize}} *" name="password" required maxlength="32" />
+           <div class="input-group-append " style="position: absolute; top: 48%; right: 64%; " >
+            <i class="fa"  [ngClass]="{
+                'fa-eye-slash': !fieldTextType,
+                'fa-eye': fieldTextType
+              }"
+              (click)="toggleFieldTextType()"></i>
+             </div>
+           
+            <validation-messages [formCtrl]="passwordInput" *ngIf="!passwordInput.touched"></validation-messages>
+        </div>
+   
+        </div>
+      
+        <div class="form-group mt-4" style="text-align: left; padding: 10px;">
+            <label class="kt-checkbox">
+                <input class="form-control" [(ngModel)]="loginService.rememberMe" type="checkbox" style="text-align: left; width:25px; float: left;" name="rememberMe" value="true" />
+                <span style="padding-left: 10px;
+                top: 10px;
+                position: relative;">{{"RememberMe" | localize}}</span>
+            </label>
+        </div>
+        <button id="btnLogIn" type="submit" style="background-color: #007bff; padding: 13px 32px;" class="btn btn-primary btn-sm" [disabled]="!loginForm.form.valid">{{"LogIn" | localize}}</button>
+        <div class="kt-login__actions">
+           
+            <a routerLink="/account/forgot-password" id="forget-password" class="kt-link kt-login__link-forgot">{{"ForgotPassword" | localize}}</a>
+          
+        </div>
+     
+    </form>
+
+
+    <a id="opener"></a>
+
+    <div class="kt-login__divider">
+        <div class="kt-divider">
+            <span></span>
+            <span>{{"LoginWith" | localize}}</span>
+            <span></span>
+        </div>
+    </div>
+
+    <div class="kt-login__options" *ngIf="(multiTenancySideIsTeanant || !isMultiTenancyEnabled) && loginService.externalLoginProviders.length > 0">
+        <a *ngFor="let provider of loginService.externalLoginProviders" class="btn btn-outline-secondary kt-btn btn-sm" (click)="externalLogin(provider)" title="{{provider.name}}">
+            <i class="fab fa-{{provider.icon}}"></i>
+            {{provider.name}}
+        </a>
+    </div>
+
+</div>
+<div class="kt-login__account">
+    <span *ngIf="isSelfRegistrationAllowed">
+        <a routerLink="/account/register">{{"CreateAnAccount" | localize}}</a>
+        <span> | </span>
+    </span>
+    <span *ngIf="!multiTenancySideIsTeanant && isTenantSelfRegistrationAllowed">
+        <a routerLink="/account/select-edition">{{"NewTenant" | localize}}</a>
+        <span> | </span>
+    </span>
+    <a routerLink="/account/email-activation" id="email-activation-btn">{{"EmailActivation" | localize}}</a>
+</div>
+
+<style>.input-icons i { 
+    position: absolute; 
+} 
+  
+.input-icons { 
+    width: 100%; 
+    margin-bottom: 10px; 
+    padding: 15px;
+} 
+  
+.icon { 
+    padding:16px 7px; 
+    min-width: 40px; 
+} 
+  
+.input-field { 
+    width: 100%; 
+  margin-bottom:5px;
+    text-align: center; 
+    
+} 
+.form-control{
+    padding-left: 2.25rem !important;
+}
+.kt-login.kt-login--v1 .kt-login__wrapper {
+    padding: 1rem 1rem !important;}
+    .ng-tns-c310-1{
+        text-align: center;
+    }
+    .kt-login__form{
+        margin: 0 !important;
+    }
+    .kt-login__actions {
+  
+    margin: 1rem 0 !important;
+}
+
+ 
+</style>

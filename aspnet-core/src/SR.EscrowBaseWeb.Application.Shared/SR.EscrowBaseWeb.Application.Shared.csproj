@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\common.props"></Import>
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>SR.EscrowBaseWeb</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Abp.Web.Common" Version="6.4.0" />
+    <PackageReference Include="Aspose.Words" Version="23.6.0" />
+    <PackageReference Include="Syncfusion.DocToPDFConverter.WinForms" Version="21.2.10" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SR.EscrowBaseWeb.Core.Shared\SR.EscrowBaseWeb.Core.Shared.csproj" />
+  </ItemGroup>
+</Project>

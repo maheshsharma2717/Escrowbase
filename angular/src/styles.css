@@ -1,0 +1,323 @@
+/* You can add global styles to this file, and also import other style files */
+.margin-left-5 {
+  margin-left: 5px !important;
+}
+
+.margin-right-5 {
+  margin-right: 5px !important;
+}
+
+.margin-top-5 {
+  margin-top: 5px !important;
+}
+
+.margin-top-15 {
+  margin-top: 15px !important;
+}
+
+.margin-bottom-5 {
+  margin-bottom: 5px !important;
+}
+
+.margin-bottom-5 {
+  margin-bottom: 5px !important;
+}
+
+.margin-bottom-15 {
+  margin-bottom: 15px !important;
+}
+
+.padding-left-5 {
+  padding-left: 5px !important;
+}
+
+.padding-right-5 {
+  padding-right: 5px !important;
+}
+
+.padding-top-5 {
+  padding-top: 5px !important;
+}
+
+.padding-bottom-5 {
+  padding-bottom: 5px !important;
+}
+
+.width-percent-5 {
+  width: 5%;
+}
+
+.width-percent-10 {
+  width: 10%;
+}
+
+.width-percent-15 {
+  width: 15%;
+}
+
+.width-percent-20 {
+  width: 20%;
+}
+
+.width-percent-30 {
+  width: 30%;
+}
+
+.width-percent-40 {
+  width: 40%;
+}
+
+.width-percent-50 {
+  width: 50%;
+}
+
+.width-percent-100 {
+  width: 100%;
+}
+
+span.dx-filemanager-details-item-name {
+  padding-left: 15px !important;
+}
+
+.dx-header-row td:first-child .dx-datagrid-text-content.dx-text-content-alignment-left {
+  padding-left: 15px !important;
+  /* Adjust the padding as needed */
+}
+
+/* Sweet alert */
+
+body.swal2-height-auto {
+  height: inherit !important;
+}
+
+.swal2-popup.swal2-toast {
+  padding: 10px 12px !important;
+  display: block !important;
+}
+
+.swal2-popup.swal2-toast .swal2-header,
+.swal2-popup.swal2-toast .swal2-title,
+.swal2-popup.swal2-toast .swal2-content {
+  text-align: left !important;
+  margin: 0 !important;
+}
+
+.swal2-popup.swal2-toast .swal2-title {
+  margin-bottom: 4px !important;
+}
+
+.swal2-icon.swal2-info::before,
+.swal2-icon.swal2-warning::before,
+.swal2-icon.swal2-success::before,
+.swal2-icon.swal2-error::before {
+  content: "";
+}
+
+@keyframes glowing {
+  0% {
+    opacity: 0.3;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.3;
+  }
+}
+
+.glowing {
+  animation: glowing 2s infinite;
+}
+
+.root-initial-loader .overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(51, 51, 51, 0.8);
+  z-index: 99999 !important;
+  width: 100%;
+  height: 100%;
+}
+
+.root-initial-loader i {
+  position: absolute;
+  color: rgb(91, 167, 234);
+  z-index: 100000 !important;
+  top: 50%;
+  left: 50%;
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+
+.root-initial-loader .fa-spin-2x {
+  -webkit-animation: fa-spin 1s infinite linear;
+  animation: fa-spin 1s infinite linear;
+}
+
+ngx-spinner .loading-text {
+  font-weight: bold;
+  color: white;
+  font-size: 1.3em;
+}
+
+.drag-signfield {
+  position: absolute !important;
+  top: -18px !important;
+  left: 10px !important;
+}
+
+.modal {
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1050 !important;
+}
+
+
+li.data.ng-star-inserted.active,
+li.data.ng-star-inserted {
+  cursor: context-menu;
+}
+
+.ng-otp-input-wrapper {
+  padding-left: 0px !important;
+  padding-top: 0px !important;
+}
+
+.all-page-textBox,
+.all-page-textBox:focus {
+  height: 8% !important;
+  box-shadow: 2px 5px 5px #f2f1f1 !important;
+}
+
+.main-shadow {
+  box-shadow: 2px 5px 5px #b9a8a8 !important;
+}
+
+.form-control:active {
+  box-shadow: 2px 5px 5px #f2f1f1 !important;
+}
+
+.all-page-selectBox,
+.all-page-selectBox:focus {
+
+  box-shadow: 2px 5px 5px #f2f1f1 !important;
+}
+
+.header-fixed.subheader-fixed.subheader-enabled .wrapper {
+  padding-top: 50 !important
+}
+
+.modal-backdrop {
+  z-index: 0 !important;
+}
+
+#kt_aside {
+  transition: width 0.3s ease;
+}
+
+#kt_wrapper {
+  transition: margin-left 0.3s ease;
+}
+
+#kt_header {
+  transition: margin-left 0.3s ease;
+}
+
+.sticky-notes-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+  background-color: #f9f9f9;
+}
+
+.sticky-note {
+  width: 200px;
+  min-height: 150px;
+  background-color: #fffa91;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f4e242;
+  border-radius: 8px;
+  padding: 15px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  word-wrap: break-word;
+}
+
+.sticky-note .note-content {
+  flex-grow: 1;
+}
+
+.sticky-note .note-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.sticky-note .note-actions button {
+  font-size: 12px;
+}
+
+.sticky-note:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease-in-out;
+}
+
+
+.dx-scrollable-scrollbar.dx-widget.dx-scrollbar-vertical.dx-scrollbar-hoverable {
+  display: none;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: auto;
+  scroll-behavior: smooth;
+}
+
+input,
+textarea {
+  cursor: text;
+  /* Only for input fields and text areas */
+}
+
+body {
+  cursor: default;
+  /* Reset cursor globally */
+}
+
+input {
+  background-color: #efefef !important;
+}
+
+i.fa.fa-calendar {
+ 
+  padding-right: 0 !important;
+}
+
+i.fa.fa-envelope{
+  padding-right: 0 !important;
+}
+
+a.tabs {
+  font-size: 14px;
+  font-family: roboto;
+}
+
+/* .modal-footer{
+  padding: 1rem 1.75rem !important;
+  flex: 0 0 auto;
+}
+.modal-body{
+  padding: 1rem 1.75rem !important;
+  flex: 0 0 auto !important;
+}
+
+.modal-content{
+  height: 80vh !important;
+} */

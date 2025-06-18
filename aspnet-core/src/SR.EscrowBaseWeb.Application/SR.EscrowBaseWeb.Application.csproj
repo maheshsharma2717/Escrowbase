@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\common.props"></Import>
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <AssetTargetFallback>$(AssetTargetFallback);portable-net45+win8+wp8+wpa81;</AssetTargetFallback>
+    <AssemblyName>SR.EscrowBaseWeb.Application</AssemblyName>
+    <PackageId>SR.EscrowBaseWeb.Application</PackageId>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <RootNamespace>SR.EscrowBaseWeb</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\SR.EscrowBaseWeb.Core\Net\Sms\TwilioSmsSenderConfiguration.cs" Link="TwilioSmsSenderConfiguration.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Abp.EntityFrameworkCore.EFPlus" Version="6.4.0" />
+    <PackageReference Include="Aspose.Words" Version="23.6.0" />
+    <PackageReference Include="NPOI" Version="2.5.3" />
+    <PackageReference Include="Syncfusion.DocToPDFConverter.WinForms" Version="21.2.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SR.EscrowBaseWeb.Application.Shared\SR.EscrowBaseWeb.Application.Shared.csproj" />
+    <ProjectReference Include="..\SR.EscrowBaseWeb.Core\SR.EscrowBaseWeb.Core.csproj" />
+    <ProjectReference Include="..\SR.EscrowBaseWeb.EntityFrameworkCore\SR.EscrowBaseWeb.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+</Project>

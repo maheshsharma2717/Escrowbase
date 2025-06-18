@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\common.props"></Import>
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <AssetTargetFallback>$(AssetTargetFallback);portable-net45+win8+wp8+wpa81;</AssetTargetFallback>
+    <RootNamespace>SR.EscrowBaseWeb</RootNamespace>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>
+<ItemGroup>
+    <Compile Remove="Migrations\20200305145558_Add_Dynamic_Entity_Parameters.cs" />
+    <Compile Remove="Migrations\20200305145558_Add_Dynamic_Entity_Parameters.Designer.cs" />
+    <Compile Remove="Migrations\20200317114116_Add_Dynamic_Entity_Parameters.cs" />
+    <Compile Remove="Migrations\20200317114116_Add_Dynamic_Entity_Parameters.Designer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspose.Words" Version="23.6.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="5.0.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="5.0.1" />
+    <PackageReference Include="Syncfusion.DocToPDFConverter.WinForms" Version="21.2.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SR.EscrowBaseWeb.Core\SR.EscrowBaseWeb.Core.csproj" />
+  </ItemGroup>
+</Project>

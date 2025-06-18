@@ -1,0 +1,3 @@
+Email, User Name, Company, Invitee, Esc#, Access Types
+"mzzp111rb4@zvvzuv.com","Narender","Asus","JEANNIE MILLER","JIT-0001","{SR1}"
+"kegacyto@closetab.email","Narender","Asus","JEANNIE MILLER","JIT-0001","{BR1}"

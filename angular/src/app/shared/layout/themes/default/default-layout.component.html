@@ -1,0 +1,212 @@
+<div style="font-size: 16px; font-weight: 700px;  z-index: 99; background-color: #ccc;" >
+
+
+    <app-tabs *ngIf="!router.url.includes('users')">
+        <my-tab [tabTitle]="'Dashboard'">
+            <div id="kt_header_mobile"
+            class="header-mobile align-items-center {{currentTheme.baseSettings.header.mobileFixedHeader ? 'header-mobile-fixed':''}}">
+            <a routerLink="/" target="_blank">
+                <!-- <span>{{company}}</span> -->
+                <!-- <img *ngIf="!appSession.tenant || !appSession.tenant.logoId" [src]="defaultLogo" alt="logo" height="28" />
+                <img *ngIf="appSession.tenant && appSession.tenant.logoId"
+                    [src]="remoteServiceBaseUrl + '/TenantCustomization/GetTenantLogo?skin=' + currentTheme.baseSettings.menu.asideSkin + '&tenantId=' + appSession.tenant.id + '&id=' + appSession.tenant.logoId"
+                    alt="logo" height="38" /> -->
+            </a>
+            <div class="d-flex align-items-center" >
+                <button class="btn p-0 burger-icon burger-icon-left" id="kt_aside_mobile_toggle">
+                    <span></span>
+                </button>
+                <button ktToggle [options]="userMenuToggleOptions" class="btn btn-hover-text-primary p-0 ml-2"
+                    id="kt_header_mobile_topbar_toggle">
+                    <span class="svg-icon svg-icon-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px"
+                            height="24px" viewBox="0 0 24 24" version="1.1">
+                            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                <polygon points="0 0 24 0 24 24 0 24"></polygon>
+                                <path
+                                    d="M12,11 C9.790861,11 8,9.209139 8,7 C8,4.790861 9.790861,3 12,3 C14.209139,3 16,4.790861 16,7 C16,9.209139 14.209139,11 12,11 Z"
+                                    fill="#000000" fill-rule="nonzero" opacity="0.3"></path>
+                                <path
+                                    d="M3.00065168,20.1992055 C3.38825852,15.4265159 7.26191235,13 11.9833413,13 C16.7712164,13 20.7048837,15.2931929 20.9979143,20.2 C21.0095879,20.3954741 20.9979143,21 20.2466999,21 C16.541124,21 11.0347247,21 3.72750223,21 C3.47671215,21 2.97953825,20.45918 3.00065168,20.1992055 Z"
+                                    fill="#000000" fill-rule="nonzero"></path>
+                            </g>
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </div>
+        <div [@routerTransition] class="d-flex flex-column flex-root">
+            <div class="d-flex flex-row flex-column-fluid page">
+                <div id="kt_aside" [class.hidden]="!isAdmin" ktOffcanvas [options]="menuCanvasOptions" 
+                    class="aside aside-left aside-{{currentTheme.baseSettings.menu.fixedAside ? 'fixed':'static'}} d-flex flex-column flex-row-auto">
+                    <default-brand></default-brand>
+                    <div id="kt_aside_menu_wrapper" class="aside-menu-wrapper flex-column-fluid">
+                        <side-bar-menu></side-bar-menu>
+                    </div>
+                </div>
+                <div class="d-flex flex-column flex-row-fluid wrapper" id="kt_wrapper" style="padding-left: 0 !important;" [ngStyle]="isAdmin && !isMenuToggled ? {  marginLeft: '265px' } : {marginLeft:'0px'}" >
+                    <div id="kt_header" style="background-color:white; left:0 !important; top: 35px;" [ngStyle]="isAdmin && !isMenuToggled ? {  marginLeft: '265px ' } : {marginLeft:'0px'}"
+                        class="header header-{{currentTheme.baseSettings.header.desktopFixedHeader ? 'fixed':'static'}} head--skin-{{currentTheme.baseSettings.header.headerSkin}}">
+                        
+                        <div class="{{containerClass}} d-flex align-items-stretch ">
+                            <div style="margin: 1px 0px 0px 0px; min-width: 26%;" class="col-md-2"><span [class.hidden]="isAdmin" style="position: unset; font-size: large; position: relative; padding: 5px;background-color: rgb(255, 255, 106); top: 25%;">
+                                <b><i>{{detail}}</i></b><br></span>
+                                 
+                                </div>
+                            <!-- <div class="header-menu-wrapper header-menu-wrapper-left col-md-2" id="kt_header_menu_wrapper">
+                                <div style="padding-top: 8px; font-size: 18px; font-weight: 700; margin: 0px 412px 0px 0px; color:blue;" *ngIf="companyLogo.includes('.png') || companyLogo.includes('.jpeg')">
+                                <img [src]="companyLogo" [style]="display1"  height="28"/>
+                                  </div> 
+                            </div> -->
+                            <div style="margin:0; justify-content:right;" class="topbar col-md-4">
+                                <b><i style="padding: 0px 68px 0px 0px;color:blue; top: 5px;
+                                    position: relative; font-size: 1.2vw;
+                                ">{{company}}</i>
+                                <div style="  color:blue;" *ngIf=" companyLogo?.includes('.png') || companyLogo?.includes('.jpeg')">
+                                    <img *ngIf=" companyLogo?.includes('.png') || companyLogo?.includes('.jpeg')" [src]="companyLogo" [style]="display1"  height="20"/>
+                                      </div></b><img *ngIf=" companyLogo?.includes('.png') || companyLogo?.includes('.jpeg')"  [src]="defaultLogo" [style]="display" style="margin:0px !important;" class="custom-top"  height="20" />
+                                  
+                            </div>
+                            <div class="topbar col-md-4" style="position: absolute; right: 20px; top: 0px;justify-content: space-around;">
+                              
+                                <div class="topbar-item subscription-warning d-print-none" *ngIf="!isMobileDevice() && subscriptionStatusBarVisible()">
+                                    <subscription-notification-bar></subscription-notification-bar>
+                                </div>
+                                <active-delegated-users-combo *ngIf="!installationMode"></active-delegated-users-combo>
+                                <quick-theme-selection></quick-theme-selection>
+                                
+                                <!-- <language-switch-dropdown></language-switch-dropdown> -->
+                                <header-notifications></header-notifications>
+                                <chat-toggle-button></chat-toggle-button>
+                                
+                                <commonLookupModal #userLookupModal (itemSelected)="chatBarComponent.addFriendSelected($event)"></commonLookupModal>
+                                <chat-bar #chatBarComponent [userLookupModal]="userLookupModal"></chat-bar>
+                                <user-menu></user-menu>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    <div class="p-3 mobile-subscription-warning d-print-none" *ngIf="isMobileDevice() && subscriptionStatusBarVisible()">
+                        <subscription-notification-bar></subscription-notification-bar>
+                    </div>
+<div  [ngStyle]="isAdmin ? {  marginTop: '50px ' } : {}"></div>
+
+                    <router-outlet></router-outlet>
+                    <footer-bar></footer-bar>
+                </div>
+            </div>
+        </div>
+
+
+        
+        </my-tab>
+      </app-tabs>
+<div *ngIf="router.url.includes('users')">
+ 
+            <div id="kt_header_mobile"
+            class="header-mobile align-items-center {{currentTheme.baseSettings.header.mobileFixedHeader ? 'header-mobile-fixed':''}}">
+            <a routerLink="/" target="_blank">
+             
+            </a>
+            <div class="d-flex align-items-center">
+                <button class="btn p-0 burger-icon burger-icon-left" id="kt_aside_mobile_toggle">
+                    <span></span>
+                </button>
+                <button ktToggle [options]="userMenuToggleOptions" class="btn btn-hover-text-primary p-0 ml-2"
+                    id="kt_header_mobile_topbar_toggle">
+                    <span class="svg-icon svg-icon-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px"
+                            height="24px" viewBox="0 0 24 24" version="1.1">
+                            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                <polygon points="0 0 24 0 24 24 0 24"></polygon>
+                                <path
+                                    d="M12,11 C9.790861,11 8,9.209139 8,7 C8,4.790861 9.790861,3 12,3 C14.209139,3 16,4.790861 16,7 C16,9.209139 14.209139,11 12,11 Z"
+                                    fill="#000000" fill-rule="nonzero" opacity="0.3"></path>
+                                <path
+                                    d="M3.00065168,20.1992055 C3.38825852,15.4265159 7.26191235,13 11.9833413,13 C16.7712164,13 20.7048837,15.2931929 20.9979143,20.2 C21.0095879,20.3954741 20.9979143,21 20.2466999,21 C16.541124,21 11.0347247,21 3.72750223,21 C3.47671215,21 2.97953825,20.45918 3.00065168,20.1992055 Z"
+                                    fill="#000000" fill-rule="nonzero"></path>
+                            </g>
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </div>
+          
+        <div [@routerTransition] class="d-flex flex-column flex-root">
+            <div class="d-flex flex-row flex-column-fluid page">
+                <div id="kt_aside"  ktOffcanvas [options]="menuCanvasOptions"
+                    class="aside aside-left aside-{{currentTheme.baseSettings.menu.fixedAside ? 'fixed':'static'}} d-flex flex-column flex-row-auto">
+                    <default-brand></default-brand>
+                    <div id="kt_aside_menu_wrapper" class="aside-menu-wrapper flex-column-fluid">
+                        <side-bar-menu></side-bar-menu>
+                    </div>
+                </div>
+                <div class="d-flex flex-column flex-row-fluid wrapper" id="kt_wrapper" style="padding-left: 0 !important;">
+                    <div id="kt_header" style="background-color:white; left:0 !important;"
+                        class="header header-{{currentTheme.baseSettings.header.desktopFixedHeader ? 'fixed':'static'}} head--skin-{{currentTheme.baseSettings.header.headerSkin}}">
+                        
+                        <div class="{{containerClass}} d-flex align-items-stretch ">
+                            <div style="margin: 1px 0px 0px 0px; min-width: 26%;" class="col-md-2"><span style="position: unset; font-size: large; position: relative; padding: 5px;background-color: rgb(255, 255, 106); top: 25%;">
+                                <b><i>{{detail}}</i></b><br></span>
+                                 
+                                </div>
+                           
+                            <div style="margin:0; justify-content:right;" class="topbar col-md-4">
+                                <b><i style="padding: 0px 68px 0px 0px;color:blue; top: 5px;
+                                    position: relative; font-size: 1.2vw;
+                                ">{{company}}</i>
+                                <div style="  color:blue;" *ngIf=" companyLogo?.includes('.png') || companyLogo?.includes('.jpeg')">
+                                    <img *ngIf=" companyLogo?.includes('.png') || companyLogo?.includes('.jpeg')" [src]="companyLogo" [style]="display1"  height="20"/>
+                                      </div></b><img *ngIf=" companyLogo?.includes('.png') || companyLogo?.includes('.jpeg')"  [src]="defaultLogo" [style]="display" style="margin:0px !important;" class="custom-top"  height="20" />
+                                  
+                            </div>
+                            <div class="topbar col-md-4" style="position: absolute; right: 20px;justify-content: end;">
+                              
+                                <!-- <div class="topbar-item subscription-warning d-print-none" *ngIf="!isMobileDevice() && subscriptionStatusBarVisible()">
+                                    <subscription-notification-bar></subscription-notification-bar>
+                                </div>
+                                <active-delegated-users-combo *ngIf="!installationMode"></active-delegated-users-combo>
+                                <quick-theme-selection></quick-theme-selection>
+                                
+                              
+                                <header-notifications></header-notifications>
+                                <chat-toggle-button></chat-toggle-button>
+                                
+        <commonLookupModal #userLookupModal (itemSelected)="chatBarComponent.addFriendSelected($event)"></commonLookupModal>
+                                <chat-bar #chatBarComponent [userLookupModal]="userLookupModal"></chat-bar> -->
+                                <user-menu></user-menu>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    <div class="p-3 mobile-subscription-warning d-print-none" *ngIf="isMobileDevice() && subscriptionStatusBarVisible()">
+                        <subscription-notification-bar></subscription-notification-bar>
+                    </div>
+                    <router-outlet></router-outlet>
+                    <footer-bar></footer-bar>
+                </div>
+            </div>
+        </div>
+
+
+        
+        
+</div>
+
+  
+      <ng-template let-person="person" #about style="overflow: scroll !important;height: 100vh !important;">
+
+       <app-upload-file [person]="person"></app-upload-file>
+      </ng-template>
+
+
+
+
+
+
+</div>
+<style>
+    .hidden{
+        display: none !important;
+    }
+</style>

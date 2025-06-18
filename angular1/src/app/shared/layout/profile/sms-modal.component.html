@@ -1,0 +1,49 @@
+<style>
+    .modal {
+        z-index: 99 !important;
+    }
+</style>
+<div appBsModal #smsModal="bs-modal" (onShown)="onShown()" class="modal fade" tabindex="1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true" [config]="{backdrop: 'static'}">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form *ngIf="active" #smsModalForm="ngForm" >
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <span>{{"Manage SMS Notifications" | localize}}</span>
+                    </h5>
+                    <button type="button" class="close" [attr.aria-label]="l('Close')" (click)="close()">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table style="width:100%;">
+                        <thead>
+                            <tr class="indec1">
+                          <th>Name of Function</th>
+                          <th></th>
+                          <th>Send SMS to given Function</th>
+                          </tr>
+                        </thead>
+                        <tbody >
+                    
+                       <tr class="indec" *ngFor="let item of SMSprefrences;">
+                        <td>
+                          {{item.lable}}
+                         </td>
+                         <td></td>
+                        <td style="PADDING: 10px 20PX;"><input [checked]="item.Ichecked" (change)="Enterprise($event, item.function)" type="checkbox"></td>
+                       </tr>
+                     
+                       </tbody></table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-primary font-weight-bold" (click)="close()" [disabled]="saving">{{"Cancel" | localize}}</button>
+                    <button type="submit" class="btn btn-primary font-weight-bold" (click)="Save()"><i class="fa fa-save"></i> <span>{{"Save" | localize}}</span></button>
+                    <!-- <button type="submit" class="btn btn-primary font-weight-bold" [disabled]="!smsModalForm.form.valid || saving"><i class="fa fa-save"></i> <span>{{"Save" | localize}}</span></button>
+               -->
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+ 

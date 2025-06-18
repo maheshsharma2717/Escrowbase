@@ -1,0 +1,7 @@
+Email, User Name, Company, Invitee, Esc#, Access Types
+"jitender@mandavconsultancy.com","MaheshSharma1","NewUserType","JEANNIE MILLER","07","{SR1}"
+"10x4xizowq@pirolsnet.com","MaheshSharma2","NewUserType","JEANNIE MILLER","07","{SR2}"
+"pidopo2425@dovesilo.com","MaheshSharma3","NewUserType","JEANNIE MILLER","07","{SR3}"
+
+
+

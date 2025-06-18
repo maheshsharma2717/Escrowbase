@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\common.props"></Import>
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <AssetTargetFallback>$(AssetTargetFallback);portable-net45+win8+wp8+wpa81;</AssetTargetFallback>
+    <AssemblyName>SR.EscrowBaseWeb.Migrator</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PackageId>SR.EscrowBaseWeb.Migrator</PackageId>
+    <UserSecretsId>SR-EscrowBaseWeb-894FDFC1-6482-4A56-926A-3C46C9FE0329</UserSecretsId>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <LangVersion>7.2</LangVersion>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>..\..</DockerfileContext>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Update="appsettings.json;log4net.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspose.Words" Version="23.6.0" />
+    <PackageReference Include="CsvHelper" Version="15.0.5" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.8" />
+    <PackageReference Include="Abp.Castle.Log4Net" Version="6.4.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="5.0.0" />
+    <PackageReference Include="Spire.PDF" Version="7.8.2" />
+    <PackageReference Include="Syncfusion.DocToPDFConverter.WinForms" Version="21.2.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SR.EscrowBaseWeb.EntityFrameworkCore\SR.EscrowBaseWeb.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+</Project>
