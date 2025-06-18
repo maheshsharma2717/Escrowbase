@@ -1,0 +1,18 @@
+.active {
+    background-color: #fdfeff !important;
+    color:#000000
+}
+.active a {
+    color:rgb(0, 0, 0) !important;
+}
+.data{
+    border-radius: unset !important;   
+    border-bottom: white;  
+    margin-left: 0px !important;
+   }
+   .active a .tab-close {
+    color:#000000;
+  }
+ 
+ 
+  
