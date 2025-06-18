@@ -1,0 +1,53 @@
+<div bsModal #createOrEditStickyNoteModal="bs-modal" class="modal fade" tabindex="-1" style="z-index: 1;" role="dialog" aria-labelledby="createOrEditStickyNoteModal" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Sticky Note</h5>
+                <button type="button" class="close" (click)="closeStickyNoteModal()" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <tabset>
+                    <!-- Create Sticky Note Tab -->
+                    <tab heading="Create Sticky Note" (select)="createStickyNoteTabEvent($event)">
+                        <br />
+                        <br />
+                        <textarea class="form-control"   [(ngModel)]="noteMessage" 
+                                  placeholder="Enter your sticky note here..." 
+                                  style="height: 250px; background: #ededed;"
+                               >
+                        </textarea>
+                        <div class="text-danger mt-2" *ngIf="stickyNoteError">
+                            {{ stickyNoteError }}
+                        </div>
+                    </tab>
+
+                    <!-- Sticky Notes History Tab -->
+                    <tab heading="Sticky Notes History" (select)="stickyNotesHistoryTabEvent($event)">
+                        <p-table (onLazyLoad)="stickyNotesHistoryTabEvent($event)" [value]="primengTableHelper.records" [paginator]="true" [rows]="10">
+                            <ng-template pTemplate="header">
+                                <tr>
+                                    <th>Note Content</th>
+                                    <th>Created Date</th>
+                                    <th>Created By</th>  
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-note>
+                                <tr>
+                                    <td>{{ note.message }}</td>
+                                    <td>{{ note.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                                    <td>{{ note.userName }}</td>                                 
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                    </tab>
+                </tabset>
+            </div>
+            <div class="modal-footer">
+                <button type="button" *ngIf="!stickyNotesHistoryTabActive" class="btn btn-primary" (click)="saveStickyNote()" [disabled]="isSavingStickyNote">Save</button>
+                <button type="button" class="btn btn-danger" (click)="closeStickyNoteModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
