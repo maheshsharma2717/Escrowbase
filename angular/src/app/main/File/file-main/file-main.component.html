@@ -1,0 +1,128 @@
+<div #fullscreenElementMain [ngClass]="{'fullscreen-container-main': isFullScreenMain}">
+    <div style="text-align: left; font-size: small; line-height: 1.4; padding: 2px 10px;">
+        <b>
+            Escrow Generated Documents
+            <i style="color: royalblue; font-size: 12px;">
+                (This is the area where the escrow officer will download documents that you are required to give
+                attention to.)
+                &ensp;Select Document below you need to do work on and then choose the action required from the 4
+                buttons below to start that action.
+            </i>
+        </b>
+    </div>
+
+    <!-- Toolbar Section -->
+    <div
+        style="background-color: #adcde9; padding: 3px 10px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold; font-size: 14px;">Total Items -: {{tableData.length}}</span>
+        <span (click)="toggleFullScreenMain(fullscreenElementMain)" style="cursor: pointer;">
+            <i class="fas" [ngClass]="{'fa-expand': !isFullScreenMain, 'fa-compress': isFullScreenMain}"
+                style="font-size: 15px; color: #464E5F;"></i>
+        </span>
+    </div>
+
+    <!-- Table Section -->
+    <div class="table-container" style="min-height: 400px; background-color: white">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr style="height: 26px;">
+                <th style="width: 33%; cursor: pointer; padding-left: 10px;" (click)="sortTable('name')">Name
+                    <span *ngIf="currentSortField === 'name'">
+                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </span>
+                </th>
+                <th style="width: 8%; cursor: pointer; padding: 4px;" (click)="sortTable('access')">Access Level
+                    <span *ngIf="currentSortField === 'access'">
+                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </span>
+                </th>
+                <th style="width: 15%; cursor: pointer; padding: 4px;" (click)="sortTable('action')">Signing Actions
+                    <span *ngIf="currentSortField === 'action'">
+                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </span>
+                </th>
+                <th style="width: 21%; cursor: pointer; padding: 4px;" (click)="sortTable('otherAction')">Other Action
+                    <span *ngIf="currentSortField === 'otherAction'">
+                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </span>
+                </th>
+                <th style="width: 6%; cursor: pointer; padding: 4px;" (click)="sortTable('signStatus')">My Status
+                    <span *ngIf="currentSortField === 'signStatus'">
+                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </span>
+                </th>
+                <th style="width: 8%; cursor: pointer; padding: 4px;" (click)="sortTable('signing')">Signing Status
+                    <span *ngIf="currentSortField === 'signing'">
+                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </span>
+                </th>
+                <th style="width: 9%; cursor: pointer; padding: 4px;" (click)="sortTable('updateOn')">Updated On
+                    <span *ngIf="currentSortField === 'updateOn'">
+                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </span>
+                </th>
+            </tr>
+
+            <tbody>
+                <tr *ngIf="!tableData.length">
+                    <td colspan="7" style="text-align: center; padding:5px">No data available</td>
+                </tr>
+                <tr *ngFor="let file of tableData; let i = index" (contextmenu)="onRightClick($event, i, file, 'All')"
+                    style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#e0f2fe';"
+                    onmouseout="this.style.backgroundColor='';">
+
+
+                    <!-- First TD: Includes context menu -->
+                    <td style="position: relative;">
+                        <!-- <img [src]="apiUrl + file.fileType" alt="Image" style="width: 25px; margin-right: 5px;"> -->
+                        <span class="file-name" [title]="file.name">
+                            {{ file.name.length > 50 ? (file.name | slice:0:50) + '…' : file.name }}
+                        </span>
+
+                        <!-- Context menu only on selected row -->
+                        <div *ngIf="showContextMenu && selectedIndex === i" class="context-menu dropdown-menus"
+                            [style.top.px]="contextMenuPosition.y" [style.left.px]="contextMenuPosition.x"
+                            style="position: absolute; z-index: 9999; width: 150px; min-width: 145px; min-height: 170px;">
+                            <ul>
+                                <li *ngIf="!editPermission" (click)="onItemClickMain('view')">View</li>
+                                <li *ngIf="editPermission" (click)="onItemClickMain('view')">View/Edit</li>
+                                <li *ngIf="esignPermission" (click)="onItemClickMain('esign')">E-Sign</li>
+                                <li *ngIf="esignPermission" (click)="onItemClickMain('esignDetails')">E-Sign Details
+                                </li>
+                                <li *ngIf="viewHistoryPermission" (click)="onItemClickMain('ViewHistory')">View/History
+                                </li>
+                                <li (click)="onItemClickMain('SendReminderMessage')">Send
+                                    Reminder/Message</li>
+                                <li (click)="onItemClickMain('Rename')">Rename</li>
+                                <li *ngIf="deletePermission" (click)="onItemClickMain('delete')">Delete</li>
+                                <li *ngIf="downloadPermission" (click)="DownloadFile($event)">Download File</li>
+                                <li *ngIf="viewFullNamePermission" (click)="onItemClickMain('ViewFullName')">View
+                                    FullName</li>
+                            </ul>
+                        </div>
+                    </td>
+                    <td>{{file.access}}</td>
+                    <td>{{file.action}}</td>
+                    <td style="width: 16%;">
+                        <div style="display: flex; align-items: center; width: 100%;">
+                            <input type="checkbox" [checked]="file.otherAction" (change)="onOtherActionChanged(file)"
+                                style="margin-right: 6px;" />
+                            <!-- <input type="checkbox" [(ngModel)]="file.otherAction" (change)="onOtherActionChanged(file)"
+                                style="margin-right: 6px;" /> -->
+
+                            <textarea [(ngModel)]="file.otherActionNote" (focus)="expandTextarea($event)"
+                                (input)="onTextareaInput($event, file)" (blur)="collapseTextarea($event, file)"
+                                placeholder="Enter note..." [attr.title]="file.otherActionNote" class="note-input"
+                                rows="1"
+                                style="flex: 1; width: 100%; font-size: 13px; padding:0 4px; line-height: 1.4; overflow: hidden;"></textarea>
+
+                        </div>
+                    </td>
+                    <td>{{file.signStatus}}</td>
+                    <td>{{file.signing}}</td>
+                    <td>{{file.updateOn}}</td>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
