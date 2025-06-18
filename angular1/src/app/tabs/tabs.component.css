@@ -1,0 +1,18 @@
+.active {
+    background-color: #3699FF !important;
+    color:#fff
+}
+.active a {
+    color:white !important;
+}
+.data{
+    padding:0 20px;
+    color:#3699FF;
+     background-color:#fff;
+   }
+   .active a .tab-close {
+    color:#fff;
+  }
+ 
+ 
+  
