@@ -1,0 +1,163 @@
+<div bsModal #createOrEditEscrowUserTagModal="bs-modal" class="modal fade" tabindex="-1" style="z-index: 1;"
+    role="dialog" aria-labelledby="createOrEditStickyNoteModal" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ editMode ? 'Edit Tag' : 'Add Tags' }}</h5>
+                <button type="button" class="close" (click)="closeStickyNoteModal()" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <tabset #tagTabSet>
+                    <!-- Create Sticky Note Tab -->
+                    <tab heading="Add Tag" (select)="createStickyNoteTabEvent()">
+                        <br />
+
+                        <div class="container mt-5">
+                            <div class="card p-4 shadow-sm ">
+                                <form>
+                                    <!-- <input type="text" id="text1" class="form-control" [(ngModel)]="noteMessage"
+                                        name="tagDescription" required autofocus (input)="textinput()" [ngStyle]="{
+                                      'background-color': primaryColor,
+                                      'color': secondaryColor,
+                                      'border': '1px solid #2196F3'
+                                    }"> -->
+                                    <label for="tagInput" class="my-2">Tag Description:</label>
+
+                                    <textarea id="text1" class="form-control mt1" [(ngModel)]="noteMessage"
+                                        (ngModelChange)="checkLimit(noteMessage)" name="tagDescription" required
+                                        maxlength="60" (input)="textinput(); adjustHeight($event)" [ngStyle]="{
+        'border': '1px solid #2196F3',
+        'resize': 'none',
+        'overflow': 'hidden',
+        'border-radius': '15px',
+        'text-align': 'left',
+        'width': '100%',
+        'max-height': '45px',
+        'font-size': '18px'
+    }">
+</textarea>
+                                    <!-- Optional: Show validation message -->
+                                    <div *ngIf="noteMessage?.length > 60" class="text-danger mt-1">
+                                        Description must be 60 characters or fewer.
+                                    </div>
+                                    <br>
+                                    <label for="tagInput my-2">Preview:</label>
+                                    <br>
+                                    <div class="d-flex v">
+                                        <button [ngStyle]="{
+                                            'background-color': primaryColor,
+                                            'border-radius': '10px', 
+                                            'border':'none',
+                                            'padding':'5px 10px',
+                                            'text-align': 'left',
+                                            'margin-block':'15px',
+                                            'color': secondaryColor,
+                                            'white-space': 'pre-wrap',
+                                            'word-break': 'break-word',
+                                            'font-size': '18px',
+                                            'width': 'fit-content',
+                                            'max-width': '100%'
+                                          }" class="color-button">
+                                            {{noteMessage}}
+                                        </button>
+                                    </div>
+
+                                    <div class="color-picker">
+                                        <label for="color1" class="color-label">Background Color:</label>
+
+                                        <input type="color" id="color1" name="primaryColor" [(ngModel)]="primaryColor"
+                                            class="color-input" (focus)="isBackgroundPickerOpen = true"
+                                            (blur)="isBackgroundPickerOpen = false" (change)="onColorChange($event)"
+                                            (mouseup)="onMouseUpColorPicker($event)" />
+
+                                        <div class="color-display-wrapper">
+                                            <span class="color-value">{{ primaryColor }}</span>
+                                            <i *ngIf="isBackgroundPickerOpen" class="fas fa-times close-icon"
+                                                (click)="clearBackgroundColor()" title="Clear Color"></i>
+                                        </div>
+                                    </div>
+
+                                    <div class="color-picker">
+                                        <label for="color2" class="color-label">Description Color:</label>
+
+                                        <input type="color" id="color2" name="secondaryColor"
+                                            [(ngModel)]="secondaryColor" class="color-input"
+                                            (focus)="isDescriptionPickerOpen = true"
+                                            (blur)="isDescriptionPickerOpen = false" />
+
+                                        <div class="color-display-wrapper">
+                                            <span class="color-value">{{ secondaryColor }}</span>
+                                            <i *ngIf="isDescriptionPickerOpen" class="fas fa-times close-icon"
+                                                (click)="clearDescriptionColor()" title="Clear Color"></i>
+                                        </div>
+                                    </div>
+                                    
+                                </form>
+                            </div>
+                        </div>
+                    </tab>
+                    <tab heading="Manage Tags" (select)="manageTagsTabEvent()">
+
+                        <!-- Link to FontAwesome CSS for icons -->
+                        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+                            rel="stylesheet">
+
+                        <table style="margin-top: 30px;" class="table table-bordered">
+                            <thead>
+                                <tr>
+
+                                    <th>Tags</th>
+                                    <th>Actions</th> <!-- New column for actions -->
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let item of manageTagList">
+                                    <td>
+                                        <button [ngStyle]="{
+                                            'background-color': item.escrowFileTags.tagColor.split(',')[0].trim(), 
+                                            'color': item.escrowFileTags.tagColor.includes(',') ? item.escrowFileTags.tagColor.split(',')[1].trim() : 'inherit',
+                                            'border': 'none',
+                                            'outline': 'none',
+                                            'box-shadow': 'none',
+                                            'border-radius': '10px',
+                                            'padding': '5px',
+                                            'text-align': 'center',
+                                            'max-height': '45px'
+                                          }" class="color-button" style="display: inline-block;">
+                                            {{ item.escrowFileTags.tagDescription }}
+                                        </button>
+                                    </td>
+
+                                    <td>
+
+                                        <span class="edit-icon" style="cursor: pointer; margin-right: 10px;"
+                                            (click)="editTag(item.escrowFileTags.id)">
+                                            <i class="fas fa-edit" style="color: #007bff;"></i>
+                                        </span>
+                                        <span class="delete-icon" style="cursor: pointer;"
+                                            (click)="deleteTag(item.escrowFileTags.id)">
+                                            <i class="fas fa-trash" style="color: #dc3545;"></i>
+                                        </span>
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+
+                    </tab>
+                </tabset>
+            </div>
+
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" (click)="saveTag()">
+                    {{ editMode ? 'Update' : 'Save' }}
+                </button>
+                <button type="button" class="btn btn-danger" (click)="closeTagModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
