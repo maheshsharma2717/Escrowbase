@@ -49,7 +49,7 @@ import { MultipleSelectComboboxInputTypeComponent } from './input-types/multiple
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { PasswordInputWithShowButtonComponent } from './password-input-with-show-button/password-input-with-show-button.component';
 import { KeyValueListManagerComponent } from './key-value-list-manager/key-value-list-manager.component';
-import { SubHeaderComponent } from '@app/shared/common/sub-header/sub-header.component';
+//import { SubHeaderComponent } from '@app/shared/common/sub-header/sub-header.component';
 import { NgxSpinnerModule } from 'ngx-spinner';
 
 @NgModule({
@@ -101,7 +101,7 @@ import { NgxSpinnerModule } from 'ngx-spinner';
         MultipleSelectComboboxInputTypeComponent,
         PasswordInputWithShowButtonComponent,
         KeyValueListManagerComponent,
-        SubHeaderComponent
+      //  SubHeaderComponent
     ],
     exports: [
         TimeZoneComboComponent,
@@ -114,7 +114,7 @@ import { NgxSpinnerModule } from 'ngx-spinner';
         NgxChartsModule,
         PasswordInputWithShowButtonComponent,
         KeyValueListManagerComponent,
-        SubHeaderComponent
+      //  SubHeaderComponent
     ],
     providers: [
         DateTimeService,

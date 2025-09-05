@@ -19,7 +19,7 @@
     <EmbeddedResource Remove="App_Data\**" />
     <None Remove="App_Data\**" />
   </ItemGroup>
-<ItemGroup>
+  <ItemGroup>
     <Compile Remove="Controllers\MessageController.cs" />
     <Compile Remove="ITypedHubClient.cs" />
     <Compile Remove="Message.cs" />
@@ -51,6 +51,7 @@
     <PackageReference Include="AspNetCore.HealthChecks.UI" Version="5.0.1" />
     <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="5.0.1" />
     <PackageReference Include="CsvHelper" Version="15.0.5" />
+    <PackageReference Include="DocuSign.eSign.dll" Version="8.2.0" />
     <PackageReference Include="Foxit.SDK.Dotnet" Version="10.0.0" />
     <PackageReference Include="FreeSpire.Doc" Version="7.1.13" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.70" />
@@ -60,8 +61,13 @@
     <PackageReference Include="MsgReader" Version="5.7.0" />
     <PackageReference Include="Spire.Doc" Version="13.1.4" />
     <PackageReference Include="System.IO" Version="4.3.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.2.0" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.0" />
+    
+
   </ItemGroup>
-<ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\SR.EscrowBaseWeb.Application.Shared\SR.EscrowBaseWeb.Application.Shared.csproj" />
     <ProjectReference Include="..\SR.EscrowBaseWeb.Application\SR.EscrowBaseWeb.Application.csproj" />
     <ProjectReference Include="..\SR.EscrowBaseWeb.Web.Core\SR.EscrowBaseWeb.Web.Core.csproj" />

@@ -62,7 +62,7 @@
     <div *ngIf="signPopup" class="sign-popup-backdrop"></div>
 
     <div id="hideDiv" *ngIf="signPopup" class="my-special-div" style="float: inherit !important;position: absolute !important; box-shadow: 5px 5px 8px 5px #888888;margin: 20px 0px 0px 107px !important;z-index: 1 !important;background-color: #FFF;padding: 20px; top: 150px; overflow: scroll;
-      min-height: 250px; width:85%">
+      min-height: 250px;overflow-y: auto; max-height: 400px; width:85%">
       <div class="d-flex justify-content-between w-100">
         <h4>File Signing Status</h4>
         <i class="fa fa-times" (click)="closeSignPopup()" style="font-size: 25px;"></i>
@@ -148,6 +148,12 @@
             <dxi-item *ngIf=" editPermission == true" name="View/Edit" text="View/Edit" [visible]="readPermission"
               [options]="{view: popupesign}"></dxi-item>
             <dxi-item name="E-Sign" text="E-Sign" [visible]="esignPermission" [options]="{esign: popupesign}">
+            </dxi-item>
+            <dxi-item *ngIf=" editPermission == false" name="View/Edit" text="View" [visible]="readPermission"
+              [options]="{view: popupDocuSign}"></dxi-item>
+            <dxi-item *ngIf=" editPermission == true" name="View/Edit" text="View/Edit" [visible]="readPermission"
+              [options]="{view: popupDocuSign}"></dxi-item>
+            <dxi-item name="E-Sign" text="E-Sign" [visible]="esignPermission" [options]="{esign: popupDocuSign}">
             </dxi-item>
             <dxi-item name="E-SignDetalis" text="E-Sign Details" [visible]="esignPermission"
               [options]="{esignDetails: displayImagePopupFromMain}"> </dxi-item>
@@ -278,7 +284,6 @@
  padding: 0px;
  margin: 0px 0px 0px -18px;
 " src="\assets\common\images\cross.png" class="btn btn-danger" (click)="Hide();DownloadEsignedPdf()" />
-
       <button *ngIf="editPermission && !docx &&  !eSign" style="
       height: 35px;
       width: 20vh;
@@ -310,6 +315,98 @@
           style="width: 100% !important;height: 100% !important;" frameborder="0"></iframe>
         <iframe *ngIf="eSign" id="esignIframe" style="width: 100% !important;height: 100% !important;" [src]="embedUrl"
           frameborder="0"></iframe>
+      </div>
+      <div *ngIf="msgShow">
+        <div class="msg-info" style="display: none;">
+          <div class="info-box wizard-msg">
+            2. MSG info <span class="msg-file-name"></span>
+          </div>
+          <div class="field-block">
+            <div class="field-label">From</div>
+            <div class="msg-from"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">To</div>
+            <div class="msg-to"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Date (from Headers, example)</div>
+            <div class="msg-date"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Subject</div>
+            <div class="msg-subject"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Body</div>
+            <div class="msg-body"></div>
+          </div>
+          <div class="field-block" style="display: none;">
+            <div class="field-label">HTML Body</div>
+            <div class="msg-body-html"></div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Attachments</div>
+            <div class="msg-attachment"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-template>
+
+  <ng-template #popupDocuSign>
+
+    <div class="modal-header">
+
+      <img *ngIf="!docuSign" style="
+     position: fixed;
+     height: 35px;
+    width: 42px;
+    padding: 0px;
+    margin: 0px 0px 0px -18px;
+ " src="\assets\common\images\cross.png" class="btn btn-danger" (click)="Hide()" />
+      <img *ngIf="docuSign" style="
+  position: fixed;
+  height: 35px;
+ width: 42px;
+ padding: 0px;
+ margin: 0px 0px 0px -18px;
+" src="\assets\common\images\cross.png" class="btn btn-danger" (click)="Hide();DownloadDocuSignedPdf()" />
+      <button *ngIf="editPermission && !docx &&  !docuSign" style="
+      height: 35px;
+      width: 20vh;
+      right: 0px;
+      position: absolute;
+      margin: 0px 5px 0px 170px;
+    " type="button" class="btn btn-info" (click)="SaveChanges()">Save Changes</button>
+      <button *ngIf="docx" class="btn btn-success" style="
+      height: 35px;
+      width: 20vh;
+      right: 0px;
+      position: absolute;
+      margin: 0px 5px 0px 170px;" (click)="SaveFileDoc()">Save</button>
+    </div>
+
+    <div id="modal-content" style="height:100vh;" class="modal-content">
+
+      <app-richedit *ngIf="docx" [changing]="changingValue"></app-richedit>
+      <ngx-extended-pdf-viewer *ngIf="!docx && !docuSign" [src]="source" height="88vh" [useBrowserLocale]="true"
+        [textLayer]="true" [showHandToolButton]="true" [showFindButton]="false" [showPagingButtons]="false"
+        [showPresentationModeButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
+        [showBookmarkButton]="false" [showSecondaryToolbarButton]="false" [showRotateButton]="false"
+        [showSpreadButton]="false" [showPropertiesButton]="false"
+        [showDownloadButton]="false"></ngx-extended-pdf-viewer>
+
+
+      <div *ngIf="docuSign" style="height: 100%; width: 100%; overflow: hidden;" data-role="content">
+        <!-- <iframe *ngIf="docuSign" id="docuSignIframe" [src]="EMBED_SESSION_URL"
+          style="width: 100% !important;height: 100% !important;" frameborder="0"></iframe> -->
+        <iframe *ngIf="docuSign" id="docuSignIframe" [src]="EMBED_SESSION_URL"
+          style="width: 100% !important;height: 100% !important;" frameborder="0" allow="geolocation">
+        </iframe>
+        <!-- <iframe *ngIf="docuSign" id="docuSignIframe" style="width: 100% !important;height: 100% !important;" [src]="embedUrl"
+          frameborder="0"></iframe> -->
       </div>
       <div *ngIf="msgShow">
         <div class="msg-info" style="display: none;">
@@ -627,6 +724,86 @@
 
   </div>
 </ng-template>
+
+<div *ngIf="isSigningReady" class="signing-overlay">
+  <div class="signing-center">
+    <!-- <div class="modern-spinner">
+      <span class="visually-hidden">Preparing file...</span>
+    </div> -->
+    <div class="animated-dots">
+      <span></span><span></span><span></span>
+    </div>
+    <p class="mt-3">Preparing file for signing...</p>
+  </div>
+</div>
+<style>
+  .signing-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(255,255,255,0.7);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .signing-center {
+    text-align: center;
+    background: #fff;
+    padding: 40px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  }
+  .modern-spinner {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 6px solid #e0e0e0;
+    border-top: 6px solid #3699FF;
+    border-right: 6px solid #3699FF;
+    border-bottom: 6px solid #3699FF;
+    border-left: 6px solid #3699FF;
+    animation: spin 1s linear infinite, pulse 1.2s infinite;
+    margin: 0 auto;
+    box-shadow: 0 0 16px rgba(54,153,255,0.15);
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(36,205,217,0.15); }
+    50% { box-shadow: 0 0 32px rgba(36,205,217,0.25); }
+  }
+  .animated-dots {
+    display: flex;
+    justify-content: center;
+    margin-top: 18px;
+    margin-bottom: 8px;
+  }
+  .animated-dots span {
+    width: 10px;
+    height: 10px;
+    margin: 0 4px;
+    background: #3699FF;
+    border-radius: 50%;
+    display: inline-block;
+    animation: bounce 1.2s infinite;
+  }
+  .animated-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .animated-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+</style>
+
 
 <ng-template #Viewmore></ng-template>
 

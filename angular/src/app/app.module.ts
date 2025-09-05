@@ -109,6 +109,8 @@ import { EscrowUsertagsComponent } from './main/escrow-usertags/escrow-usertags.
 import { FileOtherComponent } from './main/File/file-other/file-other.component';
 import { FileMainComponent } from './main/File/file-main/file-main.component';
 
+
+
 @NgModule({
     declarations: [
         AppComponent,
@@ -180,7 +182,7 @@ import { FileMainComponent } from './main/File/file-main/file-main.component';
         EscrowUsertagsComponent,
         FileOtherComponent,
         FileMainComponent
-         
+                 
     ],
     imports: [
         CommonModule,
@@ -229,7 +231,7 @@ import { FileMainComponent } from './main/File/file-main/file-main.component';
         {
             provide: PERFECT_SCROLLBAR_CONFIG,
             useValue: DEFAULT_PERFECT_SCROLLBAR_CONFIG
-        }
+        },
     ],
     entryComponents: [NgxSpinnerComponent,TabComponent],
 

@@ -4,11 +4,9 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AppCommonModule } from '@app/shared/common/app-common.module';
 import { ViewEscrowClientModalComponent } from './srEscrowClient/escrowClients/view-escrowClient-modal.component';
 import { CreateOrEditEscrowClientModalComponent } from './srEscrowClient/escrowClients/create-or-edit-escrowClient-modal.component';
-
 import { EscrowClientsComponent } from './srEscrowClient/escrowClients/escrowClients.component';
 import { ViewEscrowClientComponent } from './srEscrowClient/escrowClients/view-escrowClient.component';
 import { CreateOrEditEscrowClientComponent } from './srEscrowClient/escrowClients/create-or-edit-escrowClient.component';
-
 import { UtilsModule } from '@shared/utils/utils.module';
 import { AddMemberModalComponent } from 'app/admin/organization-units/add-member-modal.component';
 import { AddRoleModalComponent } from 'app/admin/organization-units/add-role-modal.component';

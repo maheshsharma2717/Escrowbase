@@ -18,7 +18,30 @@
                                     defaultTimezoneScope="{{defaultTimezoneScope}}"></timezone-combo>
                             </div>
                         </tab>
-                        <tab class="p-5" heading="{{'TenantManagement' | localize}}" *ngIf="hostSettings.tenantManagement">
+
+                        <tab heading="{{ 'E -Sign Companies' | localize }}" class="p-5">
+                            <div class="form-group">
+                                <label for="eSignCompany">{{ 'E-Sign Company' | localize }}</label>
+
+                                <select id="eSignCompany" class="form-control" [(ngModel)]="selectedCompany">
+                                    <option *ngFor="let company of eSignCompanies" [value]="company.companyName">
+                                        {{ company.companyName }}{{ company.isActive ? '' : '' }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div *ngIf="eSignCompanies.length === 0" class="text-muted">
+                                {{ 'No active e-sign companies found.' | localize }}
+                            </div>
+
+                            <button *ngIf="eSignCompanies.length > 0" class="btn btn-primary mt-3"
+                                (click)="saveSelectedCompany()">
+                                Save
+                            </button>
+                        </tab>
+
+                        <tab class="p-5" heading="{{'TenantManagement' | localize}}"
+                            *ngIf="hostSettings.tenantManagement">
                             <div class="form">
                                 <h5>{{"FormBasedRegistration" | localize}}</h5>
                                 <div class="checkbox-list">
@@ -31,8 +54,8 @@
                                             {{"AllowTenantsToRegisterThemselves" | localize}}
                                             <span></span>
                                         </label>
-                                        <span
-                                            class="form-text text-muted">{{"AllowTenantsToRegisterThemselves_Hint" | localize}}</span>
+                                        <span class="form-text text-muted">{{"AllowTenantsToRegisterThemselves_Hint" |
+                                            localize}}</span>
                                     </div>
                                     <div class="form-group"
                                         [hidden]="!hostSettings.tenantManagement.allowSelfRegistration">
@@ -45,7 +68,8 @@
                                             <span></span>
                                         </label>
                                         <span
-                                            class="form-text text-muted">{{"NewRegisteredTenantsIsActiveByDefault_Hint" | localize}}</span>
+                                            class="form-text text-muted">{{"NewRegisteredTenantsIsActiveByDefault_Hint"
+                                            | localize}}</span>
                                     </div>
                                     <div class="form-group"
                                         [hidden]="!hostSettings.tenantManagement.allowSelfRegistration">
@@ -68,6 +92,7 @@
                                 </div>
                             </div>
                         </tab>
+
                         <tab class="p-5" heading="{{'UserManagement' | localize}}" *ngIf="hostSettings.userManagement">
                             <div class="checkbox-list">
                                 <label for="Settings_IsEmailConfirmationRequiredForLogin" class="checkbox">
@@ -107,7 +132,7 @@
                                     <span></span>
                                 </label>
                                 <label *ngIf="hostSettings.userManagement.sessionTimeOutSettings.isEnabled"
-                                 for="Setting_ShowLockScreenWhenTimedOut" class="checkbox">
+                                    for="Setting_ShowLockScreenWhenTimedOut" class="checkbox">
                                     <input id="Setting_ShowLockScreenWhenTimedOut" class="md-check" type="checkbox"
                                         name="IsEnabled"
                                         [(ngModel)]="hostSettings.userManagement.sessionTimeOutSettings.showLockScreenWhenTimedOut">
@@ -116,8 +141,8 @@
                                 </label>
                                 <div class="form-group"
                                     *ngIf="hostSettings.userManagement.sessionTimeOutSettings.isEnabled">
-                                    <label
-                                        for="Setting_SessionTimeOutSecond">{{"SessionTimeOutSecond" | localize}}</label>
+                                    <label for="Setting_SessionTimeOutSecond">{{"SessionTimeOutSecond" |
+                                        localize}}</label>
                                     <input id="Setting_SessionTimeOutSecond" type="number" name="TimeOutSecond"
                                         class="form-control" min="1"
                                         [ngClass]="{'edited':hostSettings.userManagement.sessionTimeOutSettings.timeOutSecond}"
@@ -125,8 +150,8 @@
                                 </div>
                                 <div class="form-group"
                                     *ngIf="hostSettings.userManagement.sessionTimeOutSettings.isEnabled">
-                                    <label
-                                        for="Setting_ShowTimeOutNotificationSecond">{{"ShowTimeOutNotificationSecond" | localize}}</label>
+                                    <label for="Setting_ShowTimeOutNotificationSecond">{{"ShowTimeOutNotificationSecond"
+                                        | localize}}</label>
                                     <input id="Setting_ShowTimeOutNotificationSecond" type="number" name="TimeOutSecond"
                                         class="form-control" min="1"
                                         [ngClass]="{'edited':hostSettings.userManagement.sessionTimeOutSettings.showTimeOutNotificationSecond}"
@@ -135,11 +160,12 @@
                                 <div class="form-group">
                                     <h5>{{"Profile" | localize}}</h5>
                                     <label for="Setting_AllowUsingGravatarProfilePicture" class="checkbox">
-                                       <input id="Setting_AllowUsingGravatarProfilePicture" class="md-check" type="checkbox" name="AllowUsingGravatarProfilePicture"
-                                           [(ngModel)]="hostSettings.userManagement.allowUsingGravatarProfilePicture">
-                                       {{"AllowUsingGravatarProfilePicture" | localize}}
-                                       <span></span>
-                                   </label>
+                                        <input id="Setting_AllowUsingGravatarProfilePicture" class="md-check"
+                                            type="checkbox" name="AllowUsingGravatarProfilePicture"
+                                            [(ngModel)]="hostSettings.userManagement.allowUsingGravatarProfilePicture">
+                                        {{"AllowUsingGravatarProfilePicture" | localize}}
+                                        <span></span>
+                                    </label>
                                 </div>
                             </div>
                         </tab>
@@ -163,7 +189,8 @@
                                             <input id="Setting_PasswordComplexity_RequireDigit" type="checkbox"
                                                 name="Setting_PasswordComplexity_RequireDigit"
                                                 [(ngModel)]="hostSettings.security.defaultPasswordComplexity.requireDigit"
-                                                *ngIf="hostSettings.security.useDefaultPasswordComplexitySettings" disabled>
+                                                *ngIf="hostSettings.security.useDefaultPasswordComplexitySettings"
+                                                disabled>
                                             {{"PasswordComplexity_RequireDigit" | localize}}
                                             <span></span>
                                         </label>
@@ -175,19 +202,21 @@
                                             <input id="Setting_PasswordComplexity_RequireLowercase" type="checkbox"
                                                 name="Setting_PasswordComplexity_RequireLowercase"
                                                 [(ngModel)]="hostSettings.security.defaultPasswordComplexity.requireLowercase"
-                                                *ngIf="hostSettings.security.useDefaultPasswordComplexitySettings" disabled>
+                                                *ngIf="hostSettings.security.useDefaultPasswordComplexitySettings"
+                                                disabled>
                                             {{"PasswordComplexity_RequireLowercase" | localize}}
                                             <span></span>
                                         </label>
                                         <label for="Setting_PasswordComplexity_RequireNonAlphanumeric" class="checkbox">
-                                            <input id="Setting_PasswordComplexity_RequireNonAlphanumeric" type="checkbox"
-                                                name="Setting_PasswordComplexity_RequireNonAlphanumeric"
+                                            <input id="Setting_PasswordComplexity_RequireNonAlphanumeric"
+                                                type="checkbox" name="Setting_PasswordComplexity_RequireNonAlphanumeric"
                                                 [(ngModel)]="hostSettings.security.passwordComplexity.requireNonAlphanumeric"
                                                 *ngIf="!hostSettings.security.useDefaultPasswordComplexitySettings">
-                                            <input id="Setting_PasswordComplexity_RequireNonAlphanumeric" type="checkbox"
-                                                name="Setting_PasswordComplexity_RequireNonAlphanumeric"
+                                            <input id="Setting_PasswordComplexity_RequireNonAlphanumeric"
+                                                type="checkbox" name="Setting_PasswordComplexity_RequireNonAlphanumeric"
                                                 [(ngModel)]="hostSettings.security.defaultPasswordComplexity.requireNonAlphanumeric"
-                                                *ngIf="hostSettings.security.useDefaultPasswordComplexitySettings" disabled>
+                                                *ngIf="hostSettings.security.useDefaultPasswordComplexitySettings"
+                                                disabled>
                                             {{"PasswordComplexity_RequireNonAlphanumeric" | localize}}
                                             <span></span>
                                         </label>
@@ -199,7 +228,8 @@
                                             <input id="Setting_PasswordComplexity_RequireUppercase" type="checkbox"
                                                 name="Setting_PasswordComplexity_RequireUppercase"
                                                 [(ngModel)]="hostSettings.security.defaultPasswordComplexity.requireUppercase"
-                                                *ngIf="hostSettings.security.useDefaultPasswordComplexitySettings" disabled>
+                                                *ngIf="hostSettings.security.useDefaultPasswordComplexitySettings"
+                                                disabled>
                                             {{"PasswordComplexity_RequireUppercase" | localize}}
                                             <span></span>
                                         </label>
@@ -230,7 +260,8 @@
                                 </div>
                                 <div class="form-group" *ngIf="hostSettings.security.userLockOut.isEnabled">
                                     <label
-                                        for="MaxFailedAccessAttemptsBeforeLockout">{{"MaxFailedAccessAttemptsBeforeLockout" | localize}}</label>
+                                        for="MaxFailedAccessAttemptsBeforeLockout">{{"MaxFailedAccessAttemptsBeforeLockout"
+                                        | localize}}</label>
                                     <input id="MaxFailedAccessAttemptsBeforeLockout" type="number"
                                         name="MaxFailedAccessAttemptsBeforeLockout" class="form-control"
                                         [ngClass]="{'edited':hostSettings.security.userLockOut.maxFailedAccessAttemptsBeforeLockout}"
@@ -238,7 +269,8 @@
                                 </div>
                                 <div class="form-group" *ngIf="hostSettings.security.userLockOut.isEnabled">
                                     <label
-                                        for="DefaultAccountLockoutDurationAsSeconds">{{"DefaultAccountLockoutDurationAsSeconds" | localize}}</label>
+                                        for="DefaultAccountLockoutDurationAsSeconds">{{"DefaultAccountLockoutDurationAsSeconds"
+                                        | localize}}</label>
                                     <input id="DefaultAccountLockoutDurationAsSeconds" type="number"
                                         name="DefaultAccountLockoutSeconds" class="form-control"
                                         [ngClass]="{'edited':hostSettings.security.userLockOut.defaultAccountLockoutSeconds}"
@@ -400,13 +432,14 @@
                                 </label>
                             </div>
                         </tab>
-                        <tab class="p-5" *ngIf="enabledSocialLoginSettings" heading="{{'ExternalLoginSettings' | localize}}">
+                        <tab class="p-5" *ngIf="enabledSocialLoginSettings"
+                            heading="{{'ExternalLoginSettings' | localize}}">
                             <div *ngIf="enabledSocialLoginSettings.indexOf('Facebook')!== -1">
                                 <h5>Facebook</h5>
                                 <div class="form-group">
                                     <label for="Setting_Facebook_AppId">{{"AppId" | localize}}*</label>
                                     <input id="Setting_Facebook_AppId" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.facebook.appId">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.facebook.appId">
                                 </div>
                                 <div class="form-group">
                                     <label>{{"AppSecret" | localize}}*</label>
@@ -415,12 +448,12 @@
                                 </div>
                             </div>
                             <div *ngIf="enabledSocialLoginSettings.indexOf('Google')!== -1">
-                                <hr/>
+                                <hr />
                                 <h5>Google</h5>
                                 <div class="form-group">
                                     <label for="Setting_Google_ClientId">{{"ClientId" | localize}}*</label>
                                     <input id="Setting_Google_ClientId" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.google.clientId">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.google.clientId">
                                 </div>
                                 <div class="form-group">
                                     <label>{{"ClientSecret" | localize}}*</label>
@@ -428,18 +461,19 @@
                                         [(data)]="hostSettings.externalLoginProviderSettings.google.clientSecret"></password-input-with-show-button>
                                 </div>
                                 <div class="form-group">
-                                    <label for="Setting_Google_UserInfoEndpoint">{{"UserInfoEndpoint" | localize}}*</label>
+                                    <label for="Setting_Google_UserInfoEndpoint">{{"UserInfoEndpoint" |
+                                        localize}}*</label>
                                     <input id="Setting_Google_UserInfoEndpoint" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.google.userInfoEndpoint">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.google.userInfoEndpoint">
                                 </div>
                             </div>
                             <div *ngIf="enabledSocialLoginSettings.indexOf('Microsoft')!== -1">
-                                <hr/>
+                                <hr />
                                 <h5>Microsoft</h5>
                                 <div class="form-group">
                                     <label for="Setting_Microsoft_ClientId">{{"ClientId" | localize}}*</label>
                                     <input id="Setting_Microsoft_ClientId" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.microsoft.clientId">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.microsoft.clientId">
                                 </div>
                                 <div class="form-group">
                                     <label>{{"ClientSecret" | localize}}*</label>
@@ -449,76 +483,73 @@
                             </div>
 
                             <div *ngIf="enabledSocialLoginSettings.indexOf('WsFederation')!== -1" class="mb-4">
-                                <hr/>
+                                <hr />
                                 <h5>WsFederation</h5>
                                 <div class="form-group">
                                     <label for="Setting_WsFederation_ClientId">{{"ClientId" | localize}}</label>
                                     <input id="Setting_WsFederation_ClientId" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.wsFederation.clientId">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.wsFederation.clientId">
                                 </div>
                                 <div class="form-group">
                                     <label for="Setting_WsFederation_Tenant">{{"Tenant" | localize}}</label>
                                     <input id="Setting_WsFederation_Tenant" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.wsFederation.tenant">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.wsFederation.tenant">
                                 </div>
                                 <div class="form-group">
-                                    <label for="Setting_WsFederation_MetaDataAddress">{{"MetaDataAddress" | localize}}</label>
+                                    <label for="Setting_WsFederation_MetaDataAddress">{{"MetaDataAddress" |
+                                        localize}}</label>
                                     <input id="Setting_WsFederation_MetaDataAddress" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.wsFederation.metaDataAddress">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.wsFederation.metaDataAddress">
                                 </div>
                                 <div class="form-group">
                                     <label for="Setting_WsFederation_Wtrealm">{{"Wtrealm" | localize}}</label>
                                     <input id="Setting_WsFederation_Wtrealm" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.wsFederation.wtrealm">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.wsFederation.wtrealm">
                                 </div>
                                 <div class="form-group">
                                     <label for="Setting_WsFederation_Authority">{{"Authority" | localize}}</label>
                                     <input id="Setting_WsFederation_Authority" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.wsFederation.authority">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.wsFederation.authority">
                                 </div>
-                                <key-value-list-manager
-                                    #wsFederationClaimsMappingManager
-                                    [header]="l('ClaimsMapping')"
-                                    [keyPlaceHolder]="l('ClaimKey')"
-                                    [valuePlaceHolder]="l('ClaimValue')"
-                                    [items]="wsFederationClaimMappings"
-                                ></key-value-list-manager>
+                                <key-value-list-manager #wsFederationClaimsMappingManager [header]="l('ClaimsMapping')"
+                                    [keyPlaceHolder]="l('ClaimKey')" [valuePlaceHolder]="l('ClaimValue')"
+                                    [items]="wsFederationClaimMappings"></key-value-list-manager>
                             </div>
 
                             <div *ngIf="enabledSocialLoginSettings.indexOf('OpenId')!== -1">
-                                <hr/>
+                                <hr />
                                 <h5>OpenIdConnect</h5>
                                 <div class="form-group">
                                     <label for="Setting_OpenIdConnect_ClientId">{{"ClientId" | localize}}</label>
                                     <input id="Setting_OpenIdConnect_ClientId" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.openIdConnect.clientId">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.openIdConnect.clientId">
                                 </div>
                                 <div class="form-group">
-                                    <label for="Setting_OpenIdConnect_ClientSecret">{{"ClientSecret" | localize}}</label>
+                                    <label for="Setting_OpenIdConnect_ClientSecret">{{"ClientSecret" |
+                                        localize}}</label>
                                     <input id="Setting_OpenIdConnect_ClientSecret" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.openIdConnect.clientSecret">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.openIdConnect.clientSecret">
                                 </div>
                                 <div class="form-group">
                                     <label for="Setting_OpenIdConnect_Authority">{{"Authority" | localize}}</label>
                                     <input id="Setting_OpenIdConnect_Authority" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.openIdConnect.authority">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.openIdConnect.authority">
                                 </div>
                                 <div class="form-group">
                                     <label for="Setting_OpenIdConnect_LoginUrl">{{"LoginUrl" | localize}}</label>
                                     <input id="Setting_OpenIdConnect_LoginUrl" type="text" class="form-control"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.openIdConnect.loginUrl">
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.openIdConnect.loginUrl">
                                 </div>
-                                <label for="Setting_OpenIdConnect_ValidateIssuer" class="checkbox mb-3" style="margin-bottom: 0">
-                                    <input id="Setting_OpenIdConnect_ValidateIssuer" class="check" type="checkbox" name="AllowSelfRegistration"
-                                           [(ngModel)]="hostSettings.externalLoginProviderSettings.openIdConnect.validateIssuer">
+                                <label for="Setting_OpenIdConnect_ValidateIssuer" class="checkbox mb-3"
+                                    style="margin-bottom: 0">
+                                    <input id="Setting_OpenIdConnect_ValidateIssuer" class="check" type="checkbox"
+                                        name="AllowSelfRegistration"
+                                        [(ngModel)]="hostSettings.externalLoginProviderSettings.openIdConnect.validateIssuer">
                                     {{"ValidateIssuer" | localize}}
                                     <span></span>
                                 </label>
-                                <key-value-list-manager
-                                    #openIdConnectClaimsMappingManager
-                                    [header]="l('ClaimsMapping')"
-                                    [keyPlaceHolder]="l('ClaimKey')"
-                                    [valuePlaceHolder]="l('ClaimValue')"
+                                <key-value-list-manager #openIdConnectClaimsMappingManager [header]="l('ClaimsMapping')"
+                                    [keyPlaceHolder]="l('ClaimKey')" [valuePlaceHolder]="l('ClaimValue')"
                                     [items]="openIdConnectClaimMappings">
                                 </key-value-list-manager>
                             </div>

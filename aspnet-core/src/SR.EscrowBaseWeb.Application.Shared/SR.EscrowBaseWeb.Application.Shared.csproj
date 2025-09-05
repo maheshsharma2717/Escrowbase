@@ -7,7 +7,8 @@
   <ItemGroup>
     <PackageReference Include="Abp.Web.Common" Version="6.4.0" />
     <PackageReference Include="Aspose.Words" Version="23.6.0" />
-    <PackageReference Include="Syncfusion.DocToPDFConverter.WinForms" Version="21.2.10" />
+    <PackageReference Include="DocuSign.eSign.dll" Version="8.2.0" />
+    <PackageReference Include="Foxit.SDK.Dotnet" Version="10.0.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>

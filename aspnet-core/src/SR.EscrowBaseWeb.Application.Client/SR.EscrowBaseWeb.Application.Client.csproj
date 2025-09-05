@@ -8,7 +8,6 @@
     <PackageReference Include="Aspose.Words" Version="23.6.0" />
     <PackageReference Include="Flurl" Version="3.0.2" />
     <PackageReference Include="Flurl.Http" Version="3.2.0" />
-    <PackageReference Include="Syncfusion.DocToPDFConverter.WinForms" Version="21.2.10" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SR.EscrowBaseWeb.Application.Shared\SR.EscrowBaseWeb.Application.Shared.csproj" />

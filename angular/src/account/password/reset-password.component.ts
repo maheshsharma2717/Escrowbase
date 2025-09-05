@@ -103,8 +103,6 @@ btnsubmit:boolean=false;
     }
     ngOnInit(): void {
         
-      debugger
-        
         if (this._activatedRoute.snapshot.queryParams['un']) {
             this.mail=atob(this._activatedRoute.snapshot.queryParams['un']);
             this.mailid = atob(this._activatedRoute.snapshot.queryParams['ui']);

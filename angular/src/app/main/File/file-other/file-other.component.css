@@ -213,11 +213,12 @@ i {
 }
 
 div#contextMenu {
-    top: 100px !important;
+    top: 5px !important;
 }
 
 div#contextMenu2 {
-    top: 40px !important;
+    top: 5px !important;
+    left: 200px !important;
 } 
 
 .hover-row:hover {

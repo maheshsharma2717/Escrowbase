@@ -34,6 +34,8 @@ using SR.EscrowBaseWeb.Invitee;
 using SR.EscrowBaseWeb.SRUserAnswer;
 using SR.EscrowBaseWeb.SRSecurityQuestion;
 using Abp.IdentityServer4vNext;
+using SR.EscrowBaseWeb.EsignCompany;
+
 
 namespace SR.EscrowBaseWeb.EntityFrameworkCore
 {
@@ -99,6 +101,9 @@ namespace SR.EscrowBaseWeb.EntityFrameworkCore
 
         public virtual DbSet<UserAnswer> UserAnswers { get; set; }
         public virtual DbSet<SecurityQuestion> SecurityQuestions { get; set; }
+        public virtual DbSet<ESignCompany> ESignCompanies { get; set; }
+
+
         public EscrowBaseWebDbContext(DbContextOptions<EscrowBaseWebDbContext> options)
             : base(options)
         {

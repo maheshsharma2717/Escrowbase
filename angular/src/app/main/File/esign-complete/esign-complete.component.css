@@ -1,0 +1,27 @@
+.esign-complete-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  background-color: #f5f7fa;
+}
+
+.esign-box {
+  text-align: center;
+  padding: 40px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.esign-box h1 {
+  font-size: 28px;
+  color: #28a745;
+  margin-bottom: 20px;
+}
+
+.success-message {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 15px;
+}

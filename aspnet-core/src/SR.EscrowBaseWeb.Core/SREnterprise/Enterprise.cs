@@ -62,5 +62,19 @@ namespace SR.EscrowBaseWeb.SREnterprise
 		public virtual string EnterpriseId { get; set; }
 		public virtual string Subcompany { get; set; }
 		public virtual string Logo { get; set; }
+
+		//
+		public virtual string ESignProviderCode { get; set; }
+		public virtual string ESignClientId { get; set; }
+		public virtual string ESignClientSecret { get; set; }
+		public virtual string ESignApiAccountId { get; set; }
+		public virtual string ESignUserId { get; set; }
+		public virtual string ESignFolderId { get; set; }
+		public virtual bool IsAdminAssigned { get; set; }
+        public virtual bool IsActive { get; set; }
+		public virtual string RefreshToken { get; set; }
+		public virtual string AccessToken { get; set; }
+		public virtual DateTime? AccessTokenTime { get; set; }
+
 	}
 }

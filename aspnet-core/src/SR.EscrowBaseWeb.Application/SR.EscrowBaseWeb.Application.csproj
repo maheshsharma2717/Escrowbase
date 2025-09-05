@@ -19,12 +19,16 @@
   <ItemGroup>
     <PackageReference Include="Abp.EntityFrameworkCore.EFPlus" Version="6.4.0" />
     <PackageReference Include="Aspose.Words" Version="23.6.0" />
+    <PackageReference Include="DocuSign.eSign.dll" Version="8.2.0" />
+    <PackageReference Include="Foxit.SDK.Dotnet" Version="10.0.0" />
     <PackageReference Include="NPOI" Version="2.5.3" />
-    <PackageReference Include="Syncfusion.DocToPDFConverter.WinForms" Version="21.2.10" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SR.EscrowBaseWeb.Application.Shared\SR.EscrowBaseWeb.Application.Shared.csproj" />
     <ProjectReference Include="..\SR.EscrowBaseWeb.Core\SR.EscrowBaseWeb.Core.csproj" />
     <ProjectReference Include="..\SR.EscrowBaseWeb.EntityFrameworkCore\SR.EscrowBaseWeb.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 </Project>

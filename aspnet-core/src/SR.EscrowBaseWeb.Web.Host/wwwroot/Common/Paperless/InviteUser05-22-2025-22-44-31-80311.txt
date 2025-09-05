@@ -1,2 +1,0 @@
-Email, User Name, Company, Invitee, Esc#, Access Types
-"ilwyvf1kbv@tippabble.com","Surya","Lapcare","JEANNIE MILLER","WHY","{SR5}"

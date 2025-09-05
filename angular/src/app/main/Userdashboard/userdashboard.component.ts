@@ -16,7 +16,7 @@ import * as _ from 'lodash';
 
 import { accountModuleAnimation } from '@shared/animations/routerTransition';
 import { AppAuthService } from '@app/shared/common/auth/app-auth.service';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AppConsts } from '@shared/AppConsts';
 import { ChatSignalrService } from '@app/shared/layout/chat/chat-signalr.service';
 import { LocalStorageService } from '@shared/utils/local-storage.service';
@@ -83,8 +83,22 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     filterLabel: any = "";
     searchText: any = "";
     escrow: any;
-
-
+    ///////////////////
+    isFormSubmitted = false;
+    selectedESignCompany: string = '';
+    eSignCreds: any = {
+        clientId: '',
+        clientSecret: '',
+        apiAccountId: '',
+        userId: '',
+        folderId: '',
+        refreshToken: '',
+        accessToken: '',
+        accessTokenTime: ''
+    };
+    isAdminAssigned: boolean = false;
+    showESignModal: boolean = false;
+    tempDataNew: any = null;
 
     constructor(
         injector: Injector,
@@ -157,17 +171,11 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     }
 
     ngOnInit(): void {
-
-
-
         console.log('Current Route' + this.router);
         if (localStorage.getItem('homeOpened') == 'true') {
             localStorage.setItem('notab', 'false');
 
-
-
         }
-
 
         // this.checkForDuplicateTab()
         localStorage.setItem('homeOpened', 'true');
@@ -208,7 +216,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     }
 
     getEscrowClients(event?: LazyLoadEvent, IsRefresh: boolean = false) {
-
+        debugger
         //this.MyRefresh();
 
         if (IsRefresh) {
@@ -320,7 +328,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                                 //this._defaultLayoutComponent.onOpenAbout(data.dataNew1);
 
 
-                               // localStorage.removeItem('EscrowBaseWeb/abpzerotemplate_local_storage/Escrow');
+                                // localStorage.removeItem('EscrowBaseWeb/abpzerotemplate_local_storage/Escrow');
 
 
                                 return;
@@ -390,17 +398,17 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     }
 
     onOpenFileManager(dataNew, fromUI) {
-         
+        debugger
         if (fromUI == true) {
             var queryParams = dataNew;
             const Key = 'accessTYpe' + atob(queryParams['e']);
             localStorage.setItem(Key, atob(queryParams['u']))
         }
-        
+
         this._defaultLayoutComponent.onOpenAbout(dataNew, false);
         this.setListOfOpenTab(dataNew);
         localStorage.setItem('activeTab', atob(queryParams['e']));
-        
+
     }
     SearchChange() {
         this.searchText = "";
@@ -454,7 +462,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     // }
 
     setListOfOpenTab(item) {
-
+        debugger
         var listOfOpenTab = localStorage.getItem("OpenTabList")
         if (listOfOpenTab != "" && listOfOpenTab != null && listOfOpenTab != undefined) {
             var listData: any = [];
@@ -471,6 +479,222 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
             localStorage.setItem("OpenTabList", listData);
         }
     }
+    checkAndOpenFile(dataNew: any) {
+        debugger;
+        const enterpriseName = atob(dataNew.c);
+        const url = AppConsts.remoteServiceBaseUrl + "/GetEsignStatus?escrowId=" + enterpriseName;
+        this.http.get(url).subscribe({
+            next: (res: any) => {
+                // const result = res?.result;
+                const result = res?.result?.result;
+                if (result?.hasCredentials) {
+                    dataNew.enterpriseId = result.enterpriseId;
+                    dataNew.enterpriseName = result.enterpriseName;
+                    this.onOpenFileManager(dataNew, true);
+                } else {
+                    this.tempDataNew = {
+                        ...dataNew,
+                        enterpriseId: result?.enterpriseId,
+                        enterpriseName: result?.enterpriseName
+                    };
+                    this.showESignModal = true;
+                }
+            },
+            error: () => {
+                this.message.error("Unable to check E-Sign configuration.");
+            }
+        });
+    }
+    // editESignCreds(dataNew: any) {
+    //     const enterpriseId = atob(dataNew.c);
+    //     const url = AppConsts.remoteServiceBaseUrl + "/GetUserCreds?enterpriseId=" + enterpriseId;
+
+    //     this.http.get(url).subscribe({
+    //         next: (res: any) => {
+    //             if (res?.success && res?.result) {
+    //                 const creds = res.result.result;
+    //                 this.selectedESignCompany = creds.eSignProviderCode;
+    //                 this.eSignCreds = {
+    //                     clientId: creds.eSignClientId,
+    //                     clientSecret: creds.eSignClientSecret,
+    //                     apiAccountId: creds.eSignApiAccountId,
+    //                     userId: creds.eSignUserId,
+    //                     folderId: creds.eSignFolderId,
+    //                     refreshToken: creds.refreshToken,
+    //                     accessToken: creds.accessToken,
+    //                     accessTokenTime: creds.accessTokenTime,
+    //                      dataNew.enterpriseId = result.enterpriseId;
+    //                     dataNew.enterpriseName = result.enterpriseName;
+    //                 };
+
+    //                 this.isAdminAssigned = creds.isAdminAssigned;
+    //                 this.tempDataNew = dataNew;
+    //                 this.showESignModal = true; // open modal for edit
+    //             } else {
+    //                 this.message.error("No credentials found to edit.");
+    //             }
+    //         },
+    //         error: () => {
+    //             this.message.error("Unable to fetch credentials.");
+    //         }
+    //     });
+    // }
+    editESignCreds(dataNew: any) {
+        const enterpriseId = atob(dataNew.c);
+        const url = AppConsts.remoteServiceBaseUrl + "/GetUserCreds?enterpriseId=" + enterpriseId;
+
+        this.http.get(url).subscribe({
+            next: (res: any) => {
+                if (res?.success && res?.result) {
+                    const creds = res.result.result;
+
+                    // Fill dropdown & credentials
+                    this.selectedESignCompany = creds.eSignProviderCode;
+                    this.eSignCreds = {
+                        clientId: creds.eSignClientId,
+                        clientSecret: creds.eSignClientSecret,
+                        apiAccountId: creds.eSignApiAccountId,
+                        userId: creds.eSignUserId,
+                        folderId: creds.eSignFolderId,
+                        refreshToken: creds.refreshToken,
+                        accessToken: creds.accessToken,
+                        //accessTokenTime: creds.accessTokenTime
+                        accessTokenTime: this.convertToLocalDateTimeInputFormat(creds.accessTokenTime)
+                    };
+
+                    this.tempDataNew = {
+                        ...dataNew,
+                        enterpriseId: creds.enterpriseId,
+                        enterpriseName: creds.enterpriseName
+                    };
+
+                    this.isAdminAssigned = creds.isAdminAssigned;
+                    this.showESignModal = true; // open modal for edit
+                } else {
+                    this.message.error("No credentials found to edit.");
+                }
+            },
+            error: () => {
+                this.message.error("Unable to fetch credentials.");
+            }
+        });
+    }
+
+    // To get the time while edit 
+    convertToLocalDateTimeInputFormat(utcString: string): string | null {
+        if (!utcString) return null;
+        const date = new Date(utcString);
+        const offset = date.getTimezoneOffset();
+        const localDate = new Date(date.getTime() - offset * 60000);
+        return localDate.toISOString().slice(0, 16); // 'YYYY-MM-DDTHH:mm'
+    }
+
+
+    saveESignAndContinue() {
+        debugger;
+        this.isFormSubmitted = true;
+        // Required fields for all companies
+        if (!this.selectedESignCompany || !this.selectedESignCompany.trim()) {
+            return;
+        }
+        if (this.selectedESignCompany !== 'admin-suggested') {
+            if (!this.eSignCreds.clientId || !this.eSignCreds.clientId.trim()) {
+                return;
+            }
+            if (!this.eSignCreds.clientSecret || !this.eSignCreds.clientSecret.trim()) {
+                return;
+            }
+            if (this.selectedESignCompany !== '2001') {
+                if (!this.eSignCreds.apiAccountId || !this.eSignCreds.apiAccountId.trim()) {
+                    return;
+                }
+                if (!this.eSignCreds.userId || !this.eSignCreds.userId.trim()) {
+                    return;
+                }
+            }
+            if (this.selectedESignCompany === '2001') {
+                if (!this.eSignCreds.folderId || !this.eSignCreds.folderId.trim()) {
+                    return;
+                }
+            }
+            if (this.selectedESignCompany !== '4001') {
+                if (!this.eSignCreds.refreshToken || !this.eSignCreds.refreshToken.trim()) {
+                    return;
+                }
+            }
+        }
+        // If all required fields are filled, proceed with save logic
+        // ...existing save logic here...
+        const isAdminFlow = this.selectedESignCompany === 'admin-suggested';
+        const payload = {
+            enterpriseId: this.tempDataNew.enterpriseId,
+            eSignProviderCode: isAdminFlow ? null : this.selectedESignCompany,
+            eSignClientId: isAdminFlow ? null : this.eSignCreds.clientId,
+            eSignClientSecret: isAdminFlow ? null : this.eSignCreds.clientSecret,
+            eSignApiAccountId: isAdminFlow ? null : this.eSignCreds.apiAccountId,
+            eSignUserId: isAdminFlow ? null : this.eSignCreds.userId,
+            eSignFolderId: isAdminFlow ? null : this.eSignCreds.folderId,
+            refreshToken: isAdminFlow ? null : this.eSignCreds.refreshToken,
+            accessToken: isAdminFlow ? null : this.eSignCreds.accessToken,
+            accessTokenTime: isAdminFlow ? null : this.eSignCreds.accessTokenTime,
+            isAdminAssigned: isAdminFlow,
+            isActive: !isAdminFlow
+        };
+        this.http.post(AppConsts.remoteServiceBaseUrl + "/SaveUserCreds", payload)
+            .subscribe((response: any) => {
+                if (response?.success) {
+                    this.showESignModal = false;
+                    this.isFormSubmitted = false;
+
+                    // reload record from server
+                    this.http.get(AppConsts.remoteServiceBaseUrl + "/GetUserCreds?enterpriseId=" + this.tempDataNew.enterpriseId)
+                        .subscribe((updated: any) => {
+                            this.tempDataNew = { ...this.tempDataNew, ...updated };
+                            this.onOpenFileManager(this.tempDataNew, true);
+                        });
+
+                } else {
+                    this.message.error('Failed to save e-sign credentials.');
+                }
+            }, error => {
+                this.message.error('API Error while saving credentials.');
+            });
+
+    }
+
+    closeModal() {
+        this.showESignModal = false;
+    }
+    // onESignCompanyChange() {
+    //     if (this.selectedESignCompany === 'admin-suggested') {
+    //         this.eSignCreds = {
+    //             clientId: '',
+    //             clientSecret: '',
+    //             apiAccountId: '',
+    //             userId: '',
+    //             folderId: ''
+    //         };
+    //         this.isAdminAssigned = true;
+    //     } else {
+    //         this.isAdminAssigned = false;
+    //     }
+    // }
+    onESignCompanyChange() {
+        this.eSignCreds = {
+            clientId: '',
+            clientSecret: '',
+            apiAccountId: '',
+            userId: '',
+            folderId: '',
+            refreshToken: '',
+            accessToken: '',
+            accessTokenTime: ''
+        };
+
+        // Update admin flag based on selection
+        this.isAdminAssigned = (this.selectedESignCompany === 'admin-suggested');
+    }
+
 
 }
 
@@ -484,6 +708,6 @@ export class escrows {
     public buyer: string;
     public seller: string;
     public dataNew: any = {}
-    constructor() {
-    }
+    constructor() { }
+
 }

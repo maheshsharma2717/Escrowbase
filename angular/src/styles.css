@@ -309,15 +309,6 @@ a.tabs {
   font-family: roboto;
 }
 
-/* .modal-footer{
-  padding: 1rem 1.75rem !important;
-  flex: 0 0 auto;
+ul.nav.nav-tabs {
+    flex-wrap: nowrap;
 }
-.modal-body{
-  padding: 1rem 1.75rem !important;
-  flex: 0 0 auto !important;
-}
-
-.modal-content{
-  height: 80vh !important;
-} */

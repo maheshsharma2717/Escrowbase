@@ -1,2 +1,0 @@
-Email, User Name, Company, Invitee, Esc#, Access Types
-"bekat60247@betzenn.com","Manoj","Enterprise","JEANNIE MILLER","ESCROW","{TC2}"

@@ -4,6 +4,7 @@ import { AppComponent } from './app.component';
 import { AppRouteGuard } from './shared/common/auth/auth-route-guard';
 import { NotificationsComponent } from './shared/layout/notifications/notifications.component';
 import { NgxSpinnerService } from 'ngx-spinner';
+import { EsignCompleteComponent } from './main/File/esign-complete/esign-complete.component';
 
 
 
@@ -36,9 +37,10 @@ import { NgxSpinnerService } from 'ngx-spinner';
                     },
                     {
                         path: '**', redirectTo: 'notifications'
-                    }
+                    }                   
                 ]
-            }
+            },
+             { path: 'esign-complete', component: EsignCompleteComponent },
         ])
     ],
     exports: [RouterModule]

@@ -16,6 +16,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Aspose.Words" Version="23.6.0" />
+    <PackageReference Include="DocuSign.eSign.dll" Version="8.2.0" />
+    <PackageReference Include="Foxit.SDK.Dotnet" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="5.0.8">
       <PrivateAssets>all</PrivateAssets>
@@ -26,7 +28,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="5.0.1" />
-    <PackageReference Include="Syncfusion.DocToPDFConverter.WinForms" Version="21.2.10" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SR.EscrowBaseWeb.Core\SR.EscrowBaseWeb.Core.csproj" />

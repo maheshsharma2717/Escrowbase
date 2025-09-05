@@ -60,7 +60,6 @@ namespace SR.EscrowBaseWeb.E_SignRecords
             var e_SignRecords = from o in pagedAndFilteredE_SignRecords
                                 select new
                                 {
-
                                     o.EmailId,
                                     o.EmbeddedURL,
                                     o.EmbeddedToken,
@@ -87,7 +86,6 @@ namespace SR.EscrowBaseWeb.E_SignRecords
                 {
                     E_SignRecord = new E_SignRecordDto
                     {
-
                         EmailId = o.EmailId,
                         EmbeddedURL = o.EmbeddedURL,
                         EmbeddedToken = o.EmbeddedToken,
@@ -147,11 +145,11 @@ namespace SR.EscrowBaseWeb.E_SignRecords
         {
             if (input.Id == null)
             {
-              return  await Create(input);
+                return await Create(input);
             }
             else
             {
-              return  await Update(input);
+                return await Update(input);
             }
         }
 
@@ -212,28 +210,25 @@ namespace SR.EscrowBaseWeb.E_SignRecords
             {
             }
 
-
-
         }
-
 
         public virtual async Task<bool> UpdateEsignStatus(long Id, string Status, string signin_percentage)
         {
             try
             {
-               // using (var unit = _unitOfWorkManager.Begin())
+                // using (var unit = _unitOfWorkManager.Begin())
                 //{
-                    var dbESignRecord = await _e_SignRecordRepository.GetAll().Where(x => x.Id == Id).FirstOrDefaultAsync();
-                    if (dbESignRecord != null)
-                    {
-                        dbESignRecord.Status = Status;
-                        dbESignRecord.Signin_percentage = signin_percentage;
-                    }
-                    await _e_SignRecordRepository.UpdateAsync(dbESignRecord);
+                var dbESignRecord = await _e_SignRecordRepository.GetAll().Where(x => x.Id == Id).FirstOrDefaultAsync();
+                if (dbESignRecord != null)
+                {
+                    dbESignRecord.Status = Status;
+                    dbESignRecord.Signin_percentage = signin_percentage;
+                }
+                await _e_SignRecordRepository.UpdateAsync(dbESignRecord);
                 return true;
-                  //  await CurrentUnitOfWork.SaveChangesAsync();
-                   // unit.Complete();
-               // }
+                //  await CurrentUnitOfWork.SaveChangesAsync();
+                // unit.Complete();
+                // }
 
             }
             catch (Exception ex)

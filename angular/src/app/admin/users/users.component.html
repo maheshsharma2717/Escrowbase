@@ -1,5 +1,5 @@
 <div [@routerTransition]>
-    <div class="content d-flex flex-column flex-column-fluid" style="margin-left: 13%; margin-top: 6%;">
+    <div class="content d-flex flex-column flex-column-fluid" style="margin-left: 16%; margin-top: 6%;">
         <sub-header [title]="'Users' | localize" [description]="'UsersHeaderInfo' | localize">
             <div role="actions" style="display:flex;">
                 <div class="btn-group" dropdown>
@@ -49,9 +49,10 @@
                                                 type="text">
                                             <span class="input-group-btn">
                                                 <button (click)="getUsers()" class="btn btn-primary" style="width: 100%;
-    height: 100%;" type="submit"><i
+                                                 height: 100%;" type="submit"><i
                                                         class="flaticon-search-1"
-                                                        [attr.aria-label]="l('Search')"></i></button>
+                                                        [attr.aria-label]="l('Search')"></i>
+                                                </button>
                                             </span>
                                         </div>
                                     </div>

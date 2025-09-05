@@ -18,6 +18,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Aspose.Words" Version="23.6.0" />
+    <PackageReference Include="DocuSign.eSign.dll" Version="8.2.0" />
+    <PackageReference Include="Foxit.SDK.Dotnet" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.AzureKeyVault" Version="3.1.17" />
@@ -26,7 +28,6 @@
     <PackageReference Include="PayPalHttp" Version="1.0.0" />
     <PackageReference Include="PayPalCheckoutSdk" Version="1.0.3" />
     <PackageReference Include="Stripe.net" Version="39.59.0" />
-    <PackageReference Include="Syncfusion.DocToPDFConverter.WinForms" Version="21.2.10" />
     <PackageReference Include="TimeZoneConverter" Version="3.5.0" />
     <PackageReference Include="Abp.AspNetZeroCore" Version="3.0.0 " />
   </ItemGroup>

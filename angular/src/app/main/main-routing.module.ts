@@ -10,6 +10,7 @@ import { EnterprisesComponent } from './srEnterprise/enterprises.component';
 //import { GridViewComponent } from './Grid/grid.component';
 import { FileViewComponent } from './File/filelist.component';
 import { ManageLinkedAccountsModalComponent } from './ManageAccount/manageaccount.component';
+import { EsignCompleteComponent } from './File/esign-complete/esign-complete.component';
 
 @NgModule({
     imports: [
@@ -26,6 +27,7 @@ import { ManageLinkedAccountsModalComponent } from './ManageAccount/manageaccoun
                     { path: 'UserdashboardAdmin', component: UserDashboardAdminComponent, data: { permission: 'Pages.SrFileMappings' } },
                     { path: 'ManageAccount', component: ManageLinkedAccountsModalComponent, data: { permission: 'Pages.SrFileMappings' } },
                     //{ path: 'Grid', component: GridViewComponent, data: { permission: 'Pages.EscrowClients' } },
+                   // { path: 'esign-complete', component: EsignCompleteComponent },
                     { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
                     { path: '**', redirectTo: 'dashboard' },
 

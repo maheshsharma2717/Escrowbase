@@ -2711,6 +2711,75 @@ export class DemoUiComponentsServiceProxy {
 }
 
 @Injectable()
+export class DocuSignServiceProxy {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+    }
+
+    /**
+     * @param body (optional) 
+     * @return Success
+     */
+    sendEnvelopeAndGetUrl(body: CreateOrEditDocuSignDto | undefined): Observable<string> {
+        let url_ = this.baseUrl + "/api/services/app/DocuSign/SendEnvelopeAndGetUrl";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json-patch+json",
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSendEnvelopeAndGetUrl(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSendEnvelopeAndGetUrl(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<string>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<string>;
+        }));
+    }
+
+    protected processSendEnvelopeAndGetUrl(response: HttpResponseBase): Observable<string> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+                result200 = resultData200 !== undefined ? resultData200 : <any>null;
+    
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<string>(null as any);
+    }
+}
+
+@Injectable()
 export class DynamicEntityPropertyServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -9413,6 +9482,76 @@ export class FriendshipServiceProxy {
             }));
         }
         return _observableOf<void>(null as any);
+    }
+}
+
+@Injectable()
+export class HomeServiceProxy {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+    }
+
+    /**
+     * @return Success
+     */
+    getAllCompanies(): Observable<EsignCompanyDto[]> {
+        let url_ = this.baseUrl + "/api/services/app/Home/GetAllCompaniesAsync";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAllCompanies(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAllCompanies(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<EsignCompanyDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<EsignCompanyDto[]>;
+        }));
+    }
+
+    protected processGetAllCompanies(response: HttpResponseBase): Observable<EsignCompanyDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(EsignCompanyDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<EsignCompanyDto[]>(null as any);
     }
 }
 
@@ -19291,6 +19430,64 @@ export class ApiServiceProxy {
     }
 
     /**
+     * @return Success
+     */
+    testGet(): Observable<string[]> {
+        let url_ = this.baseUrl + "/api/Test";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processTestGet(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processTestGet(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<string[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<string[]>;
+        }));
+    }
+
+    protected processTestGet(response: HttpResponseBase): Observable<string[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(item);
+            }
+            else {
+                result200 = <any>null;
+            }
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<string[]>(null as any);
+    }
+
+    /**
      * @param body (optional) 
      * @return Success
      */
@@ -19340,61 +19537,6 @@ export class ApiServiceProxy {
             }));
         }
         return _observableOf<void>(null as any);
-    }
-
-    /**
-     * @return Success
-     */
-    testGet(id: number): Observable<string> {
-        let url_ = this.baseUrl + "/api/Test/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Accept": "text/plain"
-            })
-        };
-
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processTestGet(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processTestGet(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<string>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<string>;
-        }));
-    }
-
-    protected processTestGet(response: HttpResponseBase): Observable<string> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-                result200 = resultData200 !== undefined ? resultData200 : <any>null;
-    
-            return _observableOf(result200);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf<string>(null as any);
     }
 
     /**
@@ -25223,6 +25365,102 @@ export interface ICreateInvoiceDto {
     subscriptionPaymentId: number;
 }
 
+export class CreateOrEditDocuSignDto implements ICreateOrEditDocuSignDto {
+    email!: string | undefined;
+    name!: string | undefined;
+    base64Pdf!: string | undefined;
+    folderId!: number;
+    folderName!: string | undefined;
+    folderPassword!: string | undefined;
+    partyId!: number;
+    contractId!: number;
+    companyId!: number;
+    documentId!: number;
+    fileName!: string | undefined;
+    fullFilePath!: string | undefined;
+    escrowId!: string | undefined;
+    fileContent!: string | undefined;
+    signerEmail!: string | undefined;
+    signerName!: string | undefined;
+
+    constructor(data?: ICreateOrEditDocuSignDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.email = _data["email"];
+            this.name = _data["name"];
+            this.base64Pdf = _data["base64Pdf"];
+            this.folderId = _data["folderId"];
+            this.folderName = _data["folderName"];
+            this.folderPassword = _data["folderPassword"];
+            this.partyId = _data["partyId"];
+            this.contractId = _data["contractId"];
+            this.companyId = _data["companyId"];
+            this.documentId = _data["documentId"];
+            this.fileName = _data["fileName"];
+            this.fullFilePath = _data["fullFilePath"];
+            this.escrowId = _data["escrowId"];
+            this.fileContent = _data["fileContent"];
+            this.signerEmail = _data["signerEmail"];
+            this.signerName = _data["signerName"];
+        }
+    }
+
+    static fromJS(data: any): CreateOrEditDocuSignDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateOrEditDocuSignDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["email"] = this.email;
+        data["name"] = this.name;
+        data["base64Pdf"] = this.base64Pdf;
+        data["folderId"] = this.folderId;
+        data["folderName"] = this.folderName;
+        data["folderPassword"] = this.folderPassword;
+        data["partyId"] = this.partyId;
+        data["contractId"] = this.contractId;
+        data["companyId"] = this.companyId;
+        data["documentId"] = this.documentId;
+        data["fileName"] = this.fileName;
+        data["fullFilePath"] = this.fullFilePath;
+        data["escrowId"] = this.escrowId;
+        data["fileContent"] = this.fileContent;
+        data["signerEmail"] = this.signerEmail;
+        data["signerName"] = this.signerName;
+        return data;
+    }
+}
+
+export interface ICreateOrEditDocuSignDto {
+    email: string | undefined;
+    name: string | undefined;
+    base64Pdf: string | undefined;
+    folderId: number;
+    folderName: string | undefined;
+    folderPassword: string | undefined;
+    partyId: number;
+    contractId: number;
+    companyId: number;
+    documentId: number;
+    fileName: string | undefined;
+    fullFilePath: string | undefined;
+    escrowId: string | undefined;
+    fileContent: string | undefined;
+    signerEmail: string | undefined;
+    signerName: string | undefined;
+}
+
 export class CreateOrEditE_SignRecordDto implements ICreateOrEditE_SignRecordDto {
     emailId!: string | undefined;
     embeddedURL!: string | undefined;
@@ -29328,6 +29566,50 @@ export class EscrowUserNotesUserLookupTableDto implements IEscrowUserNotesUserLo
 export interface IEscrowUserNotesUserLookupTableDto {
     id: number;
     displayName: string | undefined;
+}
+
+export class EsignCompanyDto implements IEsignCompanyDto {
+    companyName!: string | undefined;
+    companyCode!: string | undefined;
+    isActive!: boolean;
+
+    constructor(data?: IEsignCompanyDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.companyName = _data["companyName"];
+            this.companyCode = _data["companyCode"];
+            this.isActive = _data["isActive"];
+        }
+    }
+
+    static fromJS(data: any): EsignCompanyDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new EsignCompanyDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["companyName"] = this.companyName;
+        data["companyCode"] = this.companyCode;
+        data["isActive"] = this.isActive;
+        return data;
+    }
+}
+
+export interface IEsignCompanyDto {
+    companyName: string | undefined;
+    companyCode: string | undefined;
+    isActive: boolean;
 }
 
 export class EsignCompanyMappingDto implements IEsignCompanyMappingDto {

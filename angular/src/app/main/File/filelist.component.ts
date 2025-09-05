@@ -12,7 +12,7 @@ import {
   EscrowDirectMessageDetailsesServiceProxy,
   CreateOrEditEscrowFileHistoryDto,
   EscrowUserNotesesServiceProxy,
-  CreateOrEditEscrowUserNotesDto
+  CreateOrEditEscrowUserNotesDto, DocuSignServiceProxy, CreateOrEditDocuSignDto
 
 } from '@shared/service-proxies/service-proxies';
 import * as $ from "jquery";
@@ -52,6 +52,8 @@ export class FileViewComponent extends AppComponentBase {
   @ViewChild("targetDataGrid", { static: false }) fileManager1: DxFileManagerComponent;
   @ViewChild("data", { static: false }) data: DxFileManagerComponent;
   @ViewChild('fileOtherComponent') fileOtherComponent!: FileOtherComponent;
+  @ViewChild('scrollContainer') scrollContainer!: ElementRef;
+
   dashboardName = DashboardCustomizationConst.dashboardNames.defaultTenantDashboard;
   remoteProvider: FileSystemProvider;
   remoteProvider1: FileSystemProvider;
@@ -141,6 +143,8 @@ export class FileViewComponent extends AppComponentBase {
   base64SrcSource: any;
   msgShow: boolean;
   eSign: boolean = false;
+  docuSign: boolean = false;
+  esignUnified: boolean = false;
   EMBED_SESSION_URL: any;
   SignName: any;
   SignStatus: any;
@@ -227,6 +231,7 @@ export class FileViewComponent extends AppComponentBase {
   @ViewChild('Historyunique', { static: true }) viewHistoryMainTemplateRef !: TemplateRef<any>;
   @ViewChild('reminderModel', { static: true }) reminderModelMainTemplateRef !: TemplateRef<any>;
   @ViewChild('popupesign', { static: true }) esignModelMainTemplateRef !: TemplateRef<any>;
+  @ViewChild('popupDocuSign', { static: true }) docuSignModelMainTemplateRef !: TemplateRef<any>;
   @ViewChild('displayImagePopup', { static: true }) esignDeailsModelMainTemplateRef !: TemplateRef<any>;
   attachments: any;
   noteMessage: string;
@@ -234,8 +239,10 @@ export class FileViewComponent extends AppComponentBase {
   completeEnterprisePathOther: string = "";
   completeEnterprisePathMain: string = "";
   selectedFileForEsign: any;
+  selectedFileForDocuSign: any;
   mainFileSelected: any;
   otherFileSelected: any;
+  isSigningReady = false;
 
   public constructor(
     private http: HttpClient,
@@ -257,6 +264,7 @@ export class FileViewComponent extends AppComponentBase {
     private clipboardService: ClipboardService,
     private escrowUserNotesesServiceProxy: EscrowUserNotesesServiceProxy,
     private renderer: Renderer2,
+    private _docuSignService: DocuSignServiceProxy,
   ) {
     super(injector);
     if (this.appSession.application) {
@@ -312,7 +320,7 @@ export class FileViewComponent extends AppComponentBase {
    * Closes the modal and resets the modal state.
    */
   closeModal(): void {
-    debugger;
+
     if (this.modalRef) {
       this.modalRef.hide();
     }
@@ -373,7 +381,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   ngOnInit(): void {
-    debugger;
+
     console.log(this.renderer);
     var queryParams = this.person;
     this.inputPerson = this.person;
@@ -516,7 +524,7 @@ export class FileViewComponent extends AppComponentBase {
   isRename: boolean = false;
 
   handleShownEvent(e) {
-    debugger;
+
     this.readPermission = false;
     this.editPermission = false;
     this.viewHistoryPermission = false;
@@ -588,8 +596,10 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   handelSaveMainFile(e) {
-    debugger;
+
     this.eSign = false;
+    this.docuSign = false;
+    this.esignUnified = false;
     this.mainFileSelected = e.selectedFile
     this.handleShownEvent(e.selectedFile)
     if (e.templateRef == "Rename") {
@@ -610,8 +620,18 @@ export class FileViewComponent extends AppComponentBase {
       this.openEsignpopUpFromMain(e.selectedFile);
     }
     if (e.templateRef == "esignDetails") {
+      this.signPopup = true;
       this.openEsignDetailsPopUpFromMain(e.selectedFile);
     }
+    if (e.templateRef == "signWithDocusign") {
+      this.docuSign = true;
+      this.openDocuSignpopUpFromMain(e.selectedFile);
+    }
+    if (e.templateRef == "esignUnified") {
+      this.esignUnified = true;
+      this.openSignUnifiedpopUpFromMain(e.selectedFile);
+    }
+
     if (e.templateRef == "view") {
       //  this.openEsignpopUpFromMain(e.selectedFile);
       this.View(this.esignModelMainTemplateRef, e.selectedFile);
@@ -625,34 +645,6 @@ export class FileViewComponent extends AppComponentBase {
     }
   }
 
-  // handelSaveOtherFile(e) {
-  //   debugger;
-  //   if (e.templateRef == "Rename1") {
-  //     this.parentpath = e.folderPath
-  //     this.openrenameModal1(e,e.selectedFile);
-  //   } 
-  //   if (e.templateRef == "ViewFullName") {
-  //     this.openFullNameFromMain(e.selectedFile)
-  //   }    
-
-  //   if (e.templateRef == "viewEdit") {
-  //     this.openEsignpopUpFromMain(e.selectedFile);
-  //   }
-  //   else if (e.templateRef == "delete") {  // You can define this condition as needed
-  //     // Call the delete function here
-  //     this.Delete2(e);  // Pass 'e' to the Delete function if needed
-  //   }
-  // }
-
-  // openEsignpopUpFromMain(file) {
-  //   this.e_Sign(this.esignModelMainTemplateRef);
-  // this.modalRef = this.modalService.show(
-  //   this.esignModelMainTemplateRef,
-  //   Object.assign({}, { class: 'gray modal-xl', backdrop: false, ignoreBackdropClick: true })
-  // );
-  //}
-
-
   openEsignpopUpFromMain(file) {
     // this.modalRef = this.modalService.show(
     //   this.esignModelMainTemplateRef,
@@ -662,14 +654,48 @@ export class FileViewComponent extends AppComponentBase {
     this.selectedFileForEsign = file.key;
     this.e_Sign(this.esignModelMainTemplateRef, file);
   }
+  openDocuSignpopUpFromMain(file) {
+    this.selectedFileForDocuSign = file.key;
+    this.e_SignWithDocuSign(this.docuSignModelMainTemplateRef, file);
+  }
+  openSignUnifiedpopUpFromMain(file) {
+    this.selectedFileForDocuSign = file.key;
+    this.e_SignUnified(this.docuSignModelMainTemplateRef, file);
+  }
 
   openEsignDetailsPopUpFromMain(file) {
-    debugger
+
     this.displayImagePopupFromMain(file);
   }
 
+  // openDocuSignPopUpFromMain(file: any) {
+  //   const dto: CreateOrEditDocuSignDto = new CreateOrEditDocuSignDto();
+  //   dto.escrowId = file.key;
+  //   dto.email = "signer@example.com";      // Replace with actual value
+  //   dto.name = "John Doe";                 // Replace with actual value
+  //   dto.base64Pdf = "";                    // Optional or "" if backend reads file
+  //   dto.fileName = file.shortFileName;     // If used
+  //   // dto.folderId = "";                     // Optional
+
+  //   this._docuSignService.sendEnvelopeAndGetUrl(dto).subscribe(res => {
+  //     this.embedUrl = this.sanitizer.bypassSecurityTrustResourceUrl(res);
+  //     this.eSign = true;
+
+  //     this.modalRef = this.modalService.show(
+  //       this.esignModelMainTemplateRef,
+  //       Object.assign({}, {
+  //         class: 'gray modal-xl',
+  //         backdrop: false,
+  //         ignoreBackdropClick: true
+  //       })
+  //     );
+  //   });
+  // }
+
+
+
   onItemClick(e) {
-    debugger;
+
     if (e.itemData.options.download) {
       this.Download(e);
     }
@@ -692,6 +718,7 @@ export class FileViewComponent extends AppComponentBase {
       //this.e_Sign(e.itemData.options.esign);
     }
     else if (e.itemData.options.esignDetails) {
+
       let file = this.fileManager.instance.getSelectedItems();
       this.displayImagePopupFromMain(file[0]);
     }
@@ -807,7 +834,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   HideOtherAreaFileAction() {
-    debugger;
+
     this.check();
     this.modalReff.hide();
 
@@ -848,7 +875,7 @@ export class FileViewComponent extends AppComponentBase {
 
   onItemClick1(e) {
     try {
-      debugger;
+
       if (e.templateRef == 'fownload') {
         this.Download1(e);
       }
@@ -923,7 +950,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   uploadFile(filess) {
-    debugger;
+
     for (let index = 0; index < filess.length; index++) {
       var element = filess[index];
       this.filess.push(element.name);
@@ -1075,32 +1102,8 @@ export class FileViewComponent extends AppComponentBase {
     return `${baseName}_${dateTimeStamp}${fileExtension}`;
   }
 
-  // displayImagePopupFromMain(file) {
-  //   debugger;
-  //   if (file.name) {
-  //     if (!file.name.includes(this.myurl)) {
-  //       this.Sign = [];
-  //       let source = this.myurl + "/Common/Paperless/" + file.name;
-  //       let strng = file.key.replace(/#/g, "%23");
-  //       var escrow = localStorage.getItem("activeTab");
-  //       this.http.get(this.folderPath + "GetSignDetails?type=" + this.appSession.user.emailAddress + "&filename=" + strng + "&Escrow=" + escrow).subscribe((response: any) => {
-
-  //         let data = response['result'];
-  //         if (data.length > 0) {
-  //           this.Sign = [];
-  //           for (let i = 0; i < data.length; i++) {
-  //             this.Sign.push(data[i]);
-  //           }
-  //           this.signPopup = true;
-  //           document.body.style.backgroundColor = '#d3d3d3';
-  //         }
-  //       });
-  //     }
-  //   }
-  // }
-
   displayImagePopupFromMain(file) {
-    debugger;
+
     const mainContainer = document.querySelector('.page');
     if (mainContainer) {
       (mainContainer as HTMLElement).style.backgroundColor = 'black';
@@ -1268,6 +1271,7 @@ export class FileViewComponent extends AppComponentBase {
 
       // Make the HTTP request to update document status (if needed)
       this.http.get(this.folderPath + "DocUpdate?message=Read&filename=" + this.fileNamestrng + "&userId=" + this.appSession.userId).subscribe((response: any) => {
+        debugger
         let data = response['result'];
 
         // Construct the file source URL with cache-busting
@@ -1529,7 +1533,6 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   DownloadFileForDocViwer(event) {
-    debugger
 
     let compare;
     let
@@ -2000,7 +2003,7 @@ export class FileViewComponent extends AppComponentBase {
       // this.data = response;
       // this.bs = response.result.message;
       // return;
-     
+
       this.HideRename();
       this.fileManager1.instance.refresh().done((result) => {
         this.check();
@@ -2021,12 +2024,12 @@ export class FileViewComponent extends AppComponentBase {
         abp.notify.success('File renamed successfully', 'success');
         this.fileMainComponent.getAllFiles();
         return;
-    }
+      }
       if (fileRes.result?.message === "File Already Signed") {
         abp.notify.error('You are not allowed to rename this file', 'error');
         this.fileMainComponent.getAllFiles();
         return;
-   }
+      }
       abp.notify.success('File Renamed Successfully', 'Success');
       this.fileMainComponent.getAllFiles();
       try {
@@ -2037,12 +2040,12 @@ export class FileViewComponent extends AppComponentBase {
           this.isFile = false;
           this.fileName = 'Select a file'
         }
-        if (newResult == 200 ) {
-        alert("File Renamed successfully :)");
-        this.spinnerUpl = false;
-        this.file = null;
-        this.isFile = false;
-        this.fileName = 'Select a file'
+        if (newResult == 200) {
+          alert("File Renamed successfully :)");
+          this.spinnerUpl = false;
+          this.file = null;
+          this.isFile = false;
+          this.fileName = 'Select a file'
         }
         else {
         }
@@ -2067,7 +2070,6 @@ export class FileViewComponent extends AppComponentBase {
     }
     return;
   }
-
 
   Renamee1() {
     try {
@@ -2127,8 +2129,10 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   Moved() {
-
     debugger;
+    if (this.scrollContainer?.nativeElement) {
+      this.scrollContainer.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     this.datachanges = [];
 
     let data = this.userpermissionsall;
@@ -2227,6 +2231,7 @@ export class FileViewComponent extends AppComponentBase {
       this.fileOtherComponent.getAllFiles();
       abp.notify.success('File Moved Successfully', 'Success');
       this.userpermissionsall = [];
+
       try {
         let newResult = fileRes.result.statusCode;
         if (newResult == 500) {
@@ -2236,73 +2241,59 @@ export class FileViewComponent extends AppComponentBase {
           this.fileName = 'Select a file'
         }
         if (newResult == 200) {
-          debugger;
-          //alert("File Moved successfully :)");
           this.spinnerUpl = false;
           this.file = null;
           this.isFile = false;
           this.fileName = 'Select a file';
-          // abp.notify.success('File Moved Successfully', 'Success');      
         }
-        else {
-        }
-
-        // this.fileManager.instance.refresh().done((result) => {
-
-        //   console.log("calling when refresh is done for fileManager")
-        //   this.check();
-        // })
-        //   .fail(function (error) {
-        //     // handle error
-        //   });
-
-        // const oldFileManager1 = this.fileManager1;
-        // var checkFirstFile = this.fileManager1.instance.getCurrentDirectory();
-        // if (checkFirstFile.path != "") {
-
-        // }
-        // this.fileManager1.instance.refresh()
-        //   .done((result) => {
-
-        //     console.log("calling when refresh is done for fileManager")
-        //     this.check();
-
-        //     this.fileManager1 = oldFileManager1;
-        //   })
-        //   .fail(function (error) {
-        //     // handle error
-        //   });
-
-        // this.ngOnInit();
-
       }
       catch (error) {
         alert(error);
       }
 
-      const header = new HttpHeaders({ 'parentpath': this.parentpath, 'shortfilename': this.shortfilename });
-      headers.append('Content-Type', 'application/json');
+      this.isSigningReady = true;
 
-      this.http.get<any>(this.path1 + "/Home/SignRename?EscrowId=" + escrowNewId, { headers: header }).subscribe((response: any) => {
+      setTimeout(() => {
+        abp.notify.info('File is being prepared for signing, please wait...', 'Processing');
+      }, 2000);
 
-      });
+      let headers = new HttpHeaders({ 'parentpath': this.parentpath, 'shortfilename': this.shortfilename });
+      headers = headers.append('Content-Type', 'application/json');
 
+      this.http.get<any>(this.path1 + "/Home/SignRename?EscrowId=" + escrowNewId, { headers })
+        .subscribe({
+          next: (response: any) => {
+            debugger;
+            if (response.result?.success) {
+              abp.notify.success(response.result.message || "File is ready to sign", 'Success');
+              if (this.scrollContainer?.nativeElement) {
+                this.scrollContainer.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            } else {
+              abp.notify.error(response.result?.message || 'Something went wrong', 'Error');
+            }
+          },
+          error: () => {
+            abp.notify.error('Failed to prepare file for signing.', 'Error');
+          },
+          complete: () => {
+            this.isSigningReady = false;
+
+          }
+        });
     });
     this.fileMainComponent.getAllFiles();
   }
 
   Delete(event) {
     debugger;
-
     if (document.getElementById('viewer')) {
       document.getElementById('viewer').remove();
     }
     if (document.getElementById('headerH')) {
       document.getElementById('headerH').remove();
     }
-
     this.items = this.fileManager.instance.getSelectedItems();
-
     if (this.items.length > 0) {
       Swal.fire({
         title: 'Are you sure?',
@@ -2370,19 +2361,15 @@ export class FileViewComponent extends AppComponentBase {
     }
   }
 
-
   Delete2(event) {
     debugger;
-
     if (document.getElementById('viewer')) {
       document.getElementById('viewer').remove();
     }
     if (document.getElementById('headerH')) {
       document.getElementById('headerH').remove();
     }
-
     const item = event.selectedFile;
-
     Swal.fire({
       title: 'Are you sure?',
       text: `Do you really want to delete ${item.name}?`,
@@ -2393,16 +2380,13 @@ export class FileViewComponent extends AppComponentBase {
     }).then((result) => {
       if (result.isConfirmed) {
         this.show(item.name);
-
         let path = event.folderPath;
         let key = event.selectedFile.key;
         let strng = path.replace(/#/g, "%23");
         let strng1 = key.replace(/#/g, "%23");
         let path1 = strng + "/" + event.selectedFile.name;
-
         const token = 'my JWT';
         const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
-
         this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
           headers,
           responseType: 'blob' as 'json'
@@ -2418,7 +2402,6 @@ export class FileViewComponent extends AppComponentBase {
 
           let fileRes: any = response;
           this.check();
-
           try {
             let newResult = fileRes.status;
 
@@ -2428,7 +2411,6 @@ export class FileViewComponent extends AppComponentBase {
               this.isFile = false;
               this.fileName = 'Select a file';
             }
-
             if (newResult === 200) {
               Swal.fire('Deleted!', 'File deleted successfully :)', 'success');
               this.spinnerUpl = false;
@@ -2446,19 +2428,15 @@ export class FileViewComponent extends AppComponentBase {
     });
   }
 
-
   Delete1(event) {
     debugger;
-
     if (document.getElementById('viewer')) {
       document.getElementById('viewer').remove();
     }
     if (document.getElementById('headerH')) {
       document.getElementById('headerH').remove();
     }
-
     const item = event.selectedFile;
-
     Swal.fire({
       title: 'Are you sure?',
       text: `Do you really want to delete ${item.name}?`,
@@ -2525,10 +2503,8 @@ export class FileViewComponent extends AppComponentBase {
     });
   }
 
-
   Edit(even) {
     this.check();
-
     this.items = this.fileManager.instance.getSelectedItems();
     let strcheck;
     this.items.forEach(ele => {
@@ -2564,12 +2540,8 @@ export class FileViewComponent extends AppComponentBase {
     console.log(popupesign);
     this.check();
     let config = { class: 'gray modal-lg', backdrop: false, ignoreBackdropClick: true };
-
-    // We now use the passed fileName directly, no need to use fileManager.instance.getSelectedItems()
-    let file = selectedFile; // Assuming you have the file key from fileName. Adjust accordingly if you need more info from the file.
+    let file = selectedFile;
     let strcheck;
-
-    // Process the file directly (no need for the loop)
     let compare = "";
     let action = file.key;
     action = action.substring(action.indexOf("~") + 1);
@@ -2650,6 +2622,229 @@ export class FileViewComponent extends AppComponentBase {
       }
     }
   }
+
+  e_SignWithDocuSign(popupesign: TemplateRef<any>, selectedFile: any) {
+    debugger
+    this.check();
+    let config = { class: 'gray modal-lg', backdrop: false, ignoreBackdropClick: true };
+    let strcheck;
+
+    let file = selectedFile;
+    let action = file.key.substring(file.key.indexOf("~") + 1);
+
+    const paramsPattern = /[^{\}]+(?=})/g;
+    let extractParams = action.match(paramsPattern);
+
+    if (extractParams) {
+      for (let i = 0; i < extractParams.length; i++) {
+        let my = extractParams[i].replace("{", "");
+        let my1 = my;
+        my = my.substring(0, my.indexOf('-'));
+        my1 = my1.substring(my1.indexOf('-') + 1);
+        if (my == this.Action || (my == 'BRX' || my == 'SRX')) {
+          strcheck = my1;
+        }
+      }
+    }
+
+    if (!strcheck || strcheck.indexOf("S") === -1) {
+      this.ErrorMessage = "!Oops you don't have E-sign Permission for this file";
+    } else {
+      this.docx = false;
+      this.msgShow = false;
+
+      let strng = file.key.replace(/#/g, "%23");
+      let srId = selectedFile.srAssignedFileId;
+      let escrow = localStorage.getItem("activeTab");
+      let userType = localStorage.getItem("accessTYpe" + escrow);
+
+      this.selectedFileForDownload = strng;
+      this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetEmbeddedLinkDocuSign?filePath=" + strng + "&escrow=" + escrow + "&userType=" + userType + "&srAssignedFileId=" + srId)
+        .subscribe((response: any) => {
+          debugger;
+          const embeddedLink = response?.result?.result || response?.result?.link;
+
+          if (embeddedLink) {
+            this.embedUrl = embeddedLink;
+
+            this.eSign = true;
+            this.docuSign = true;
+
+            this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(this.embedUrl);
+            debugger
+            this.modalReff = this.modalService.show(popupesign, config);
+          } else {
+            Swal.fire({
+              title: 'No signature required for this file.',
+              icon: 'info',
+              confirmButtonText: 'OK'
+            });
+          }
+        });
+    }
+  }
+
+  //This is iFreame alternate working code only opnly for popup open need to handle the download logic on close of popup
+  // e_SignWithSutiSign(selectedFile: any) {
+  //   debugger;
+
+  //   let strcheck: string | undefined;
+  //   let file = selectedFile;
+  //   let action = file.key.substring(file.key.indexOf("~") + 1);
+
+  //   const paramsPattern = /[^{\}]+(?=})/g;
+  //   let extractParams = action.match(paramsPattern);
+
+  //   if (extractParams) {
+  //     for (let i = 0; i < extractParams.length; i++) {
+  //       let my = extractParams[i].replace("{", "");
+  //       let my1 = my;
+  //       my = my.substring(0, my.indexOf('-'));
+  //       my1 = my1.substring(my1.indexOf('-') + 1);
+  //       if (my == this.Action || (my == 'BRX' || my == 'SRX')) {
+  //         strcheck = my1;
+  //       }
+  //     }
+  //   }
+
+  //   if (!strcheck || strcheck.indexOf("S") === -1) {
+  //     this.ErrorMessage = "!Oops you don't have E-sign Permission for this file";
+  //     abp.notify.error(this.ErrorMessage, "Error");
+  //     return;
+  //   }
+
+  //   let strng = file.key.replace(/#/g, "%23");
+  //   let srId = selectedFile.srAssignedFileId;
+  //   let escrow = localStorage.getItem("activeTab");
+  //   let userType = localStorage.getItem("accessTYpe" + escrow);
+
+  //   const popupWidth = 800;
+  //   const popupHeight = 650;
+  //   const left = (window.screen.width / 2) - (popupWidth / 2);
+  //   const top = (window.screen.height / 2) - (popupHeight / 2);
+  //   const popup = window.open(
+  //     'about:blank',
+  //     '_blank',
+  //     `toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=${popupWidth},height=${popupHeight},top=${top},left=${left}`
+  //   );
+
+  //   this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetEmbeddedLinkDocuSign?filePath=" + strng + "&escrow=" + escrow + "&userType=" + userType + "&srAssignedFileId=" + srId)
+  //     .subscribe({
+  //       next: (response: any) => {
+  //         const sutiLink = response?.result?.result || response?.result?.link;
+
+  //         if (sutiLink) {
+  //           popup.location.href = sutiLink;
+  //         } else {
+  //           popup.close();
+  //           Swal.fire({
+  //             title: 'No signature required for this file.',
+  //             icon: 'info',
+  //             confirmButtonText: 'OK'
+  //           });
+  //         }
+  //       },
+  //       error: (error) => {
+  //         popup.close();
+  //         const message = error?.error?.result?.result || "Something went wrong while fetching the SutiSign link.";
+  //         abp.notify.error(message, "Error");
+  //       }
+  //     });
+  // }
+
+  e_SignWithSutiSign(popupesign: TemplateRef<any>, selectedFile: any) {
+    debugger
+    this.check();
+    let config = { class: 'gray modal-lg', backdrop: false, ignoreBackdropClick: true };
+    let strcheck;
+
+    let file = selectedFile;
+    let action = file.key.substring(file.key.indexOf("~") + 1);
+
+    const paramsPattern = /[^{\}]+(?=})/g;
+    let extractParams = action.match(paramsPattern);
+
+    if (extractParams) {
+      for (let i = 0; i < extractParams.length; i++) {
+        let my = extractParams[i].replace("{", "");
+        let my1 = my;
+        my = my.substring(0, my.indexOf('-'));
+        my1 = my1.substring(my1.indexOf('-') + 1);
+        if (my == this.Action || (my == 'BRX' || my == 'SRX')) {
+          strcheck = my1;
+        }
+      }
+    }
+
+    if (!strcheck || strcheck.indexOf("S") === -1) {
+      this.ErrorMessage = "!Oops you don't have E-sign Permission for this file";
+    } else {
+      this.docx = false;
+      this.msgShow = false;
+
+      let strng = file.key.replace(/#/g, "%23");
+      let srId = selectedFile.srAssignedFileId;
+      let escrow = localStorage.getItem("activeTab");
+      let userType = localStorage.getItem("accessTYpe" + escrow);
+
+      this.selectedFileForDownload = strng;
+      this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetEmbeddedLinkDocuSign?filePath=" + strng + "&escrow=" + escrow + "&userType=" + userType + "&srAssignedFileId=" + srId)
+        .subscribe({
+          next: (response: any) => {
+            const embeddedLink = response?.result?.result || response?.result?.link;
+
+            if (embeddedLink) {
+              this.embedUrl = embeddedLink;
+              this.eSign = true;
+              this.docuSign = true;
+
+              this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(embeddedLink);
+              this.modalReff = this.modalService.show(popupesign, config);
+              console.log(this.EMBED_SESSION_URL)
+            } else {
+              Swal.fire({
+                title: 'No signature required for this file.',
+                icon: 'info',
+                confirmButtonText: 'OK'
+              });
+            }
+          },
+          error: (error) => {
+            const message = error?.error?.result.result || "Something went wrong while fetching the embedded link.";
+            abp.notify.error(message)
+          }
+        });
+    }
+  }
+
+  e_SignUnified(popupesign: TemplateRef<any>, selectedFile: any) {
+    this.check();
+
+    const parentPath = selectedFile?.parentPath || '';
+    const shortFileName = selectedFile?.name || '';
+    const escrow = localStorage.getItem("activeTab");
+
+    const headers = new HttpHeaders({
+      parentpath: parentPath,
+      shortfilename: shortFileName
+    });
+
+    this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetActiveESignCompany?EscrowId=" + escrow, { headers })
+      .subscribe((response: any) => {
+        const companyCode = response?.result?.result?.companyCode?.toString();
+
+        if (companyCode === '2001') {
+          this.e_Sign(popupesign, selectedFile);
+        } else if (companyCode === '3001') {
+          this.e_SignWithDocuSign(popupesign, selectedFile);
+        } else if (companyCode === '4001') {
+          this.e_SignWithSutiSign(popupesign, selectedFile);
+        } else {
+          Swal.fire("Unknown e-sign company setup.");
+        }
+      });
+  }
+
 
   // e_Sign(popupesign: TemplateRef<any>) {
   //   console.log(popupesign);
@@ -2872,7 +3067,8 @@ export class FileViewComponent extends AppComponentBase {
     debugger
     let dir = this.mainFileSelected;
     let fileId = dir.srAssignedFileId;
-    this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/downloadZohoPdf?filePath=" + this.selectedFileForDownload + "&srAssignedFileId=" + fileId).subscribe((response: any) => {
+    const escrowId = localStorage.getItem("activeTab"); // this is EscrowId
+    this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/downloadZohoPdf?filePath=" + this.selectedFileForDownload + "&srAssignedFileId=" + fileId + "&escrowId=" + escrowId).subscribe((response: any) => {
 
       if (response != null) {
         if (response.result.signingStatus != "Unsigned") {
@@ -2898,6 +3094,72 @@ export class FileViewComponent extends AppComponentBase {
       }
 
     })
+  }
+
+  // DownloadDocuSignedPdf() {
+  //   debugger
+  //   let dir = this.mainFileSelected;
+  //   let fileId = dir.srAssignedFileId;
+  //   const escrow = localStorage.getItem("activeTab");
+  //   this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/DownloadDocuSignPdf?filePath=" + this.selectedFileForDownload + "&srAssignedFileId=" + fileId + escrow).subscribe((response: any) => {
+
+  //     if (response != null) {
+  //       if (response.result.signingStatus != "Unsigned") {
+  //         this.isRename = false;
+  //         this.editPermission = false;
+  //         this.renamePermission = false;
+  //         this.renameFileName = true;
+
+  //         this.fileMainComponent.getAllFiles();
+  //         this.fileOtherComponent.getAllFiles();
+  //         setTimeout(() => {
+  //           this.fileManager.instance.refresh().done((result) => {
+  //             console.log("calling when refresh is done for fileManager after sign")
+  //             this.fileManager.instance.option('selectedItems', []);
+  //             this.check();
+  //           })
+  //         }, 1000);
+  //       } else {
+  //         this.isRename = true;
+  //         this.editPermission = true;
+  //         this.renamePermission = true;
+  //       }
+  //     }
+
+  //   })
+  // }
+  DownloadDocuSignedPdf() {
+    debugger
+    const dir = this.mainFileSelected;
+    const fileId = dir.srAssignedFileId;
+    const escrowId = localStorage.getItem("activeTab"); // this is EscrowId
+    const filePath = this.selectedFileForDownload;
+
+    const apiUrl = `${AppConsts.remoteServiceBaseUrl}/Home/DownloadDocuSignPdf?filePath=${filePath}&srAssignedFileId=${fileId}&escrowId=${escrowId}`;
+
+    this.http.get(apiUrl).subscribe((response: any) => {
+      if (response?.result?.signingStatus !== "Unsigned") {
+        this.isRename = false;
+        this.editPermission = false;
+        this.renamePermission = false;
+        this.renameFileName = true;
+
+        this.fileMainComponent.getAllFiles();
+        this.fileOtherComponent.getAllFiles();
+
+        setTimeout(() => {
+          this.fileManager.instance.refresh().done(() => {
+            console.log("refresh done after DocuSign signing");
+            this.fileManager.instance.option('selectedItems', []);
+            this.check();
+          });
+        }, 1000);
+      } else {
+        this.isRename = true;
+        this.editPermission = true;
+        this.renamePermission = true;
+      }
+    });
   }
 
   SignStatusChange() {
@@ -3839,7 +4101,10 @@ export class FileViewComponent extends AppComponentBase {
   }
   @HostListener('window:paste', ['$event'])
   onPaste(event: ClipboardEvent) {
-
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+      return;
+    }
     if (this.UsertypeModel === 'EOX') {
       const clipboardData = event.clipboardData || (window as any).clipboardData;
 

@@ -85,7 +85,10 @@
                             <ul>
                                 <li *ngIf="!editPermission" (click)="onItemClickMain('view')">View</li>
                                 <li *ngIf="editPermission" (click)="onItemClickMain('view')">View/Edit</li>
-                                <li *ngIf="esignPermission" (click)="onItemClickMain('esign')">E-Sign</li>
+                                <!-- <li *ngIf="esignPermission" (click)="onItemClickMain('esign')">E-Sign</li>
+                                <li *ngIf="esignPermission" (click)="onItemClickMain('signWithDocusign')">Sign with Docusign</li> -->
+                                <li *ngIf="esignPermission" (click)="onItemClickMain('esignUnified')">E-Sign</li>
+
                                 <li *ngIf="esignPermission" (click)="onItemClickMain('esignDetails')">E-Sign Details
                                 </li>
                                 <li *ngIf="viewHistoryPermission" (click)="onItemClickMain('ViewHistory')">View/History

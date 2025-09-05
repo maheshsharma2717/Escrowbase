@@ -22,8 +22,8 @@ namespace SR.EscrowBaseWeb.Web.Models.ZohoESign
         public string verification_code { get; set; }
         public string private_notes { get; set; }
         public bool is_embedded { get; set; }
-       public bool is_bulk { get; set; }
-        
+        public bool is_bulk { get; set; }
+
 
 
     }
@@ -39,7 +39,7 @@ namespace SR.EscrowBaseWeb.Web.Models.ZohoESign
         public string folder_id { get; set; }
     }
 
-    
+
 
 
     public class ZohotokenApiResponse

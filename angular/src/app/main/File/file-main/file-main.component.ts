@@ -78,9 +78,6 @@ export class FileMainComponent extends AppComponentBase {
   getAllFiles(): void {
     debugger;
     var queryParams = this.inputPerson;
-    //FileViewComponent.escrowno = atob(queryParams['e']);
-    // this.escrowname = FileViewComponent.escrowno;
-
     let Name = this.appSession.user.name + " " + this.appSession.user.surname;
     let subCompanyName = this.validFileName(atob(queryParams['sc']))
     let companyName = this.validFileName(atob(queryParams['c']))
@@ -440,4 +437,6 @@ export class FileMainComponent extends AppComponentBase {
       textarea.style.height = textarea.scrollHeight + 'px';
     }, 0);
   }
+
+  
 }

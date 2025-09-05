@@ -46,6 +46,8 @@ using SR.EscrowBaseWeb.Security.Recaptcha;
 using SR.EscrowBaseWeb.Web.Authentication.External;
 using SR.EscrowBaseWeb.Web.Common;
 using SR.EscrowBaseWeb.Authorization.Delegation;
+using Microsoft.Extensions.Logging;
+
 
 namespace SR.EscrowBaseWeb.Web.Controllers
 {
@@ -78,6 +80,9 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         private readonly ISettingManager _settingManager;
         private readonly IJwtSecurityStampHandler _securityStampHandler;
         private readonly AbpUserClaimsPrincipalFactory<User, Role> _claimsPrincipalFactory;
+        private readonly ILogger<TokenAuthController> _logger;
+
+
 
         ///<Summary>
         /// Get and Set recaptcha validator
@@ -109,8 +114,10 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             ExternalLoginInfoManagerFactory externalLoginInfoManagerFactory,
             ISettingManager settingManager,
             IJwtSecurityStampHandler securityStampHandler,
-            AbpUserClaimsPrincipalFactory<User, Role> claimsPrincipalFactory, 
-            IUserDelegationManager userDelegationManager)
+            AbpUserClaimsPrincipalFactory<User, Role> claimsPrincipalFactory,
+            IUserDelegationManager userDelegationManager,
+            ILogger<TokenAuthController> logger
+            )
         {
             _logInManager = logInManager;
             _tenantCache = tenantCache;
@@ -135,6 +142,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             _claimsPrincipalFactory = claimsPrincipalFactory;
             RecaptchaValidator = NullRecaptchaValidator.Instance;
             _userDelegationManager = userDelegationManager;
+            _logger = logger;
         }
 
         ///<Summary>
@@ -226,6 +234,103 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 ReturnUrl = returnUrl
             };
         }
+
+        //[HttpPost]
+        //public async Task<IActionResult> Authenticate([FromBody] AuthenticateModel model)
+        //{
+        //    try
+        //    {
+        //        if (UseCaptchaOnLogin())
+        //        {
+        //            await ValidateReCaptcha(model.CaptchaResponse);
+        //        }
+
+        //        var loginResult = await GetLoginResultAsync(
+        //            model.UserNameOrEmailAddress,
+        //            model.Password,
+        //            GetTenancyNameOrNull()
+        //        );
+
+        //        var returnUrl = model.ReturnUrl;
+
+        //        if (model.SingleSignIn.HasValue && model.SingleSignIn.Value && loginResult.Result == AbpLoginResultType.Success)
+        //        {
+        //            loginResult.User.SetSignInToken();
+        //            returnUrl = AddSingleSignInParametersToReturnUrl(model.ReturnUrl, loginResult.User.SignInToken, loginResult.User.Id, loginResult.User.TenantId);
+        //        }
+
+        //        if (loginResult.User.ShouldChangePasswordOnNextLogin)
+        //        {
+        //            loginResult.User.SetNewPasswordResetCode();
+        //            return Ok(new AuthenticateResultModel
+        //            {
+        //                ShouldResetPassword = true,
+        //                PasswordResetCode = loginResult.User.PasswordResetCode,
+        //                UserId = loginResult.User.Id,
+        //                ReturnUrl = returnUrl
+        //            });
+        //        }
+
+        //        await _userManager.InitializeOptionsAsync(loginResult.Tenant?.Id);
+
+        //        string twoFactorRememberClientToken = null;
+        //        if (await IsTwoFactorAuthRequiredAsync(loginResult, model))
+        //        {
+        //            if (model.TwoFactorVerificationCode.IsNullOrEmpty())
+        //            {
+        //                _cacheManager
+        //                    .GetTwoFactorCodeCache()
+        //                    .Set(
+        //                        loginResult.User.ToUserIdentifier().ToString(),
+        //                        new TwoFactorCodeCacheItem()
+        //                    );
+
+        //                return Ok(new AuthenticateResultModel
+        //                {
+        //                    RequiresTwoFactorVerification = true,
+        //                    UserId = loginResult.User.Id,
+        //                    TwoFactorAuthProviders = await _userManager.GetValidTwoFactorProvidersAsync(loginResult.User),
+        //                    ReturnUrl = returnUrl
+        //                });
+        //            }
+
+        //            twoFactorRememberClientToken = await TwoFactorAuthenticateAsync(loginResult.User, model);
+        //        }
+
+        //        if (AllowOneConcurrentLoginPerUser())
+        //        {
+        //            await _userManager.UpdateSecurityStampAsync(loginResult.User);
+        //            await _securityStampHandler.SetSecurityStampCacheItem(loginResult.User.TenantId, loginResult.User.Id, loginResult.User.SecurityStamp);
+        //            loginResult.Identity.ReplaceClaim(new Claim(AppConsts.SecurityStampKey, loginResult.User.SecurityStamp));
+        //        }
+
+        //        var accessToken = CreateAccessToken(await CreateJwtClaims(loginResult.Identity, loginResult.User));
+        //        var refreshToken = CreateRefreshToken(await CreateJwtClaims(loginResult.Identity, loginResult.User, tokenType: TokenType.RefreshToken));
+
+        //        return Ok(new AuthenticateResultModel
+        //        {
+        //            AccessToken = accessToken,
+        //            ExpireInSeconds = (int)_configuration.AccessTokenExpiration.TotalSeconds,
+        //            RefreshToken = refreshToken,
+        //            RefreshTokenExpireInSeconds = (int)_configuration.RefreshTokenExpiration.TotalSeconds,
+        //            EncryptedAccessToken = GetEncryptedAccessToken(accessToken),
+        //            TwoFactorRememberClientToken = twoFactorRememberClientToken,
+        //            UserId = loginResult.User.Id,
+        //            ReturnUrl = returnUrl
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error occurred in Authenticate");
+
+        //        return StatusCode(500, new
+        //        {
+        //            message = "Internal server error occurred during authentication.",
+        //            detail = ex.Message
+        //        });
+        //    }
+        //}
+
 
         ///<Summary>
         /// Refresh token
@@ -368,7 +473,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             {
                 throw new UserFriendlyException("User delegation error...");
             }
-        
+
             var expiration = userDelegation.EndTime.Subtract(Clock.Now);
             var accessToken = CreateAccessToken(await CreateJwtClaims(result.Identity, result.User, expiration), expiration);
 
@@ -849,7 +954,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         /// Authenticate by Email
         ///</Summary>
         [HttpGet]
-        public async Task<Usertokenn> AuthenticateByEmail(string username,string password)
+        public async Task<Usertokenn> AuthenticateByEmail(string username, string password)
         {
             var loginResult = await GetLoginResultAsync(
                 username,

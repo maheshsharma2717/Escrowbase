@@ -67,6 +67,7 @@ import { ZeroTemplateHttpConfigurationService } from './zero-template-http-confi
         ApiServiceProxies.EscrowDirectMessageDetailsesServiceProxy,
         ApiServiceProxies.EscrowUserNotesesServiceProxy,
         ApiServiceProxies.EscrowFileTagsesServiceProxy,
+        ApiServiceProxies.DocuSignServiceProxy,
         { provide: RefreshTokenService, useClass: ZeroRefreshTokenService },
         { provide: AbpHttpConfigurationService, useClass: ZeroTemplateHttpConfigurationService },
         { provide: HTTP_INTERCEPTORS, useClass: AbpHttpInterceptor, multi: true }

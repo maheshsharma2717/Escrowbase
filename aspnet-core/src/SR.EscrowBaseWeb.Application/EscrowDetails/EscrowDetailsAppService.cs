@@ -126,6 +126,26 @@ namespace SR.EscrowBaseWeb.EscrowDetails
 
             return output;
         }
+        public async Task<GetEscrowDetailForEditOutput> GetEscrowDetailsForByStringUserId(string userId, string escrow, string userType)
+        {
+            var escrowDetail = await _escrowDetailRepository
+       .FirstOrDefaultAsync(x => x.UserId.HasValue && x.UserId.Value.ToString() == userId && x.EscrowId == escrow && x.Usertype == userType);
+
+            var output = new GetEscrowDetailForEditOutput
+            {
+                EscrowDetail = ObjectMapper.Map<CreateOrEditEscrowDetailDto>(escrowDetail)
+            };
+
+            if (output.EscrowDetail.UserId != null)
+            {
+                var _lookupUser = await _lookup_userRepository
+                    .FirstOrDefaultAsync(x => x.Id == (long)output.EscrowDetail.UserId);
+
+                output.UserName = _lookupUser?.Name?.ToString();
+            }
+
+            return output;
+        }
 
         public async Task CreateOrEdit(CreateOrEditEscrowDetailDto input)
          {

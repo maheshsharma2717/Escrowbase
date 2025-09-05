@@ -140,7 +140,7 @@ dlogo;
 
       
         onOpenAbout(person, refresh) {
-               
+        debugger
             let escrow=atob(person.e);
             let userType = atob(person.u);
             this.person = person

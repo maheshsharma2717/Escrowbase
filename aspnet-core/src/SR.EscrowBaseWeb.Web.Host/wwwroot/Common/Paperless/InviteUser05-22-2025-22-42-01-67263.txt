@@ -1,2 +1,0 @@
-Email, User Name, Company, Invitee, Esc#, Access Types
-"anu@mandavconsultancy.com","Surya","Lapcare","JEANNIE MILLER","WHY","{SR4}"

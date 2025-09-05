@@ -316,7 +316,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
 
                 else if (Path.GetExtension(file).ToLower() == ".msg")
-                {                 
+                {
                     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                     using var fileStream = System.IO.File.OpenRead(file);
                     var reader = new MsgReader.Outlook.Storage.Message(fileStream);
@@ -371,7 +371,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             return htmlDoc.DocumentNode.InnerText;
         }
 
-         
+
         public async Task<IActionResult> SaveDocument([FromBody] SaveDocumentRequest request)
         {
             if (string.IsNullOrEmpty(request.Base64Content))
@@ -663,7 +663,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
 
                                 }
-                                else {
+                                else
+                                {
                                 }
                             }
                         }
@@ -1101,94 +1102,191 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///<Summary>
         /// Get signing file status details
         ///</Summary>
+        //public async Task<List<EsignNameStatus>> GetSignDetails(string type, string filename, string Escrow)
+        //{
+        //    List<EsignNameStatus> zohosignInPopup = new List<EsignNameStatus>();
+
+        //    var get = _esignRepository.GetAll().Where(x => x.FileName == filename).ToList();
+        //    var JoinResult = (from p in get.AsEnumerable()
+        //                      select new EsignNameStatus()
+        //                      {
+        //                          Status = p.Status,
+        //                          Signin_percentage = p.Signin_percentage
+
+        //                      }).ToList();
+
+        //    var dbEsignRecord = _e_SignRecordsAppService.GetAllE_Sign(2001);
+        //    var find = dbEsignRecord.Where(x => x.FileName == filename).FirstOrDefault();
+        //    if (find != null)
+        //    {
+        //        var EscrowDetails = _escrowDetailRepository.GetAll().Where(x => x.EscrowId == Escrow).ToList();
+
+        //        var myDeserializedClass = await getSignStatus(find.RequestId);
+        //        var action = find.ZohoAction;
+        //        var ZohoAction = JsonConvert.DeserializeObject<List<Action>>(find.ZohoAction);
+        //        if (myDeserializedClass.document_form_data != null && myDeserializedClass.document_form_data.actions != null)
+        //        {
+        //            var signPercentage = myDeserializedClass.document_form_data.actions;
+        //            foreach (var item in ZohoAction)
+        //            {
+
+        //                EsignNameStatus zohosignIn = new EsignNameStatus();
+        //                zohosignIn.Email = item.recipient_email;
+        //                zohosignIn.Name = item.recipient_name;
+        //                zohosignIn.UserType = EscrowDetails.Where(x => x.Email == zohosignIn.Email).FirstOrDefault().Usertype;
+        //                zohosignIn.signing_order = item.signing_order;
+        //                zohosignIn.TotalSignatureCount = item.fields.Where(x => x.field_type_name == "Signature").ToList().Count();
+        //                zohosignIn.TotalinitialsCount = item.fields.Where(x => x.field_type_name == "Initial").ToList().Count();
+        //                zohosignIn.TotalMandatorySignatureCount = item.fields.Where(x => x.field_type_name == "Signature" && x.is_mandatory == true).ToList().Count();
+        //                zohosignIn.TotalMandatoryInitialsCount = item.fields.Where(x => x.field_type_name == "Initial" && x.is_mandatory == true).ToList().Count();
+        //                zohosignIn.TotalOptinalSignatureCount = zohosignIn.TotalSignatureCount - zohosignIn.TotalMandatorySignatureCount;
+        //                zohosignIn.TotalOptinalInitialsCount = zohosignIn.TotalinitialsCount - zohosignIn.TotalMandatoryInitialsCount;
+
+
+        //                var signData = signPercentage.Where(x => x.recipient_email == item.recipient_email).FirstOrDefault();
+        //                if (signData != null)
+        //                {
+        //                    if (!string.IsNullOrWhiteSpace(signData.signed_time))
+        //                    {
+        //                        zohosignIn.ZohoSignSignature = true;
+        //                    }
+        //                    else
+        //                    {
+        //                        zohosignIn.ZohoSignSignature = false;
+        //                    }
+        //                }
+        //                else
+        //                {
+        //                    zohosignIn.ZohoSignSignature = false;
+        //                }
+        //                zohosignInPopup.Add(zohosignIn);
+
+
+        //            }
+        //        }
+        //        else
+        //        {
+        //            foreach (var item in ZohoAction)
+        //            {
+
+        //                EsignNameStatus zohosignIn = new EsignNameStatus();
+        //                zohosignIn.Email = item.recipient_email;
+        //                zohosignIn.Name = item.recipient_name;
+        //                zohosignIn.UserType = EscrowDetails.Where(x => x.Email == zohosignIn.Email).FirstOrDefault().Usertype;
+        //                zohosignIn.signing_order = item.signing_order;
+        //                zohosignIn.TotalSignatureCount = item.fields.Where(x => x.field_type_name == "Signature").ToList().Count();
+        //                zohosignIn.TotalinitialsCount = item.fields.Where(x => x.field_type_name == "Initial").ToList().Count();
+        //                zohosignIn.TotalMandatorySignatureCount = item.fields.Where(x => x.field_type_name == "Signature" && x.is_mandatory == true).ToList().Count();
+        //                zohosignIn.TotalMandatoryInitialsCount = item.fields.Where(x => x.field_type_name == "Initial" && x.is_mandatory == true).ToList().Count();
+        //                zohosignIn.TotalOptinalSignatureCount = zohosignIn.TotalSignatureCount - zohosignIn.TotalMandatorySignatureCount;
+        //                zohosignIn.TotalOptinalInitialsCount = zohosignIn.TotalinitialsCount - zohosignIn.TotalMandatoryInitialsCount;
+        //                zohosignIn.ZohoSignSignature = false;
+        //                zohosignInPopup.Add(zohosignIn);
+
+        //            }
+        //        }
+        //    }
+
+
+        //    return zohosignInPopup.ToList();
+        //}
         public async Task<List<EsignNameStatus>> GetSignDetails(string type, string filename, string Escrow)
         {
             List<EsignNameStatus> zohosignInPopup = new List<EsignNameStatus>();
 
-            var get = _esignRepository.GetAll().Where(x => x.FileName == filename).ToList();
-            var JoinResult = (from p in get.AsEnumerable()
-                              select new EsignNameStatus()
-                              {
-                                  Status = p.Status,
-                                  Signin_percentage = p.Signin_percentage
+            var find = _esignRepository.GetAll().FirstOrDefault(x => x.FileName == filename);
+            if (find == null || string.IsNullOrEmpty(find.ZohoAction))
+                return zohosignInPopup;
 
-                              }).ToList();
+            var esignCompanyCode = find.EsignCompanyCode.ToString();
+            var EscrowDetails = _escrowDetailRepository.GetAll().Where(x => x.EscrowId == Escrow).ToList();
+            var ZohoAction = JsonConvert.DeserializeObject<List<Action>>(find.ZohoAction);
 
-            var dbEsignRecord = _e_SignRecordsAppService.GetAllE_Sign(2001);
-            var find = dbEsignRecord.Where(x => x.FileName == filename).FirstOrDefault();
-            if (find != null)
+            if (esignCompanyCode == "2001") 
             {
-                var EscrowDetails = _escrowDetailRepository.GetAll().Where(x => x.EscrowId == Escrow).ToList();
-
                 var myDeserializedClass = await getSignStatus(find.RequestId);
-                var action = find.ZohoAction;
-                var ZohoAction = JsonConvert.DeserializeObject<List<Action>>(find.ZohoAction);
-                if (myDeserializedClass.document_form_data != null && myDeserializedClass.document_form_data.actions != null)
+                if (myDeserializedClass?.document_form_data?.actions != null)
                 {
                     var signPercentage = myDeserializedClass.document_form_data.actions;
+
                     foreach (var item in ZohoAction)
                     {
+                        EsignNameStatus zohosignIn = new EsignNameStatus
+                        {
+                            Email = item.recipient_email,
+                            Name = item.recipient_name,
+                            UserType = EscrowDetails.FirstOrDefault(x => x.Email == item.recipient_email)?.Usertype,
+                            signing_order = item.signing_order,
+                            TotalSignatureCount = item.fields.Count(x => x.field_type_name == "Signature"),
+                            TotalinitialsCount = item.fields.Count(x => x.field_type_name == "Initial"),
+                            TotalMandatorySignatureCount = item.fields.Count(x => x.field_type_name == "Signature" && x.is_mandatory),
+                            TotalMandatoryInitialsCount = item.fields.Count(x => x.field_type_name == "Initial" && x.is_mandatory),
+                        };
 
-                        EsignNameStatus zohosignIn = new EsignNameStatus();
-                        zohosignIn.Email = item.recipient_email;
-                        zohosignIn.Name = item.recipient_name;
-                        zohosignIn.UserType = EscrowDetails.Where(x => x.Email == zohosignIn.Email).FirstOrDefault().Usertype;
-                        zohosignIn.signing_order = item.signing_order;
-                        zohosignIn.TotalSignatureCount = item.fields.Where(x => x.field_type_name == "Signature").ToList().Count();
-                        zohosignIn.TotalinitialsCount = item.fields.Where(x => x.field_type_name == "Initial").ToList().Count();
-                        zohosignIn.TotalMandatorySignatureCount = item.fields.Where(x => x.field_type_name == "Signature" && x.is_mandatory == true).ToList().Count();
-                        zohosignIn.TotalMandatoryInitialsCount = item.fields.Where(x => x.field_type_name == "Initial" && x.is_mandatory == true).ToList().Count();
                         zohosignIn.TotalOptinalSignatureCount = zohosignIn.TotalSignatureCount - zohosignIn.TotalMandatorySignatureCount;
                         zohosignIn.TotalOptinalInitialsCount = zohosignIn.TotalinitialsCount - zohosignIn.TotalMandatoryInitialsCount;
 
+                        var signData = signPercentage.FirstOrDefault(x => x.recipient_email == item.recipient_email);
+                        zohosignIn.ZohoSignSignature = !string.IsNullOrWhiteSpace(signData?.signed_time);
 
-                        var signData = signPercentage.Where(x => x.recipient_email == item.recipient_email).FirstOrDefault();
-                        if (signData != null)
-                        {
-                            if (!string.IsNullOrWhiteSpace(signData.signed_time))
-                            {
-                                zohosignIn.ZohoSignSignature = true;
-                            }
-                            else
-                            {
-                                zohosignIn.ZohoSignSignature = false;
-                            }
-                        }
-                        else
-                        {
-                            zohosignIn.ZohoSignSignature = false;
-                        }
                         zohosignInPopup.Add(zohosignIn);
-
-
                     }
                 }
                 else
                 {
                     foreach (var item in ZohoAction)
                     {
+                        EsignNameStatus zohosignIn = new EsignNameStatus
+                        {
+                            Email = item.recipient_email,
+                            Name = item.recipient_name,
+                            UserType = EscrowDetails.FirstOrDefault(x => x.Email == item.recipient_email)?.Usertype,
+                            signing_order = item.signing_order,
+                            TotalSignatureCount = item.fields.Count(x => x.field_type_name == "Signature"),
+                            TotalinitialsCount = item.fields.Count(x => x.field_type_name == "Initial"),
+                            TotalMandatorySignatureCount = item.fields.Count(x => x.field_type_name == "Signature" && x.is_mandatory),
+                            TotalMandatoryInitialsCount = item.fields.Count(x => x.field_type_name == "Initial" && x.is_mandatory),
+                        };
 
-                        EsignNameStatus zohosignIn = new EsignNameStatus();
-                        zohosignIn.Email = item.recipient_email;
-                        zohosignIn.Name = item.recipient_name;
-                        zohosignIn.UserType = EscrowDetails.Where(x => x.Email == zohosignIn.Email).FirstOrDefault().Usertype;
-                        zohosignIn.signing_order = item.signing_order;
-                        zohosignIn.TotalSignatureCount = item.fields.Where(x => x.field_type_name == "Signature").ToList().Count();
-                        zohosignIn.TotalinitialsCount = item.fields.Where(x => x.field_type_name == "Initial").ToList().Count();
-                        zohosignIn.TotalMandatorySignatureCount = item.fields.Where(x => x.field_type_name == "Signature" && x.is_mandatory == true).ToList().Count();
-                        zohosignIn.TotalMandatoryInitialsCount = item.fields.Where(x => x.field_type_name == "Initial" && x.is_mandatory == true).ToList().Count();
                         zohosignIn.TotalOptinalSignatureCount = zohosignIn.TotalSignatureCount - zohosignIn.TotalMandatorySignatureCount;
                         zohosignIn.TotalOptinalInitialsCount = zohosignIn.TotalinitialsCount - zohosignIn.TotalMandatoryInitialsCount;
                         zohosignIn.ZohoSignSignature = false;
-                        zohosignInPopup.Add(zohosignIn);
 
+                        zohosignInPopup.Add(zohosignIn);
                     }
                 }
             }
+            else if (esignCompanyCode == "3001")
+            {
+                var signerList = JsonConvert.DeserializeObject<List<DocuSigninUserMapping>>(find.ZohoAction ?? "[]");
 
+                foreach (var signer in signerList)
+                {
+                    EsignNameStatus signDetail = new EsignNameStatus
+                    {
+                        Email = signer.recipientEmail,
+                        Name = signer.recipientName,
+                        UserType = EscrowDetails.FirstOrDefault(x => x.Email == signer.recipientEmail)?.Usertype,
+                        signing_order = signer.signingOrder,
 
-            return zohosignInPopup.ToList();
+                        TotalSignatureCount = signer.totalSignatureCount,
+                        TotalMandatorySignatureCount = signer.totalMandatorySignatureCount,
+                        TotalinitialsCount = signer.totalInitialsCount,
+                        TotalMandatoryInitialsCount = signer.totalMandatoryInitialsCount,
+
+                        TotalOptinalSignatureCount = signer.totalSignatureCount - signer.totalMandatorySignatureCount,
+                        TotalOptinalInitialsCount = signer.totalInitialsCount - signer.totalMandatoryInitialsCount,
+
+                        ZohoSignSignature = signer.status == "completed"
+                    };
+
+                    zohosignInPopup.Add(signDetail);
+                }
+            }
+
+            return zohosignInPopup;
         }
+     
 
         public async Task<ZohoSignatureStatus> getSignStatus(string requestId)
         {
@@ -1397,7 +1495,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             {
                 string logPath = Path.Combine(_hostingEnvironment.WebRootPath, "Logs", "Logs.txt");
                 Directory.CreateDirectory(Path.GetDirectoryName(logPath)); // ensure Logs folder exists
-               // File.AppendAllText(logPath, $"[{DateTime.Now}] Error in ProcessRequest: {ex}\n");
+                                                                           // File.AppendAllText(logPath, $"[{DateTime.Now}] Error in ProcessRequest: {ex}\n");
 
                 res.message = ex.Message;
                 res.statusCode = 500;
@@ -1667,7 +1765,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                     var lastUpdated = _escrowFileHistoryRepository.GetAll().Where(x => x.SrEscrowFileMasterId == SRFileMasterId.Id && x.ActionType != FileConstantAction.Download_File).OrderByDescending(x => x.CreatedAt).FirstOrDefault();
                                     if (lastUpdated != null)
                                     {
-                                       // res.updateOn = Convert.ToString(lastUpdated.CreatedAt);
+                                        // res.updateOn = Convert.ToString(lastUpdated.CreatedAt);
                                         res.updateOn = lastUpdated.CreatedAt.ToString("MM/dd/yy HH:mm");
                                     }
                                     else
@@ -1679,16 +1777,17 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                     // Get signing details based on email and file name
                                     var data = GetSignDetailsFile(usrdetail.EmailAddress, lst.name.TrimEnd());
                                     var Signin_percentage = string.Empty;
-                                    bool signed = false, unsigned = false, partialSigned = false;
+                                    bool signed = false, unsigned = false, partialSigned = false, sent = false;
 
                                     if (data.Any())
                                     {
                                         signed = data.Any(d => d.Status == "Signed");
+                                        signed = data.Any(d => d.Status == "success");
                                         unsigned = data.Any(d => d.Status == "Unsigned");
                                         partialSigned = data.Any(d => d.Status == "Partially Signed");
-
+                                        sent = data.Any(d => d.Status == "sent");
                                         // Get the signing percentage from the relevant status
-                                        var status = data.FirstOrDefault(d => d.Status == "Signed" || d.Status == "Partially Signed");
+                                        var status = data.FirstOrDefault(d => d.Status == "Signed" || d.Status == "Partially Signed" || d.Status == "sent" || d.Status == "success");
                                         if (status != null)
                                         {
                                             Signin_percentage = status.Signin_percentage;
@@ -1712,6 +1811,20 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                         }
 
 
+                                    }
+                                    else if (sent)
+                                    {
+                                        var percent = string.IsNullOrEmpty(Signin_percentage) ? "0" : Signin_percentage;
+
+                                        if (percent == "0")
+                                        {
+                                            res.signing = "Unsigned";
+                                        }
+                                        else if (percent != "0")
+                                        {
+                                            res.signing = $"Signed - {percent} %";
+                                        }
+                                       
                                     }
                                     else if (unsigned)
                                     {
@@ -1981,7 +2094,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                                         if (fileExtension == ".pdf")
                                         {
-                                            res.fileType = "/Images/pdf-file.png"; 
+                                            res.fileType = "/Images/pdf-file.png";
                                         }
                                         else if (fileExtension == ".docx")
                                         {
@@ -2343,7 +2456,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         /// Parameter message
         ///</Summary>
         public string message { get; set; }
- 
+
 
         ///<Summary>
         /// Parameter Name

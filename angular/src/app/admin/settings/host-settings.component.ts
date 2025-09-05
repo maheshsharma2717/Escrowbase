@@ -11,7 +11,8 @@ import {
     JsonClaimMapDto
 } from '@shared/service-proxies/service-proxies';
 import { KeyValueListManagerComponent } from '@app/shared/common/key-value-list-manager/key-value-list-manager.component';
-
+import { HttpClient } from '@angular/common/http'
+import { AppConsts } from '@shared/AppConsts';
 @Component({
     templateUrl: './host-settings.component.html',
     animations: [appModuleAnimation()]
@@ -19,64 +20,90 @@ import { KeyValueListManagerComponent } from '@app/shared/common/key-value-list-
 export class HostSettingsComponent extends AppComponentBase implements OnInit {
     @ViewChild('wsFederationClaimsMappingManager') wsFederationClaimsMappingManager: KeyValueListManagerComponent;
     @ViewChild('openIdConnectClaimsMappingManager') openIdConnectClaimsMappingManager: KeyValueListManagerComponent;
-
     loading = false;
     hostSettings: HostSettingsEditDto;
     editions: ComboboxItemDto[] = undefined;
     testEmailAddress: string = undefined;
     showTimezoneSelection = abp.clock.provider.supportsMultipleTimezone;
     defaultTimezoneScope: SettingScopes = SettingScopes.Application;
-
     usingDefaultTimeZone = false;
     initialTimeZone: string = undefined;
-
     enabledSocialLoginSettings: string[];
-
     wsFederationClaimMappings: { key: string, value: string }[];
     openIdConnectClaimMappings: { key: string, value: string }[];
+    eSignCompanies: { companyName: string; isActive: boolean }[] = [];
+    selectedCompany: string;
+    apiUrl: string = '';
 
+    ///eSignCompanies: EsignCompanyDto[] = [];
     constructor(
         injector: Injector,
         private _hostSettingService: HostSettingsServiceProxy,
-        private _commonLookupService: CommonLookupServiceProxy
+        private _commonLookupService: CommonLookupServiceProxy,
+        private http: HttpClient
     ) {
         super(injector);
     }
 
-    loadHostSettings(): void {
-        const self = this;
-        self._hostSettingService.getAllSettings()
-            .subscribe(setting => {
-                self.hostSettings = setting;
-                self.initialTimeZone = setting.general.timezone;
-                self.usingDefaultTimeZone = setting.general.timezoneForComparison === self.setting.get('Abp.Timing.TimeZone');
+    // loadHostSettings(): void {
+    //     const self = this;
+    //     self._hostSettingService.getAllSettings()
+    //         .subscribe(setting => {
+    //             self.hostSettings = setting;
+    //             self.initialTimeZone = setting.general.timezone;
+    //             self.usingDefaultTimeZone = setting.general.timezoneForComparison === self.setting.get('Abp.Timing.TimeZone');
 
-                this.wsFederationClaimMappings = this.hostSettings.externalLoginProviderSettings.openIdConnectClaimsMapping
-                    .map(item => {
-                        return {
-                            key: item.key,
-                            value: item.claim
-                        };
-                    });
-                this.openIdConnectClaimMappings = this.hostSettings.externalLoginProviderSettings.openIdConnectClaimsMapping
-                    .map(item => {
-                        return {
-                            key: item.key,
-                            value: item.claim
-                        };
-                    });
-            });
+    //             this.wsFederationClaimMappings = this.hostSettings.externalLoginProviderSettings.openIdConnectClaimsMapping
+    //                 .map(item => {
+    //                     return {
+    //                         key: item.key,
+    //                         value: item.claim
+    //                     };
+    //                 });
+    //             this.openIdConnectClaimMappings = this.hostSettings.externalLoginProviderSettings.openIdConnectClaimsMapping
+    //                 .map(item => {
+    //                     return {
+    //                         key: item.key,
+    //                         value: item.claim
+    //                     };
+    //                 });
+    //         });
+    // }
+
+    loadHostSettings(): void {
+        this._hostSettingService.getAllSettings().subscribe(setting => {
+            this.hostSettings = setting;
+            this.initialTimeZone = setting.general.timezone;
+            this.usingDefaultTimeZone =
+                setting.general.timezoneForComparison === this.setting.get('Abp.Timing.TimeZone');
+
+            // Handle openId and wsFederation mappings
+            this.wsFederationClaimMappings = this.hostSettings.externalLoginProviderSettings.wsFederationClaimsMapping?.map(item => ({
+                key: item.key,
+                value: item.claim
+            })) || [];
+
+            this.openIdConnectClaimMappings = this.hostSettings.externalLoginProviderSettings.openIdConnectClaimsMapping?.map(item => ({
+                key: item.key,
+                value: item.claim
+            })) || [];
+
+            (this.hostSettings as any).eSign = (this.hostSettings as any).eSign ?? {
+                preferredVendor: 'Zoho',
+                zoho: { clientId: '' },
+                docusign: { clientId: '' },
+                sutisign: { apiKey: '' }
+            };
+        });
     }
 
     loadEditions(): void {
         const self = this;
         self._commonLookupService.getEditionsForCombobox(false).subscribe((result) => {
             self.editions = result.items;
-
             const notAssignedEdition = new ComboboxItemDto();
             notAssignedEdition.value = null;
             notAssignedEdition.displayText = self.l('NotAssigned');
-
             self.editions.unshift(notAssignedEdition);
         });
     }
@@ -91,9 +118,23 @@ export class HostSettingsComponent extends AppComponentBase implements OnInit {
     }
 
     ngOnInit(): void {
-        const self = this;
-        self.init();
+        debugger;
+        this.init();
+
+        const url = AppConsts.remoteServiceBaseUrl;
+
+        this.http.get<any>(url + '/Home/GetAllCompaniesAsync')
+            .subscribe(response => {
+                if (response && response.result) {
+                    this.eSignCompanies = response.result;
+                    const activeCompany = this.eSignCompanies.find(c => c.isActive);
+                    if (activeCompany) {
+                        this.selectedCompany = activeCompany.companyName;
+                    }
+                }
+            });
     }
+
 
     sendTestEmail(): void {
         const self = this;
@@ -127,9 +168,7 @@ export class HostSettingsComponent extends AppComponentBase implements OnInit {
     }
 
     saveAll(): void {
-
         const self = this;
-
         self.mapClaims();
         if (!self.hostSettings.tenantManagement.defaultEditionId || self.hostSettings.tenantManagement.defaultEditionId.toString() === 'null') {
             self.hostSettings.tenantManagement.defaultEditionId = null;
@@ -153,4 +192,39 @@ export class HostSettingsComponent extends AppComponentBase implements OnInit {
                 self.enabledSocialLoginSettings = setting.enabledSocialLoginSettings;
             });
     }
+
+    // loadCompanies(): void {
+    //     debugger;
+    //     this._http.get<any>('https://localhost:44301/api/services/app/Home/GetAllCompaniesAsync')
+    //         .subscribe(response => {
+    //             if (response && response.result) {
+    //                 this.eSignCompanies = response.result;
+    //             }
+    //         });
+    // }
+
+
+    saveSelectedCompany() {
+        if (!this.selectedCompany) {
+            console.warn("No company selected.");
+            return;
+        }
+        let url = AppConsts.remoteServiceBaseUrl;
+
+        this.http.post<any>(
+            url + '/Home/SetActiveCompany',
+            JSON.stringify(this.selectedCompany),
+            {
+                headers: { 'Content-Type': 'application/json' }
+            }
+        ).subscribe({
+            next: (res) => {
+                 abp.notify.success("Company updated successfully", 'Success');
+            },
+            error: (err) => {
+                 abp.notify.error('Failed to update company:', err);
+            }
+        });
+    }
+
 }
