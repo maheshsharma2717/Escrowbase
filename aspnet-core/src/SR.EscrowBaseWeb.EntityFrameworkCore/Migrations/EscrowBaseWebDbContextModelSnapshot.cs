@@ -1820,6 +1820,12 @@ namespace SR.EscrowBaseWeb.Migrations
                     b.Property<string>("FileShortName")
                         .HasColumnType("longtext");
 
+                    b.Property<bool>("OtherAction")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("OtherActionNote")
+                        .HasColumnType("longtext");
+
                     b.HasKey("Id");
 
                     b.ToTable("SREscrowFileMasters");
@@ -1901,6 +1907,35 @@ namespace SR.EscrowBaseWeb.Migrations
                     b.ToTable("EscrowFileTagses");
                 });
 
+            modelBuilder.Entity("SR.EscrowBaseWeb.EscrowHistory.EscrowAccessHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("EscrowId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EscrowId");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EscrowAccessHistories");
+                });
+
             modelBuilder.Entity("SR.EscrowBaseWeb.EscrowUserNote.EscrowUserNotes", b =>
                 {
                     b.Property<int>("Id")
@@ -1929,6 +1964,26 @@ namespace SR.EscrowBaseWeb.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("EscrowUserNoteses");
+                });
+
+            modelBuilder.Entity("SR.EscrowBaseWeb.EsignCompany.ESignCompany", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("CompanyName")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("SystemCode")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("E_SignCompany");
                 });
 
             modelBuilder.Entity("SR.EscrowBaseWeb.EsignCompany.EsignCompanyMapping", b =>
@@ -2021,6 +2076,48 @@ namespace SR.EscrowBaseWeb.Migrations
                     b.HasIndex("TenantId", "UserId");
 
                     b.ToTable("AppFriendships");
+                });
+
+            modelBuilder.Entity("SR.EscrowBaseWeb.GetCurrentEscrow.CurrentEscrow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("EscrowNo")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("SubCompanyName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int?>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("CurrentEscrows");
                 });
 
             modelBuilder.Entity("SR.EscrowBaseWeb.Invitee.SRInvitee", b =>
@@ -2279,6 +2376,12 @@ namespace SR.EscrowBaseWeb.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    b.Property<string>("AccessToken")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("AccessTokenTime")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("Address1")
                         .HasColumnType("longtext");
 
@@ -2318,6 +2421,24 @@ namespace SR.EscrowBaseWeb.Migrations
                     b.Property<string>("DisclosureVerbage")
                         .HasColumnType("longtext");
 
+                    b.Property<string>("ESignApiAccountId")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ESignClientId")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ESignClientSecret")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ESignFolderId")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ESignProviderCode")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ESignUserId")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Email")
                         .HasColumnType("longtext");
 
@@ -2333,6 +2454,12 @@ namespace SR.EscrowBaseWeb.Migrations
                     b.Property<string>("EnterpriseName")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsAdminAssigned")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("LicenesNo")
                         .HasColumnType("longtext");
@@ -2362,6 +2489,9 @@ namespace SR.EscrowBaseWeb.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("PrimaryContactCellNo")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("RefreshToken")
                         .HasColumnType("longtext");
 
                     b.Property<string>("SecondaryEnterpriseEmail")
@@ -2466,6 +2596,12 @@ namespace SR.EscrowBaseWeb.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("OtherAction")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("OtherActionNote")
+                        .HasColumnType("longtext");
 
                     b.Property<long?>("SrEscrowFileMasterId")
                         .HasColumnType("bigint");
@@ -3040,6 +3176,21 @@ namespace SR.EscrowBaseWeb.Migrations
                     b.Navigation("CreatedByFk");
 
                     b.Navigation("SREscrowFileMasterFk");
+                });
+
+            modelBuilder.Entity("SR.EscrowBaseWeb.EscrowHistory.EscrowAccessHistory", b =>
+                {
+                    b.HasOne("SR.EscrowBaseWeb.SREscrowClient.EscrowClient", "EscrowFk")
+                        .WithMany()
+                        .HasForeignKey("EscrowId");
+
+                    b.HasOne("SR.EscrowBaseWeb.Authorization.Users.User", "UserFk")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("EscrowFk");
+
+                    b.Navigation("UserFk");
                 });
 
             modelBuilder.Entity("SR.EscrowBaseWeb.EscrowUserNote.EscrowUserNotes", b =>

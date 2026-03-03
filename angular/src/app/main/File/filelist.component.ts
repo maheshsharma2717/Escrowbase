@@ -1,5 +1,4 @@
 import { Component, Injector, Renderer2, Injectable, ViewEncapsulation, ViewChild, Input, TemplateRef, ElementRef, HostListener, OnDestroy, Pipe, PipeTransform, Output, EventEmitter } from '@angular/core';
-
 import { AppComponentBase } from '@shared/common/app-component-base';
 import { DashboardCustomizationConst } from '@app/shared/common/customizable-dashboard/DashboardCustomizationConsts';
 import FileSystemProvider from 'devextreme/file_management/remote_provider';
@@ -64,11 +63,9 @@ export class FileViewComponent extends AppComponentBase {
   private newAttribute: any = {};
   viewer = 'google';
   selectedType = 'pptx'; //'docx';
-
   // doc = 'https://file-examples.com/wp-content/uploads/2017/02/file-sample_100kB.docx';
   // doc = 'https://files.fm/down.php?i=axwasezb&n=SSaD.docx';
   doc = 'https://files.fm/down.php?i=sdymh2y6';
-
   // https://github.com/guigrpa/docx-templates#readme
   filterLabel: string = '';  // or you can set a default value
   searchText: string = '';   // for search text input
@@ -186,7 +183,6 @@ export class FileViewComponent extends AppComponentBase {
   fileInputVariable: ElementRef;
   isUploadCalled: boolean = false;
   selectedFileForDownload = "";
-
   readPermission: boolean = false;
   editPermission: boolean = false;
   esignPermission: boolean = false;
@@ -243,6 +239,26 @@ export class FileViewComponent extends AppComponentBase {
   mainFileSelected: any;
   otherFileSelected: any;
   isSigningReady = false;
+  isMainFullScreen = false;
+  isOtherFullScreen = false;
+  userName: string = '';
+  userType: string = '';
+
+  onMainFullScreen(isFullScreen: boolean) {
+    this.isMainFullScreen = isFullScreen;
+  }
+
+  DeleteAll = () => {
+    this.Delete({});
+  }
+
+  DownloadAll = () => {
+    this.Download({});
+  }
+
+  onOtherFullScreen(isFullScreen: boolean) {
+    this.isOtherFullScreen = isFullScreen;
+  }
 
   public constructor(
     private http: HttpClient,
@@ -276,6 +292,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   getEscrowUserList() {
+
     let url = AppConsts.remoteServiceBaseUrl;
     let folderPath = url + '/Home/';
     var queryParams = this.person;
@@ -381,7 +398,6 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   ngOnInit(): void {
-
     console.log(this.renderer);
     var queryParams = this.person;
     this.inputPerson = this.person;
@@ -477,8 +493,23 @@ export class FileViewComponent extends AppComponentBase {
     this.myurl = url;
     console.log("File List:   folderPath" + this.folderPath)
     console.log("File List:   myurl" + this.myurl)
+
+    // Set username and userType for display in header
+    this.userName = this.appSession.user.name + " " + this.appSession.user.surname;
+    this.getUserType();
   }
   filess: any = [];
+
+  getUserType() {
+    let url = AppConsts.remoteServiceBaseUrl;
+    let folderPath = url + '/Home/';
+    this.http.get(folderPath + "GetUserCompanyDetails?username=" + this.appSession.user.emailAddress)
+      .subscribe((res: any) => {
+        if (res.result.length > 0) {
+          this.userType = res.result[0].type;
+        }
+      });
+  }
 
   check(): void {
     setTimeout(() => {
@@ -519,6 +550,7 @@ export class FileViewComponent extends AppComponentBase {
         }
       });
   }
+
   handleShowingEvent(e) {
   }
   isRename: boolean = false;
@@ -575,8 +607,6 @@ export class FileViewComponent extends AppComponentBase {
     }
 
     let status = e.status;
-
-
     if (status == 'Nobody signed yet' || status == null || status == 'Input Incomplete') {
       this.isRename = true;
     }
@@ -596,6 +626,10 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   handelSaveMainFile(e) {
+    if (e.templateRef == "deleteAll") {
+      this.DeleteAllFiles(e.selectedFiles, e.folderPath);
+      return;
+    }
 
     this.eSign = false;
     this.docuSign = false;
@@ -642,6 +676,9 @@ export class FileViewComponent extends AppComponentBase {
     else if (e.templateRef == "delete") {  // You can define this condition as needed
       // Call the delete function here
       this.Delete2(e);  // Pass 'e' to the Delete function if needed
+    }
+    else if (e.templateRef == "deleteAll") {
+      this.DeleteAllFiles(e.selectedFiles, e.folderPath);
     }
   }
 
@@ -691,8 +728,6 @@ export class FileViewComponent extends AppComponentBase {
   //     );
   //   });
   // }
-
-
 
   onItemClick(e) {
 
@@ -834,10 +869,8 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   HideOtherAreaFileAction() {
-
     this.check();
     this.modalReff.hide();
-
     if (this.editPermissionOtherArea) {
       if (confirm("Do you want to Exit Viewer Without Saving?")) {
         this.modalReff.hide();
@@ -851,7 +884,11 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   handleSave(event) {
-    debugger;
+    if (event.templateRef === 'deleteAllOther') {
+      this.DeleteAllFilesOther(event.selectedFiles, event.folderPath);
+      return;
+    }
+
     let fileName = event.selectedFile.name
     this.otherFileSelected = event.selectedFile;
     if (fileName.includes('.pdf')) {
@@ -870,20 +907,15 @@ export class FileViewComponent extends AppComponentBase {
       this.editPermissionDocOtherArea = false;
     }
     this.onItemClick1(event);
-
   }
 
   onItemClick1(e) {
     try {
-
       if (e.templateRef == 'fownload') {
         this.Download1(e);
       }
       else if (e.templateRef == 'view1') {
         this.DownloadFileForDocViwerOther(e);
-        // this.ViewEditFromOther(e.selectedFile);
-        // this.DownloadFileForDocViwer(e.selectedFile);
-        // this.View1(e.itemData.options.view);
       }
       else if (e.templateRef == 'renameFile') {
         this.openrenameModal1(e.selectedFile, this.renameTemplateRef);
@@ -893,32 +925,19 @@ export class FileViewComponent extends AppComponentBase {
         this.openMoveModal(e.selectedFile, this.moveTemplateRef);
       }
       else if (e.templateRef == 'FullName1') {
-        // this.ViewFullName(e);
         this.openFullName1(e.selectedFile, this.fullNameTemplateRef);
       }
-
       if (e.templateRef == 'deleteFile') {
         this.Delete1(e);
       }
-
       if (e.templateRef == 'Rename1') {
         this.openrenameModal1(e.itemData.options.Rename1, null);
       }
 
-      // Additional conditions (currently commented out):
-      // if (e.itemData.options.Move) {
-      //   this.openMoveModal(e.selectedFile, e.itemData.options.Move);
-      // }
-      // if (e.itemData.options.Tags) {
-      //   this.escrowUsertagsComponent.show();
-      // }
     } catch (error) {
       console.error('Error in onItemClick1:', error);
-
     }
   }
-
-
 
   selectChangeHandler(event) {
     var queryParams = this.person;
@@ -949,48 +968,81 @@ export class FileViewComponent extends AppComponentBase {
     return newString
   }
 
+  private refreshFileListsAfterMutation(skipOtherArea: boolean = false): void {
+    const person = this.inputPerson || this.person;
+    const refresh = () => {
+      this.fileMainComponent?.getAllFiles();
+      if (!skipOtherArea) {
+        this.fileOtherComponent?.getAllFiles(person);
+      }
+    };
+
+    // Only refresh main area immediately, Other area is handled separately for uploads
+    this.fileMainComponent?.getAllFiles();
+    
+    // Retry refresh to handle eventual consistency from file APIs.
+    if (!skipOtherArea) {
+      [400, 1200, 2500, 5000, 8000].forEach((delay) => setTimeout(() => refresh(), delay));
+    } else {
+      // Still refresh main area with delays
+      [400, 1200, 2500, 5000, 8000].forEach((delay) => setTimeout(() => {
+        this.fileMainComponent?.getAllFiles();
+      }, delay));
+    }
+  }
+
   uploadFile(filess) {
+    // Set file properties
+    this.file = filess;
+    this.isFile = true;
 
-    for (let index = 0; index < filess.length; index++) {
-      var element = filess[index];
-      this.filess.push(element.name);
-      this.file = filess
-      this.isFile = true;
+    if (filess && filess.length > 0) {
       const sanitizedFileName = this.sanitizeFileName(this.file[0].name);
-      this.fileName = sanitizedFileName
-      if (this.currentpath1 == "") {
-        alert("Other file upload restricted due to zero file in main fileview");
-      } else {
-        const oldPath = this.currentpath1;
-        var uploadPath = this.currentpath1;
+      this.fileName = sanitizedFileName;
 
-        localStorage.setItem('escrowNewID', this.escrowname);
+      // Add file names to the filess array for tracking
+      for (let index = 0; index < filess.length; index++) {
+        var element = filess[index];
+        this.filess.push(element.name);
+      }
+    }
 
-        let uploadpath1 = uploadPath.replace("/", "\\");
+    if (this.currentpath1 == "") {
+      alert("Other file upload restricted due to zero file in main fileview");
+    } else {
+      const oldPath = this.currentpath1;
+      var uploadPath = this.currentpath1;
 
-        for (var i = 0; i < this.file.length; i++) {
+      localStorage.setItem('escrowNewID', this.escrowname);
 
-          var fileToUpload = <File>this.file[i];
-          const sanitizedFileName = this.sanitizeFileName(fileToUpload.name);
-          var fileName = sanitizedFileName
+      let uploadpath1 = uploadPath.replace(/\//g, "\\");
 
-          // var fileName = fileToUpload.name;
-          const formData = new FormData();
-          var startIndex = this.fileName.indexOf("~");
-          if (startIndex > 0) {
-            const fileExtension = this.getFileExtension(this.fileName);
-            //  fileName =  fileToUpload.name.slice(0,startIndex)+'.'+ fileExtension;
-          }
-          console.log("-------------" + this.folderPath + "ProcessRequest?path=" + uploadpath1 + "&useriD=" + abp.session.userId)
+      // Upload each file
+      for (let i = 0; i < this.file.length; i++) {
 
-          formData.append('file', fileToUpload, fileName);
-          this.http.post(this.folderPath + "ProcessRequest?path=" + uploadpath1 + "&useriD=" + abp.session.userId, formData, { reportProgress: true, observe: 'events' })
-            .subscribe((res) => {
-              debugger;
-              let fileRes: any = res;
+        const fileToUpload = <File>this.file[i];
+        const sanitizedFileName = this.sanitizeFileName(fileToUpload.name);
+        let fileName = sanitizedFileName
+
+        // var fileName = fileToUpload.name;
+        const formData = new FormData();
+        var startIndex = this.fileName.indexOf("~");
+        if (startIndex > 0) {
+          const fileExtension = this.getFileExtension(this.fileName);
+          //  fileName =  fileToUpload.name.slice(0,startIndex)+'.'+ fileExtension;
+        }
+        console.log("-------------" + this.folderPath + "ProcessRequest?path=" + uploadpath1 + "&useriD=" + abp.session.userId)
+
+        formData.append('file', fileToUpload, fileName);
+        this.http.post(this.folderPath + "ProcessRequest?path=" + uploadpath1 + "&useriD=" + abp.session.userId, formData, { reportProgress: true, observe: 'events' })
+          .subscribe((event: any) => {
+
+            if (event.type === HttpEventType.Response) {
+              let fileRes: any = event;
               try {
-                let newResult = fileRes.body.result
-                if (newResult.statusCode == 500) {
+                // Support both response formats: body.result.statusCode (legacy) and body.statusCode (ProcessRequest API)
+                const statusCode = fileRes.body?.result?.statusCode ?? fileRes.body?.statusCode;
+                if (statusCode == 500) {
                   this.spinnerUpl = false;
                   this.file = null
                   this.isFile = false;
@@ -998,7 +1050,7 @@ export class FileViewComponent extends AppComponentBase {
                   alert("This name file is already exists please change file name");
                   abp.notify.error('File already exists', 'Error');
                 }
-                if (newResult.statusCode == 200) {
+                if (statusCode == 200) {
                   this.spinnerUpl = false;
                   this.file = null
                   this.isFile = false;
@@ -1006,8 +1058,52 @@ export class FileViewComponent extends AppComponentBase {
 
                   abp.notify.success('File Uploaded Successfully', 'Success');
                   this.currentpath1 = oldPath;
+
+                  // Check if uploading to Other area
+                  const isOtherAreaUpload = uploadPath && (uploadPath.includes('/Other') || uploadPath.includes('\\Other'));
+                  
+                  if (isOtherAreaUpload && this.fileOtherComponent) {
+                    const person = this.inputPerson || this.person;
+                    
+                    // Add file optimistically for immediate visibility
+                    if (Array.isArray(this.fileOtherComponent.files)) {
+                      const exists = this.fileOtherComponent.files.some((f: any) => f?.name === fileName);
+                      if (!exists) {
+                        const optimisticFile = {
+                          name: fileName,
+                          key: fileName,
+                          path: this.completeEnterprisePathOther || this.currentpath1,
+                          escrowFileTags: []
+                        };
+                        this.fileOtherComponent.files = [optimisticFile, ...this.fileOtherComponent.files];
+                        
+                        // Force change detection
+                        if (this.fileOtherComponent.cdr) {
+                          this.fileOtherComponent.cdr.detectChanges();
+                        }
+                      }
+                    }
+                    
+                    // Refresh from server immediately (like move operation) and with delays for eventual consistency
+                    this.fileOtherComponent.getAllFiles(person);
+                    
+                    setTimeout(() => {
+                      if (this.fileOtherComponent) {
+                        this.fileOtherComponent.getAllFiles(person);
+                      }
+                    }, 800);
+                    
+                    setTimeout(() => {
+                      if (this.fileOtherComponent) {
+                        this.fileOtherComponent.getAllFiles(person);
+                      }
+                    }, 2000);
+                  }
+
+                  // Skip Other area refresh since we're handling it separately with immediate + delayed calls
+                  this.refreshFileListsAfterMutation(isOtherAreaUpload);
+
                   let checkFirstFile = this.fileManager1.instance.getCurrentDirectory();
-                  this.fileOtherComponent.getAllFiles();
                   console.log("checkFirstFile.path" + checkFirstFile.path)
                   if (checkFirstFile.path == "") {
 
@@ -1034,54 +1130,26 @@ export class FileViewComponent extends AppComponentBase {
                       // handle error
                     });
                   console.log("test2");
-
                 }
-
               }
               catch (error) { }
-              this.fileInputVariable.nativeElement.value = "";
+            }
+            this.fileInputVariable.nativeElement.value = "";
+          });
 
-            });
-          // this.http.post(this.folderPath + "ProcessRequest?path=" + uploadpath1 + "&useriD=" + abp.session.userId, formData, {
-          //   reportProgress: true,
-          //   observe: 'events'
-          // }).subscribe({
-          //   next: (event: HttpEvent<any>) => {
-          //     switch (event.type) {
-          //       case HttpEventType.Sent:
-          //         console.log('Upload request sent!');
-          //         break;
-
-          //       case HttpEventType.UploadProgress:
-          //         if (event.total) {
-          //           const percentDone = Math.round(100 * event.loaded / event.total);
-          //           console.log(`File is ${percentDone}% uploaded.`);
-          //         }
-          //         break;
-
-          //       case HttpEventType.Response:
-          //         debugger;
-          //         console.log('Upload complete. Response:', event.body);
-          //         break;
-          //     }
-          //   },
-          //   error: (err) => {
-          //     console.error('Upload error:', err);
-          //   }
-          // });
-          this.deleteAttachment(0);
-        }
-        this.sourcepath = "";
-        this.file = "";
+        this.deleteAttachment(0);
       }
+      this.sourcepath = "";
+      this.file = "";
     }
-
   }
+
   deleteAttachment(index) {
     this.filess.splice(index, 1)
   }
+
   select(evt) {
-    debugger;
+
     var files = evt.target.files;
     var file = files[0];
     if (files && file) {
@@ -1094,7 +1162,8 @@ export class FileViewComponent extends AppComponentBase {
 
   }
   sanitizeFileName(fileName) {
-    const sanitizedFileName = fileName.replace(/[&?=!@$%^+]/g, '_');
+    // Remove special characters including ~ which is used as a delimiter in the system
+    const sanitizedFileName = fileName.replace(/[&?=!@$%^+~]/g, '_');
     const now = new Date();
     const dateTimeStamp = now.toISOString().replace(/[:.]/g, '-');
     const fileExtension = sanitizedFileName.substring(sanitizedFileName.lastIndexOf('.'));
@@ -1126,7 +1195,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   wvDocumentLoadedHandler(): void {
-    debugger;
+
     if (!this.wvInstance) {
       console.error('wvInstance is not initialized');
       return;
@@ -1186,7 +1255,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   saveRenameFileName() {
-    debugger;
+
     let dir = this.fileManager.instance.getSelectedItems();
     let Id = dir[0].dataItem.srAssignedFileId;
     let fileFullName = this.fileFullName + "~" + this.fileAccessName;
@@ -1205,7 +1274,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   openFullName1(selectedFile: any, FullName1: TemplateRef<any>) {
-    debugger;
+
     this.modalRef = this.modalService.show(FullName1, {
       class: 'gray modal-lg',
     });
@@ -1256,6 +1325,12 @@ export class FileViewComponent extends AppComponentBase {
 
     if (dir != null) {
       let item = dir; // Using the first (and only) file from dir
+
+      if (item['key'].includes(".xlsx") || item['key'].includes(".xls")) {
+        this.DownloadFileForDocViwer({ selectedFile: item });
+        return;
+      }
+
       this.fileNamestrng = item['key'].replace(/#/g, "%23"); // Ensure file name is encoded
       this.sourcepathwithname = this.completeEnterprisePathMain + "/" + this.fileNamestrng;
 
@@ -1300,7 +1375,10 @@ export class FileViewComponent extends AppComponentBase {
       }
       for (let i = 0; i < dir.length; i++) {
         let item = dir[i];
-        if (item['key'].includes(".pdf")) {
+        if (item['key'].includes(".xlsx") || item['key'].includes(".xls")) {
+          this.DownloadFileForDocViwerOther({ selectedFile: item });
+        }
+        else if (item['key'].includes(".pdf")) {
           this.docx = false;
           this.msgShow = true;
           this.sourcepathwithname = item['parentPath'] + "/" + item['key'];
@@ -1371,7 +1449,9 @@ export class FileViewComponent extends AppComponentBase {
       }
 
       // Check file extension and handle accordingly
-      if (selectedfile['key'].includes(".pdf")) {
+      if (selectedfile['key'].includes(".xlsx") || selectedfile['key'].includes(".xls")) {
+        this.DownloadFileForDocViwerOther({ selectedFile: selectedfile });
+      } else if (selectedfile['key'].includes(".pdf")) {
         this.docx = false;
         this.msgShow = true;
         this.sourcepathwithname = this.completeEnterprisePathOther + selectedfile['key'];
@@ -1609,7 +1689,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   DownloadFileForDocViwerOther(event) {
-    debugger;
+
     let compare;
     let
       strcheck;
@@ -1703,7 +1783,6 @@ export class FileViewComponent extends AppComponentBase {
         this.ErrorMessage = "Oops you didn't selected any file";
       }
     }
-
   }
 
   private binaryToBase64(blob: Blob): Promise<string> {
@@ -1725,7 +1804,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   Download1(event) {
-    debugger;
+
     this.items = this.fileManager1.instance.getSelectedItems();
     let compare;
     let
@@ -1835,6 +1914,7 @@ export class FileViewComponent extends AppComponentBase {
     selectedPermission.D = selectedPermission.selectAll;
     selectedPermission.S = selectedPermission.selectAll;
   }
+
   selectAllup(index: number): void {
     const selectedPermission = this.userpermissionsall[index];
     selectedPermission.selectAll = !selectedPermission.selectAll;
@@ -1846,7 +1926,6 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   ddldata(test: any, index, val: any) {
-
     if (this.userpermissionsall.length > 1) {
       var checkSelectedUserType = this.userpermissionsall.find(x => x.first && x.first.includes(test));
       if (checkSelectedUserType != null) {
@@ -1857,6 +1936,7 @@ export class FileViewComponent extends AppComponentBase {
         return;
       }
     }
+
     let data = this.userpermissionsall;
     data[index].first = test;
     data[index].isChanged = true;
@@ -1907,19 +1987,16 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   Renamee() {
-    debugger;
+
     this.datachanges = [];
     let data = this.userpermissionsall;
-
-
     for (let x = 0; x < this.userpermissionsall.length; x++) {
       if (this.userpermissionsall[x].first.includes("-")) {
-
         this.typedata = this.userpermissionsall[x].first.split("-")[0];
-      } else {
+      }
+      else {
         this.typedata = this.userpermissionsall[x].first;
       }
-
       if (this.userpermissionsall[x].R == true) {
         this.R = "R";
       }
@@ -1973,10 +2050,7 @@ export class FileViewComponent extends AppComponentBase {
     let datas = this.bdata.replaceAll('"', '').replaceAll(",", "").replaceAll("[", "").replaceAll("]", "");
     datas = datas;
     let sdata = this.change.substring(this.change.lastIndexOf("}") + 1, this.change.length);
-    //sdata;
     let fulldata = datas + sdata;
-
-
     console.log(this.selectedGroup);
     this.btnstate = true;
     this.items = this.fileManager.instance.getSelectedItems();
@@ -1998,12 +2072,6 @@ export class FileViewComponent extends AppComponentBase {
     header2.append('Content-Type', 'application/json');
     //this.http.get<any>(this.path1 + "/Home/Rename", { headers: header1 });
     this.http.get<any>(this.path1 + "/Home/Rename?EscrowId=" + escrowNewId, { headers: header2 }).subscribe((response: any) => {
-
-
-      // this.data = response;
-      // this.bs = response.result.message;
-      // return;
-
       this.HideRename();
       this.fileManager1.instance.refresh().done((result) => {
         this.check();
@@ -2057,12 +2125,8 @@ export class FileViewComponent extends AppComponentBase {
     if (this.bs != "File Already Signed") {
       const header = new HttpHeaders({ 'parentpath': this.parentpath, 'shortfilename': this.shortfilename });
       // headers.append('Content-Type', 'application/json');
-
       // this.http.get<any>(this.path1 + "/Home/SignRename", { headers: header }).subscribe((response: any) => {
-
-
       // });
-
       //this.datachanges=[];
     }
     else if (this.bs == "File Already Signed") {
@@ -2073,7 +2137,7 @@ export class FileViewComponent extends AppComponentBase {
 
   Renamee1() {
     try {
-      debugger;
+
       this.btnstate = true;
       //this.items = this.fileManager1.instance.getSelectedItems();
       let formattedPath = this.completeEnterprisePathOther.replace(/\//g, "\\");
@@ -2129,7 +2193,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   Moved() {
-    debugger;
+
     if (this.scrollContainer?.nativeElement) {
       this.scrollContainer.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -2204,6 +2268,7 @@ export class FileViewComponent extends AppComponentBase {
 
     let filenameold = this.fullparentold;
     let filenamenew = this.fullparentnew;
+
     console.log(filenameold);
     console.log(filenamenew);
     var userId = abp.session.userId.toString();
@@ -2217,7 +2282,7 @@ export class FileViewComponent extends AppComponentBase {
     headers.append('Content-Type', 'application/json');
 
     this.http.get<any>(this.path1 + "/Home/Move", { headers: headers }).subscribe((response: any) => {
-      debugger;
+
       if (response != null && response.result.statusCode == 409) {
         abp.notify.success(response.result.message, 'Success');
         this.HideMove();
@@ -2263,7 +2328,7 @@ export class FileViewComponent extends AppComponentBase {
       this.http.get<any>(this.path1 + "/Home/SignRename?EscrowId=" + escrowNewId, { headers })
         .subscribe({
           next: (response: any) => {
-            debugger;
+
             if (response.result?.success) {
               abp.notify.success(response.result.message || "File is ready to sign", 'Success');
               if (this.scrollContainer?.nativeElement) {
@@ -2286,7 +2351,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   Delete(event) {
-    debugger;
+
     if (document.getElementById('viewer')) {
       document.getElementById('viewer').remove();
     }
@@ -2362,7 +2427,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   Delete2(event) {
-    debugger;
+
     if (document.getElementById('viewer')) {
       document.getElementById('viewer').remove();
     }
@@ -2428,8 +2493,117 @@ export class FileViewComponent extends AppComponentBase {
     });
   }
 
+  DeleteAllFilesOther(files: any[], folderPath: string) {
+    if (!files || files.length === 0) return;
+
+    Swal.fire({
+      title: 'Are you sure?',
+      text: `Do you really want to delete ${files.length} files?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete them!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        let completed = 0;
+        let errors = 0;
+
+        const checkCompletion = () => {
+          completed++;
+          if (completed === files.length) {
+            this.fileOtherComponent.getAllFiles();
+            this.fileMainComponent.getAllFiles();
+            // this.fileManager1.instance.refresh(); // Optional
+            if (errors === 0) {
+              Swal.fire('Deleted!', 'Files deleted successfully', 'success');
+            } else {
+              Swal.fire('Warning', 'Some files could not be deleted', 'warning');
+            }
+          }
+        };
+
+        files.forEach(file => {
+          let path = folderPath;
+          let key = file.key || file.srAssignedFileId;
+          let name = file.name;
+
+          let strng = path.replace(/#/g, "%23");
+          let strng1 = key.replace(/#/g, "%23");
+          let path1 = strng + "/" + name;
+          const token = 'my JWT';
+          const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
+
+          this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
+            headers,
+            responseType: 'blob' as 'json'
+          }).subscribe((response: any) => {
+            checkCompletion();
+          }, err => {
+            errors++;
+            checkCompletion();
+          });
+        });
+      }
+    });
+  }
+
+  DeleteAllFiles(files: any[], folderPath: string) {
+    console.log('DeleteAllFiles called', files.length, folderPath);
+    if (!files || files.length === 0) return;
+
+    Swal.fire({
+      title: 'Are you sure?',
+      text: `Do you really want to delete ${files.length} files?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete them!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        let completed = 0;
+        let errors = 0;
+
+        const checkCompletion = () => {
+          completed++;
+          if (completed === files.length) {
+            this.fileMainComponent.getAllFiles();
+            this.fileOtherComponent.getAllFiles();
+            this.fileManager.instance.refresh();
+            if (errors === 0) {
+              Swal.fire('Deleted!', 'Files deleted successfully', 'success');
+            } else {
+              Swal.fire('Warning', 'Some files could not be deleted', 'warning');
+            }
+          }
+        };
+
+        files.forEach(file => {
+          let path = folderPath;
+          let key = file.key || file.srAssignedFileId;
+          let name = file.name;
+
+          let strng = path.replace(/#/g, "%23");
+          let strng1 = key.replace(/#/g, "%23");
+          let path1 = strng + "/" + name;
+          const token = 'my JWT';
+          const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
+
+          this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
+            headers,
+            responseType: 'blob' as 'json'
+          }).subscribe((response: any) => {
+            checkCompletion();
+          }, err => {
+            errors++;
+            checkCompletion();
+          });
+        });
+      }
+    });
+  }
+
   Delete1(event) {
-    debugger;
+
     if (document.getElementById('viewer')) {
       document.getElementById('viewer').remove();
     }
@@ -2461,7 +2635,7 @@ export class FileViewComponent extends AppComponentBase {
           headers,
           responseType: 'blob',
         }).subscribe((response: any) => {
-          debugger;
+
           this.fileMainComponent.getAllFiles();
           this.fileOtherComponent.getAllFiles();
 
@@ -2478,7 +2652,7 @@ export class FileViewComponent extends AppComponentBase {
             }
 
             if (newResult === 200) {
-              debugger;
+
               Swal.fire('Deleted!', 'File deleted successfully :)', 'success');
               this.spinnerUpl = false;
               this.file = null;
@@ -2536,7 +2710,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   e_Sign(popupesign: TemplateRef<any>, selectedFile: any) {
-    debugger;
+
     console.log(popupesign);
     this.check();
     let config = { class: 'gray modal-lg', backdrop: false, ignoreBackdropClick: true };
@@ -2603,13 +2777,13 @@ export class FileViewComponent extends AppComponentBase {
           if (response.result) {
             this.embedUrl = response.result;
             this.eSign = true;
-            debugger;
+
             this.modalReff = this.modalService.show(
               popupesign, config
             );
             console.log("signing test" + this.embedUrl);
             this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(this.embedUrl);
-            debugger;
+
           } else {
             Swal.fire({
               title: 'No signature required for this file.',
@@ -2661,7 +2835,7 @@ export class FileViewComponent extends AppComponentBase {
       this.selectedFileForDownload = strng;
       this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetEmbeddedLinkDocuSign?filePath=" + strng + "&escrow=" + escrow + "&userType=" + userType + "&srAssignedFileId=" + srId)
         .subscribe((response: any) => {
-          debugger;
+
           const embeddedLink = response?.result?.result || response?.result?.link;
 
           if (embeddedLink) {
@@ -2686,7 +2860,7 @@ export class FileViewComponent extends AppComponentBase {
 
   //This is iFreame alternate working code only opnly for popup open need to handle the download logic on close of popup
   // e_SignWithSutiSign(selectedFile: any) {
-  //   debugger;
+  //   
 
   //   let strcheck: string | undefined;
   //   let file = selectedFile;
@@ -2844,7 +3018,6 @@ export class FileViewComponent extends AppComponentBase {
         }
       });
   }
-
 
   // e_Sign(popupesign: TemplateRef<any>) {
   //   console.log(popupesign);
@@ -3044,7 +3217,7 @@ export class FileViewComponent extends AppComponentBase {
   // }
 
   Hide() {
-    debugger;
+
     this.check();
     // this.modalReff.hide();
 
@@ -3183,7 +3356,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   SaveChanges() {
-    debugger;
+
     this.check();
     this.getCurrentDocumentAsBlob().then(res => {
 
@@ -3317,7 +3490,7 @@ export class FileViewComponent extends AppComponentBase {
 
 
         this.type = firstusertype;
-        debugger;
+
         this.userpermissionsall = userpermissionsall;
         this.parentpath = item['parentPath'];
         this.parentpath = this.parentpath.replace('/', '\\').replace('/', '\\');
@@ -3333,7 +3506,7 @@ export class FileViewComponent extends AppComponentBase {
 
 
   openRenameModalFromMain(fileName) {
-    debugger;
+
     this.check();
 
     // Assuming fileName is an object similar to the items from the selected file
@@ -3455,7 +3628,7 @@ export class FileViewComponent extends AppComponentBase {
 
   openrenameModal1(selectedFile: any, popuprename: TemplateRef<any>) {
     try {
-      debugger;
+
       this.check();
       let item = selectedFile;
       this.filenames = item.key;
@@ -3516,7 +3689,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   openMoveModal(selectedFile: any, popupMove: TemplateRef<any>) {
-    debugger;
+
 
     this.check();
     this.typePDF = "false";
@@ -3645,7 +3818,7 @@ export class FileViewComponent extends AppComponentBase {
     );
   }
   ngAfterViewInit() {
-    debugger;
+
     let dir = this.fileManager1.instance.getSelectedItems();
     let strng;
     if (dir.length > 0) {
@@ -4030,7 +4203,7 @@ export class FileViewComponent extends AppComponentBase {
   checkReminderMessage: boolean = false
 
   saveReminder() {
-    debugger;
+
     this.reminderResponse = [];
     this.checkMessageType = false;
     this.checkReminderMessage = false
@@ -4198,7 +4371,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   private async processClipboardItems(clipboardItems: any) {
-    debugger;
+
     console.log("processClipboardItems");
     for (const item of clipboardItems) {
       console.log("processClipboardItems Response" + item);
@@ -4215,7 +4388,7 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   SaveChangesOtherArea() {
-    debugger;
+
     this.check();
     this.getCurrentDocumentAsBlob().then(res => {
 
@@ -4299,4 +4472,5 @@ export class GlobalService {
   folderPath: string = "";
   oldPathSelectedFile = ""
 }
+
 

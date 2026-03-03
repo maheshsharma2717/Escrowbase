@@ -36,18 +36,18 @@ export class AppPreBootstrap {
                     AppPreBootstrap.impersonatedAuthenticate(queryStringObj.impersonationToken, queryStringObj.tenantId, () => { AppPreBootstrap.getUserConfiguration(callback); });
                 }
             } else if (queryStringObj.switchAccountToken) {
-                AppPreBootstrap.linkedAccountAuthenticate(queryStringObj.switchAccountToken, queryStringObj.tenantId, () => { AppPreBootstrap.getUserConfiguration(callback); });
+                AppPreBootstrap.linkedAccountAuthenticate(queryStringObj.switchAccountToken, queryStringObj.tenantId, () => { AppPreBootstrap.getUserConfiguration(callback, reject); });
             } else {
-                AppPreBootstrap.getUserConfiguration(callback);
+                AppPreBootstrap.getUserConfiguration(callback, reject);
             }
-        });
+        }, reject);
     }
 
     static bootstrap<TM>(moduleType: Type<TM>, compilerOptions?: CompilerOptions | CompilerOptions[]): Promise<NgModuleRef<TM>> {
         return platformBrowserDynamic().bootstrapModule(moduleType, compilerOptions);
     }
 
-    private static getApplicationConfig(appRootUrl: string, callback: () => void) {
+    private static getApplicationConfig(appRootUrl: string, callback: () => void, onError?: (err: any) => void) {
         let type = 'GET';
         let url = appRootUrl + 'assets/' + environment.appConfig;
         let customHeaders = [
@@ -60,20 +60,31 @@ export class AppPreBootstrap {
             const subdomainTenancyNameFinder = new SubdomainTenancyNameFinder();
             const tenancyName = subdomainTenancyNameFinder.getCurrentTenancyNameOrNull(result.appBaseUrl);
 
-            AppConsts.appBaseUrlFormat = result.appBaseUrl;
-            AppConsts.remoteServiceBaseUrlFormat = result.remoteServiceBaseUrl;
+            // Normalize to avoid double-slash URLs (which can cause redirects on some hosts).
+            const normalizedAppBaseUrl = (result.appBaseUrl || '').replace(/\/+$/, '');
+            const normalizedRemoteServiceBaseUrl = (result.remoteServiceBaseUrl || '').replace(/\/+$/, '');
+
+            AppConsts.appBaseUrlFormat = normalizedAppBaseUrl;
+            AppConsts.remoteServiceBaseUrlFormat = normalizedRemoteServiceBaseUrl;
             AppConsts.localeMappings = result.localeMappings;
 
             if (tenancyName == null) {
-                AppConsts.appBaseUrl = result.appBaseUrl.replace(AppConsts.tenancyNamePlaceHolderInUrl + '.', '');
-                AppConsts.remoteServiceBaseUrl = result.remoteServiceBaseUrl.replace(AppConsts.tenancyNamePlaceHolderInUrl + '.', '');
+                AppConsts.appBaseUrl = normalizedAppBaseUrl.replace(AppConsts.tenancyNamePlaceHolderInUrl + '.', '');
+                AppConsts.remoteServiceBaseUrl = normalizedRemoteServiceBaseUrl.replace(AppConsts.tenancyNamePlaceHolderInUrl + '.', '');
             } else {
-                AppConsts.appBaseUrl = result.appBaseUrl.replace(AppConsts.tenancyNamePlaceHolderInUrl, tenancyName);
-                AppConsts.remoteServiceBaseUrl = result.remoteServiceBaseUrl.replace(AppConsts.tenancyNamePlaceHolderInUrl, tenancyName);
+                AppConsts.appBaseUrl = normalizedAppBaseUrl.replace(AppConsts.tenancyNamePlaceHolderInUrl, tenancyName);
+                AppConsts.remoteServiceBaseUrl = normalizedRemoteServiceBaseUrl.replace(AppConsts.tenancyNamePlaceHolderInUrl, tenancyName);
             }
 
             callback();
-        });
+        }, (err) => {
+            // Fail fast during bootstrap instead of hanging indefinitely.
+            console.error('Failed to load app config:', err);
+            alert('Unable to load application configuration. Please refresh the page.');
+            if (onError) {
+                onError(err);
+            }
+        }, 30000);
     }
 
     private static getCurrentClockProvider(currentProviderName: string): abp.timing.IClockProvider {
@@ -160,7 +171,7 @@ export class AppPreBootstrap {
         );
     }
 
-    private static getUserConfiguration(callback: () => void): any {
+    private static getUserConfiguration(callback: () => void, onError?: (err: any) => void): any {
         const token = abp.auth.getToken();
 
         let requestHeaders = AppPreBootstrap.getRequetHeadersWithDefaultValues();
@@ -169,7 +180,10 @@ export class AppPreBootstrap {
             requestHeaders['Authorization'] = 'Bearer ' + token;
         }
 
-        return XmlHttpRequestHelper.ajax('GET', AppConsts.remoteServiceBaseUrl + '/AbpUserConfiguration/GetAll', requestHeaders, null, (response) => {
+        const configUrl = AppConsts.remoteServiceBaseUrl + '/AbpUserConfiguration/GetAll';
+        console.time('bootstrap:AbpUserConfiguration');
+        return XmlHttpRequestHelper.ajax('GET', configUrl, requestHeaders, null, (response) => {
+            console.timeEnd('bootstrap:AbpUserConfiguration');
             let result = response.result;
 
             _.merge(abp, result);
@@ -184,7 +198,14 @@ export class AppPreBootstrap {
             AppConsts.subscriptionExpireNootifyDayCount = parseInt(abp.setting.get('App.TenantManagement.SubscriptionExpireNotifyDayCount'));
 
             DynamicResourcesHelper.loadResources(callback);
-        });
+        }, (err) => {
+            console.timeEnd('bootstrap:AbpUserConfiguration');
+            console.error('Failed to load user configuration:', err);
+            alert('Unable to reach the server to load configuration. Please check your network/VPN/firewall and refresh.');
+            if (onError) {
+                onError(err);
+            }
+        }, 60000);
     }
 
     private static configureMoment() {

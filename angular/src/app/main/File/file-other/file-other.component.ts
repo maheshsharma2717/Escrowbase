@@ -1,4 +1,5 @@
-import { Component, HostListener, Injector, OnInit, Output, ViewChild, EventEmitter, TemplateRef, Input, Optional, Inject, ElementRef } from '@angular/core';
+import { Component, HostListener, Injector, OnInit, Output, ViewChild, EventEmitter, TemplateRef, Input, Optional, Inject, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 import { AppComponentBase } from '@shared/common/app-component-base';
 import { EscrowFileTagsesServiceProxy, API_BASE_URL, TagsAndFileMappingsesServiceProxy, CreateOrEditTagsAndFileMappingsDto } from '@shared/service-proxies/service-proxies';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -22,6 +23,9 @@ export class FileOtherComponent extends AppComponentBase {
   @ViewChild('dropdownWrapper', { static: false }) dropdownWrapper!: ElementRef;
   @Output() saveEvent = new EventEmitter<any>();
   @Input() inputPerson: any;
+  @Input() deletePermission: boolean;
+  selectedFiles: Set<string> = new Set();
+  isAllSelected: boolean = false;
   apiUrl: string = "";
   files: any = [];
   showContextMenuTags: boolean = false;
@@ -36,7 +40,7 @@ export class FileOtherComponent extends AppComponentBase {
   fileTagService: any;
   isCollapsed: boolean = false;
   isFullScreen: boolean = false;
-  sanitizer: any;
+  // sanitizer: any; // Removed as it is now injected
   filteredFiles = [...this.files];
   availableTags: string[] = [];
   showTagSearch = false;
@@ -51,6 +55,7 @@ export class FileOtherComponent extends AppComponentBase {
   editPermissionOtherArea: boolean;
   readPermissionOtherArea: boolean;
   editPermissionDocOtherArea: boolean;
+  downloadPermission: boolean = false;
   currentSortField: string = '';
   ascendingOrder: boolean = true;
   selectedIndex: number | null = null;
@@ -63,6 +68,8 @@ export class FileOtherComponent extends AppComponentBase {
     private http: HttpClient,
     injector: Injector,
     private tagsAndFileMapping: TagsAndFileMappingsesServiceProxy,
+    public sanitizer: DomSanitizer,
+    public cdr: ChangeDetectorRef,
     @Optional() @Inject(API_BASE_URL) baseUrl?: string
 
   ) {
@@ -75,8 +82,12 @@ export class FileOtherComponent extends AppComponentBase {
     this.getAllFileTags();
   }
 
-  getAllFiles(): void {
-    var queryParams = this.inputPerson;
+  getAllFiles(person?: any): void {
+    var queryParams = person || this.inputPerson;
+    if (!queryParams) {
+      console.error("getAllFiles: inputPerson is null or undefined");
+      return;
+    }
     let Name = this.appSession.user.name + " " + this.appSession.user.surname;
     let subCompanyName = this.validFileName(atob(queryParams['sc']))
     let companyName = this.validFileName(atob(queryParams['c']))
@@ -90,7 +101,19 @@ export class FileOtherComponent extends AppComponentBase {
         (response) => {
           debugger;
           this.files = response.result;
+          const savedField = localStorage.getItem('otherSortField');
+          const savedOrder = localStorage.getItem('otherSortOrder');
+
+          if (savedField) {
+            this.currentSortField = savedField;
+            this.ascendingOrder = savedOrder === 'asc';
+            this.applySorting();
+          }
+
+          // Force change detection to ensure view updates
+          this.cdr.detectChanges();
         },
+
         (error) => {
           console.error('Error fetching files:', error);
         }
@@ -141,7 +164,7 @@ export class FileOtherComponent extends AppComponentBase {
         tagsSet.add(tag.tagDescription);
       });
     });
-    return Array.from(tagsSet);  // Convert the Set back to an array
+    return Array.from(tagsSet);
   }
 
   filterFilesByTag(tag: string): void {
@@ -149,16 +172,20 @@ export class FileOtherComponent extends AppComponentBase {
     this.filteredFiles = this.files.filter(file =>
       file.escrowFileTags.some(t => t.tagDescription.toLowerCase() === tag.toLowerCase())
     );
-    this.showTagSearch = false;  // Hide the context menu after selection
+    this.showTagSearch = false;
   }
 
   getFileIcon(fileName: string): SafeHtml {
-    let fileExtension = fileName.split('.').pop()?.toLowerCase(); // Extract file extension
+    let fileExtension = fileName.split('.').pop()?.toLowerCase();
     let iconHtml: string;
 
     switch (fileExtension) {
       case "pdf":
-        iconHtml = "<i class='fas fa-file-pdf' style='color: #e74c3c;'></i>"; // Red PDF
+        iconHtml = "<i class='fas fa-file-pdf' style='color: #e74c3c;'></i>";
+        break;
+      case "xls":
+      case "xlsx":
+        iconHtml = "<i class='fas fa-file-excel' style='color: #27ae60;'></i>"; // Green Excel
         break;
       case "doc":
       case "docx":
@@ -226,16 +253,13 @@ export class FileOtherComponent extends AppComponentBase {
     }, 50);
   }
 
-
   onRightClick2(event: MouseEvent, index: number | null, file: any | null, type: string): void {
-
     if (event.button === 2) {
       event.preventDefault();
       console.log("Right-click detected");
     } else {
       console.log("Left-click detected");
     }
-
 
     this.selectedFileIndex = index;
     this.selectedFile = file;
@@ -247,7 +271,6 @@ export class FileOtherComponent extends AppComponentBase {
     const menuElement = document.getElementById("contextMenu");
     const menuWidth = menuElement?.offsetWidth || 150;
     const menuHeight = menuElement?.offsetHeight || 150;
-
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     const scrollX = window.scrollX || document.documentElement.scrollLeft;
@@ -367,7 +390,7 @@ export class FileOtherComponent extends AppComponentBase {
     };
 
     const argumentsString = JSON.stringify(argumentsData);
-    const url = `${this.apiUrl}/FileManager/FileSystem1?company=${company}&subCompany=${subCompany}&escrow=${escrow}&userId=${userId}&arguments=${argumentsString}`;
+    const url = `${this.apiUrl}/FileManager/FileSystem1?company=${company}&subCompany=${subCompany}&escrow=${escrow}&userId=${userId}&arguments=${argumentsString}&_ts=${Date.now()}`;
     return this.http.get(url);
   }
 
@@ -413,7 +436,7 @@ export class FileOtherComponent extends AppComponentBase {
       .filter(item =>
         item.tagDescription.toLowerCase().includes(this.searchQuery2.toLowerCase())
       )
-      .slice(0, 8); // Limit the filtered results to 8
+      .slice(0, 8);
   }
 
   getAllFileTags() {
@@ -447,7 +470,6 @@ export class FileOtherComponent extends AppComponentBase {
         id: 0,
       })
     };
-
     this.tagsAndFileMapping.createOrEdit(tagData).subscribe({
       next: (response: any) => {
         if (response?.success === false) {
@@ -473,7 +495,6 @@ export class FileOtherComponent extends AppComponentBase {
         abp.notify.error('This tag is already assigned to the file', 'Error');
       }
     });
-
     this.showContextMenuTags = false;
   }
 
@@ -482,8 +503,11 @@ export class FileOtherComponent extends AppComponentBase {
     this.isCollapsed = !this.isCollapsed;
   }
 
+  @Output() fullScreenToggled = new EventEmitter<boolean>();
+
   toggleFullScreen(fullscreenElement: HTMLElement) {
     this.isFullScreen = !this.isFullScreen;
+    this.fullScreenToggled.emit(this.isFullScreen);
   }
 
   onChildModalClose(): void {
@@ -503,8 +527,36 @@ export class FileOtherComponent extends AppComponentBase {
   }
 
   trackByTagId(index: number, item: any): any {
-    return item.id; // Assuming each tag has a unique id 
+    return item.id;
   }
+
+  // sortTable(field: string) {
+  //   debugger;
+  //   if (this.currentSortField === field) {
+  //     this.ascendingOrder = !this.ascendingOrder;
+  //   } else {
+  //     this.currentSortField = field;
+  //     this.ascendingOrder = true;
+  //   }
+
+  //   this.files.sort((a, b) => {
+  //     let aValue = this.getSortValue(a, field);
+  //     let bValue = this.getSortValue(b, field);
+
+  //     // Normalize null/undefined/empty values
+  //     aValue = (aValue === null || aValue === undefined || aValue === '') ? null : aValue;
+  //     bValue = (bValue === null || bValue === undefined || bValue === '') ? null : bValue;
+
+  //     // Handle nulls explicitly
+  //     if (aValue === null && bValue === null) return 0;
+  //     if (aValue === null) return this.ascendingOrder ? 1 : -1;
+  //     if (bValue === null) return this.ascendingOrder ? -1 : 1;
+
+  //     // Standard comparison
+  //     if (aValue === bValue) return 0;
+  //     return (aValue > bValue ? 1 : -1) * (this.ascendingOrder ? 1 : -1);
+  //   });
+  // }
 
   sortTable(field: string) {
     debugger;
@@ -514,21 +566,15 @@ export class FileOtherComponent extends AppComponentBase {
       this.currentSortField = field;
       this.ascendingOrder = true;
     }
+    localStorage.setItem('otherSortField', this.currentSortField);
+    localStorage.setItem('otherSortOrder', this.ascendingOrder ? 'asc' : 'desc');
+    this.applySorting();
+  }
 
+  applySorting() {
     this.files.sort((a, b) => {
-      let aValue = this.getSortValue(a, field);
-      let bValue = this.getSortValue(b, field);
-
-      // Normalize null/undefined/empty values
-      aValue = (aValue === null || aValue === undefined || aValue === '') ? null : aValue;
-      bValue = (bValue === null || bValue === undefined || bValue === '') ? null : bValue;
-
-      // Handle nulls explicitly
-      if (aValue === null && bValue === null) return 0;
-      if (aValue === null) return this.ascendingOrder ? 1 : -1;
-      if (bValue === null) return this.ascendingOrder ? -1 : 1;
-
-      // Standard comparison
+      let aValue = this.getSortValue(a, this.currentSortField);
+      let bValue = this.getSortValue(b, this.currentSortField);
       if (aValue === bValue) return 0;
       return (aValue > bValue ? 1 : -1) * (this.ascendingOrder ? 1 : -1);
     });
@@ -544,11 +590,198 @@ export class FileOtherComponent extends AppComponentBase {
     return (value === undefined || value === null || value === '') ? null : value;
   }
 
-
-
   onRowClick(index: number) {
     this.selectedRowIndex = index;
   }
 
+  onDragStart(event: DragEvent, file: any) {
+    if (!file || !file.key) {
+      return;
+    }
+
+    let path = file.path; // FileOther uses file.path usually, or this.completeEnterprisePathOther
+    let key = file.key;
+    let encodedPath = (path || this.completeEnterprisePathOther).replace(/#/g, "%23");
+    let encodedKey = key.replace(/#/g, "%23");
+    let srId = file.srAssignedFileId || this.files[0]?.dataItem?.srAssignedFileId || ''; // Try to get srId
+    let userId = this.appSession.userId;
+    const token = abp.auth.getToken();
+
+    const downloadUrl = this.apiUrl + "/FileManager/DownloadFile" +
+      "?path=" + encodeURIComponent(encodedPath) + // For other files, path might handle filename diferently, verify Download implementation
+      "&key=" + encodeURIComponent(encodedKey) +
+      "&srAssignedFileId=" + srId +
+      "&userId=" + userId +
+      "&enc_auth_token=" + encodeURIComponent(token);
+
+    // NOTE: In Download() of file-other, it uses: "?path=" + strng + "&key=" + strng1
+    // where strng = element.path.replace(/#/g, "%23") and strng1 = element.key.replace(/#/g, "%23")
+    // It does NOT append filename to path in the query string for DownloadFile endpoint used there (line 1468).
+    // So logic above is slightly different from FileMain.
+
+    const mimeType = this.getMimeType(file.name) || 'application/octet-stream';
+    const dragData = `${mimeType}:${file.name}:${downloadUrl}`;
+
+    // Add HTML representation for Outlook/Mail clients (hyperlink)
+    const htmlContent = `<a href="${downloadUrl}" target="_blank" style="text-decoration:none">📎 ${file.name}</a>`;
+
+    event.dataTransfer.setData('DownloadURL', dragData);
+    event.dataTransfer.setData('text/plain', downloadUrl);
+    event.dataTransfer.setData('text/html', htmlContent);
+    event.dataTransfer.effectAllowed = 'copy';
+  }
+
+  getMimeType(fileName: string): string {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    const mimeTypes: { [key: string]: string } = {
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'txt': 'text/plain',
+      'msg': 'application/vnd.ms-outlook',
+      'eml': 'message/rfc822'
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
+  }
+
+  toggleSelectAll(event: any) {
+    this.isAllSelected = event.target.checked;
+    if (this.isAllSelected) {
+      this.files.forEach(file => {
+        if (file.srAssignedFileId) {
+          this.selectedFiles.add(file.srAssignedFileId);
+        } else if (file.key) {
+          this.selectedFiles.add(file.key);
+        }
+      });
+    } else {
+      this.selectedFiles.clear();
+    }
+  }
+
+  toggleSelection(file: any) {
+    const id = file.srAssignedFileId || file.key;
+    if (this.selectedFiles.has(id)) {
+      this.selectedFiles.delete(id);
+    } else {
+      this.selectedFiles.add(id);
+    }
+    this.isAllSelected = this.selectedFiles.size === this.files.length && this.files.length > 0;
+  }
+
+  downloadSelected() {
+    if (this.selectedFiles.size === 0) {
+      abp.notify.warn('Please select files to download');
+      return;
+    }
+
+    if (this.selectedFiles.size > 5) {
+      this.downloadAsZip();
+      return;
+    }
+
+    this.files.forEach(file => {
+      const id = file.srAssignedFileId || file.key;
+      if (this.selectedFiles.has(id)) {
+        this.DownloadFile(file);
+      }
+    });
+  }
+
+  downloadAsZip() {
+    const filesToDownload = this.files.filter(file => {
+      const id = file.srAssignedFileId || file.key;
+      return this.selectedFiles.has(id);
+    }).map(file => ({
+      key: file.key,
+      name: file.name
+    }));
+
+    const input = {
+      parentPath: this.completeEnterprisePathOther,
+      files: filesToDownload,
+      userId: this.appSession.user.id
+    };
+
+    this.notify.info('Compressing and downloading files...');
+
+    this.http.post(`${this.apiUrl}/FileManager/DownloadZip`, input, { responseType: 'blob' })
+      .subscribe((blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `OtherDocuments_${new Date().getTime()}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        this.notify.success('Download completed');
+      }, error => {
+        console.error(error);
+        this.notify.error('Failed to download zip');
+      });
+  }
+
+  deleteSelected() {
+    if (this.selectedFiles.size === 0) {
+      abp.notify.warn('Please select files to delete');
+      return;
+    }
+
+    const filesToDelete = this.files.filter(file => {
+      const id = file.srAssignedFileId || file.key;
+      return this.selectedFiles.has(id);
+    });
+
+    var obj = {
+      selectedFiles: filesToDelete,
+      templateRef: 'deleteAllOther',
+      folderPath: this.completeEnterprisePathOther
+    }
+    this.saveEvent.emit(obj);
+  }
+
+  DownloadFile(file: any) {
+    this.onDragStart({
+      dataTransfer: new DataTransfer()
+    } as any, file);
+
+    // Trigger the download manually since onDragStart prepares it but might not execute it directly without a drag event context fully utilizing it for click
+    // Actually, looking at onDragStart, it constructs the URL but doesn't trigger a window.open or link click for the user to download immediately apart from drag data.
+    // We need to implement actual download logic here similar to what standard download does.
+    // Re-using logic from FileMain's DownloadFile or constructing it here.
+
+    let path = file.path;
+    let key = file.key;
+    let encodedPath = (path || this.completeEnterprisePathOther).replace(/#/g, "%23");
+    let encodedKey = key.replace(/#/g, "%23");
+    let srId = file.srAssignedFileId || this.files[0]?.dataItem?.srAssignedFileId || 0;
+    let userId = this.appSession.userId;
+    const token = abp.auth.getToken();
+
+    const downloadUrl = this.apiUrl + "/FileManager/DownloadFile" +
+      "?path=" + encodeURIComponent(encodedPath + file.name) +
+      "&key=" + encodeURIComponent(encodedKey) +
+      "&srAssignedFileId=" + srId +
+      "&userId=" + userId +
+      "&enc_auth_token=" + encodeURIComponent(token);
+
+    // window.open(downloadUrl, '_blank');
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = downloadUrl;
+    document.body.appendChild(iframe);
+
+    // Clean up the iframe after a delay
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 60000);
+  }
 
 }
+

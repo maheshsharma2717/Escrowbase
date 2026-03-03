@@ -13,13 +13,22 @@ td {
     white-space: nowrap;
     text-align: left;
     border: 1px solid #ddd;
+    padding: 1px;
+}
+
+th input[type="checkbox"] {
+    transform: scale(1.2);
+    cursor: pointer;
+}
+
+td input[type="checkbox"] {
+    cursor: pointer;
 }
 
 
 
 td {
     border: none !important;
-    padding-left: 7px;
 }
 
 th {
@@ -70,12 +79,12 @@ th {
 
 .fullscreen-container {
     position: fixed !important;
-    top: 0;
+    top: 98px;
     left: 0;
     right: 0;
     bottom: 0;
     width: 100vw;
-    height: 100vh;
+    height: calc(100vh - 98px);
     background-color: white;
     z-index: 9999;
     overflow: auto;
@@ -148,7 +157,7 @@ th {
 .search-input {
     width: calc(100% - 20px);
     border: 1px solid #ccc;
-    font-size: 14px;   
+    font-size: 14px;
     line-height: .5;
 }
 
@@ -174,11 +183,17 @@ li:hover {
     background-color: #f1f1f1;
 }
 
-i {    
+tbody i {
     font-size: 12px;
     margin-left: 3px;
-    color:#888;
-  }
+    color: #888;
+}
+
+.fullscreen-toggle-icon {
+    font-size: 16px !important;
+    color: #464E5F !important;
+    margin-left: 0 !important;
+}
 
 .file-name {
     display: inline-block;
@@ -219,19 +234,39 @@ div#contextMenu {
 div#contextMenu2 {
     top: 5px !important;
     left: 200px !important;
-} 
+}
 
 .hover-row:hover {
-    background-color: #e0f2fe !important; 
-  }
+    background-color: #c6e2ff !important;
+}
 
-  tbody tr:nth-child(odd) {
+tbody tr:nth-child(odd) {
     background-color: #f9f9f9;
     /* Light gray for odd rows */
-  }
-  
-  tbody tr:nth-child(even) {
+}
+
+tbody tr:nth-child(even) {
     background-color: #ffffff;
     /* White for even rows */
-  }
-  
+}
+
+.btn-xs-custom {
+    padding: 1px 6px !important;
+    font-size: 11px !important;
+    line-height: normal !important;
+    height: 24px !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.fade-btn {
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.fade-btn.visible {
+    opacity: 1;
+    visibility: visible;
+}

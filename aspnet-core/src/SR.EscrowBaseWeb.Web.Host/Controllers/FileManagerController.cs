@@ -46,10 +46,14 @@ using System.Threading.Tasks;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
+using System.IO.Compression;
 using IConfiguration = Microsoft.Extensions.Configuration.IConfiguration;
 //using NPOI.HWPF;
 //using FreeSpire.Doc;
 //using NPOI.HWPF.UserModel;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+using NPOI.HSSF.UserModel;
 
 namespace SR.EscrowBaseWeb.Web.Controllers
 {
@@ -215,6 +219,92 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> DownloadZip([FromBody] DownloadZipInput input)
+        {
+            try
+            {
+                if (input == null || input.Files == null || !input.Files.Any())
+                {
+                    return BadRequest("No files selected.");
+                }
+
+                using (var memoryStream = new MemoryStream())
+                {
+                    using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+                    {
+                        foreach (var fileItem in input.Files)
+                        {
+                            try
+                            {
+                                string path = input.ParentPath.Replace("%23", "#");
+                                string key = fileItem.Key.Replace("%23", "#");
+                                // Logic to construct file path similar to DownloadFile
+                                var folderName = Path.Combine(@"Common/Paperless/" + path);
+                                folderName = folderName.Substring(0, folderName.LastIndexOf('/'));
+                                folderName = Path.Combine(folderName + "/" + key);
+                                
+                                string newpath = folderName.Replace("/", "\\");
+                                string filePath = Path.Combine(_hostingEnvironment.WebRootPath + "\\" + newpath);
+
+                                if (System.IO.File.Exists(filePath))
+                                {
+                                    var entry = archive.CreateEntry(fileItem.Name); // Use the provided name for the entry
+                                    using (var entryStream = entry.Open())
+                                    using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                                    {
+                                        await fileStream.CopyToAsync(entryStream);
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                // Log error for individual file but continue zipping others
+                                string logs = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\Logs.txt");
+                                if (!System.IO.File.Exists(logs))
+                                {
+                                    using (FileStream fs1 = new FileStream(logs, FileMode.OpenOrCreate, FileAccess.Write)) { }
+                                }
+                                using (StreamWriter writer = new StreamWriter(logs, true))
+                                {
+                                    writer.WriteLine($"Error zipping file {fileItem.Name}: {ex.ToString()} {DateTime.Now}");
+                                }
+                            }
+                        }
+                    }
+
+                    memoryStream.Position = 0;
+                    return File(memoryStream.ToArray(), "application/zip", "FailedDownload-" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".zip");
+                }
+            }
+            catch (Exception ex)
+            {
+                string logs = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\Logs.txt");
+                if (!System.IO.File.Exists(logs))
+                {
+                    using (FileStream fs1 = new FileStream(logs, FileMode.OpenOrCreate, FileAccess.Write)) { }
+                }
+                using (StreamWriter writer = new StreamWriter(logs, true))
+                {
+                    writer.WriteLine("Error in DownloadZip method: " + ex.ToString() + DateTime.Now.ToString());
+                }
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        public class DownloadZipInput
+        {
+            public string ParentPath { get; set; }
+            public List<ZipFileItem> Files { get; set; }
+            public long UserId { get; set; }
+        }
+
+        public class ZipFileItem
+        {
+            public string Key { get; set; }
+            public string Name { get; set; }
+        }
+
         public async Task<IActionResult> ConvertFileToBase64(string path, string key)
         {
             try
@@ -326,6 +416,63 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     byte[] textBytes = System.Text.Encoding.UTF8.GetBytes(emailContent);
                     string base64String = Convert.ToBase64String(textBytes);
                     return Ok(new { Base64 = base64String, fileType = "msg" });
+                }
+                else if (Path.GetExtension(file).ToLower() == ".xlsx" || Path.GetExtension(file).ToLower() == ".xls")
+                {
+                    try
+                    {
+                        IWorkbook workbook;
+                        using (var fileStream = new FileStream(file, FileMode.Open, FileAccess.Read))
+                        {
+                            if (Path.GetExtension(file).ToLower() == ".xlsx")
+                            {
+                                workbook = new XSSFWorkbook(fileStream);
+                            }
+                            else
+                            {
+                                workbook = new HSSFWorkbook(fileStream);
+                            }
+                        }
+
+                        ISheet sheet = workbook.GetSheetAt(0);
+                        StringBuilder htmlBuilder = new StringBuilder();
+                        htmlBuilder.Append("<table border='1' style='border-collapse: collapse; width: 100%;'>");
+
+                        // Iterate through rows
+                        for (int i = 0; i <= sheet.LastRowNum; i++)
+                        {
+                            IRow row = sheet.GetRow(i);
+                            if (row != null)
+                            {
+                                htmlBuilder.Append("<tr>");
+                                for (int j = 0; j < row.LastCellNum; j++)
+                                {
+                                    ICell cell = row.GetCell(j);
+                                    string cellValue = cell?.ToString() ?? "";
+                                    htmlBuilder.Append($"<td style='padding: 5px;'>{cellValue}</td>");
+                                }
+                                htmlBuilder.Append("</tr>");
+                            }
+                        }
+                        htmlBuilder.Append("</table>");
+
+                        byte[] textBytes = System.Text.Encoding.UTF8.GetBytes(htmlBuilder.ToString());
+                        string base64String = Convert.ToBase64String(textBytes);
+                        // Using 'msg' fileType to leverage the existing notification/email viewer which renders HTML
+                        return Ok(new { Base64 = base64String, fileType = "msg" });
+                    }
+                    catch (Exception ex)
+                    {
+                         string logs = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\Logs.txt");
+                        if (!System.IO.File.Exists(logs))
+                        {
+                             FileStream fs1 = new FileStream(logs, FileMode.OpenOrCreate, FileAccess.Write);
+                        }
+                        StreamWriter writer = new StreamWriter(logs, true);
+                        writer.WriteLine("Error in ConvertFileToBase64 method for Excel -: error=" + ex.ToString() + " " + DateTime.Now.ToString());
+                        writer.Close();
+                         return NotFound();
+                    }
                 }
             }
 
@@ -1423,6 +1570,9 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             return JoinResult.ToList();
         }
 
+        [HttpPost]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        [Abp.Web.Models.DontWrapResult]
         public responseBack ProcessRequest(string path, string userId)
         {
             responseBack res = new responseBack();
@@ -1463,28 +1613,78 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                 if (userId != "1")
                 {
+                    // Path format expected: Company/SubCompany/EscrowId/Other
                     var splitPath = path.Replace("/", "\\").Split("\\");
-                    if (splitPath.Length < 3)
+                    if (splitPath.Length < 4)
                     {
-                        res.message = "Invalid path format.";
+                        res.message = "Invalid path format. Expected: Company/SubCompany/EscrowId/Other";
                         res.statusCode = 400;
                         return res;
                     }
 
+                    var company = splitPath[0];
+                    var subCompany = splitPath[1];
                     var escrowId = splitPath[2];
+                    
+                    // Logic to Create/Get Master File Record
+                    long srEscrowFileMasterId = 0;
+                    // Note: file.FileName might just be name, fullFilePath is absolute path
+                    var dbSREscrowFileMaster = _srEscrowFileMasterRepository.GetAll()
+                        .Where(x => x.FileFullName == fullFilePath)
+                        .FirstOrDefault();
+
+                    if (dbSREscrowFileMaster == null)
+                    {
+                        SREscrowFileMaster sREscrowFileMaster = new SREscrowFileMaster();
+                        sREscrowFileMaster.FileFullName = fullFilePath; // Save full path
+                        sREscrowFileMaster.FileShortName = fileName; // Save just filename
+                        srEscrowFileMasterId = _srEscrowFileMasterRepository.InsertAndGetId(sREscrowFileMaster);
+
+                        // Create History Record
+                        CreateOrEditEscrowFileHistoryDto escrowFileHistory = new CreateOrEditEscrowFileHistoryDto();
+                        escrowFileHistory.SrEscrowFileMasterId = srEscrowFileMasterId;
+                        escrowFileHistory.FileFullPath = fileName;
+                        escrowFileHistory.UserId = long.Parse(userId); 
+                        escrowFileHistory.Message = FileConstant.ADD_File;
+                        escrowFileHistory.ActionType = FileConstantAction.ADD_File;
+                        // Use async method synchronously or Task.Run/Wait (be careful with deadlocks, but this is a controller)
+                        // _escrowFileHistoriesAppService.CreateOrEdit is async task.
+                        _escrowFileHistoriesAppService.CreateOrEdit(escrowFileHistory).Wait();
+                    }
+                    else
+                    {
+                        srEscrowFileMasterId = dbSREscrowFileMaster.Id;
+                    }
+
+
                     var coesfm = new CreateOrEditSrFileMappingDto
                     {
                         UserId = Convert.ToInt32(userId),
                         FileName = fullFilePath,
                         IsActive = true,
                         EscrowiId = escrowId,
-                        Action = "READ"
+                        Action = "READ",
+                        SrEscrowFileMasterId = srEscrowFileMasterId
                     };
+                    
+                    // Ensure we don't duplicate mapping if it exists? 
+                    // The original code didn't check for duplication before CreateOrEdit. 
+                    // SrFileMappingAppService.CreateOrEdit handles insert/update based on ID, but we don't pass ID here.
+                    // We should probably check if mapping exists to avoid duplicates or use logic from AutoUpdate.
+                    // AutoUpdate logic:
+                    /* 
+                       coesfm.SrEscrowFileMasterId = SrEscrowFileMasterId;
+                       var filemap = _ISrFileMappingsAppService.CreateOrEdit(coesfm);
+                    */
 
+                    // We will check if mapping exists for this user and file to avoid spamming the DB
                     var existingMapping = _srfilemapRepository.GetAll()
-                        .FirstOrDefault(x => x.UserId == coesfm.UserId);
-
-                    var filemap = _ISrFileMappingsAppService.CreateOrEdit(coesfm);
+                        .FirstOrDefault(x => x.UserId == coesfm.UserId && x.FileName == fullFilePath);
+                    
+                    if (existingMapping == null)
+                    {
+                         _ISrFileMappingsAppService.CreateOrEdit(coesfm).Wait();
+                    }
                 }
 
                 res.statusCode = 200;
@@ -2255,11 +2455,159 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         //    }
         //}
 
+        ///<Summary>
+        /// Get User Context (Companies and Escrows) for Sync App
+        ///</Summary>
+        [HttpGet]
+        [Abp.Web.Models.DontWrapResult]
+        public List<UserCompanyDto> GetUserContext(string username)
+        {
+            try
+            {
+                List<UserCompanyDto> getComp = new List<UserCompanyDto>();
+                
+                // First try matching by email directly
+                var escrowDetails = _escrowDetailRepository.GetAll()
+                    .Where(x => x.Email == username)
+                    .ToList();
+
+                // If no match by email, try to resolve username → email via Users table
+                if (escrowDetails.Count == 0)
+                {
+                    var user = _userRepository.GetAll()
+                        .FirstOrDefault(x => x.UserName == username || x.EmailAddress == username);
+                    if (user != null && !string.IsNullOrEmpty(user.EmailAddress))
+                    {
+                        escrowDetails = _escrowDetailRepository.GetAll()
+                            .Where(x => x.Email == user.EmailAddress)
+                            .ToList();
+                    }
+                }
+
+                foreach (var detail in escrowDetails)
+                {
+                    
+                    var srEscrow = _ISrEscrowRepository.GetAll()
+                        .Where(x => x.SubCompanyName == detail.Company && x.EscrowNo == detail.EscrowId)
+                        .ToList();
+
+                    foreach (var escrow in srEscrow)
+                    {
+                        var company = _enterpriseRepository.GetAll()
+                            .Where(x => x.Id == escrow.EnterpriseId)
+                            .FirstOrDefault();
+
+                        if (company != null)
+                        {
+                            UserCompanyDto userCompany = new UserCompanyDto();
+                            userCompany.address = escrow.PropertyAddress;
+                            userCompany.company = company.EnterpriseName;
+                            userCompany.subCompany = escrow.SubCompanyName;
+                            userCompany.escrowId = escrow.EscrowNo;
+                            userCompany.type = detail.Usertype;
+                            
+                            getComp.Add(userCompany);
+                        }
+                    }
+                }
+                return getComp;
+            }
+            catch (Exception ex)
+            {
+                // Log(ex);
+                return null;
+            }
+        }
+
+        /// <Summary>
+        /// List all files in the Other folder for sync (server → local)
+        /// </Summary>
+        [HttpGet]
+        [Abp.Web.Models.DontWrapResult]
+        public List<SyncFileInfoDto> ListSyncFiles(string company, string subCompany, string escrowId)
+        {
+            try
+            {
+                var otherPath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless",
+                    company, subCompany, escrowId, "Other");
+
+                if (!Directory.Exists(otherPath))
+                    return new List<SyncFileInfoDto>();
+
+                var files = Directory.GetFiles(otherPath, "*", SearchOption.TopDirectoryOnly);
+                var result = new List<SyncFileInfoDto>();
+
+                foreach (var file in files)
+                {
+                    var fi = new FileInfo(file);
+                    result.Add(new SyncFileInfoDto
+                    {
+                        fileName = fi.Name,
+                        size = fi.Length,
+                        lastModified = fi.LastWriteTimeUtc.ToString("o")
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return new List<SyncFileInfoDto>();
+            }
+        }
+
+        /// <Summary>
+        /// Download a single file from the Other folder for sync
+        /// </Summary>
+        [HttpGet]
+        [Abp.Web.Models.DontWrapResult]
+        public IActionResult DownloadSyncFile(string company, string subCompany, string escrowId, string fileName)
+        {
+            try
+            {
+                // Sanitize fileName to prevent directory traversal
+                fileName = Path.GetFileName(fileName);
+
+                var filePath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless",
+                    company, subCompany, escrowId, "Other", fileName);
+
+                if (!System.IO.File.Exists(filePath))
+                    return NotFound("File not found on server.");
+
+                var memory = new MemoryStream();
+                using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    stream.CopyTo(memory);
+                }
+                memory.Position = 0;
+
+                var ext = Path.GetExtension(filePath).ToLowerInvariant();
+                var mimeType = GetMimeTypes().GetValueOrDefault(ext, "application/octet-stream");
+                return File(memory, mimeType, fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Error downloading file: " + ex.Message);
+            }
+        }
+
     }
 
+    public class UserCompanyDto
+    {
+        public string escrowId { get; set; }
+        public string type { get; set; }
+        public string company { get; set; }
+        public string subCompany { get; set; }
+        public string address { get; set; }
+    }
 
-
-
+    public class SyncFileInfoDto
+    {
+        public string fileName { get; set; }
+        public long size { get; set; }
+        public string lastModified { get; set; }
+    }
 
     ///<Summary>
     /// Class EsignNameStatus

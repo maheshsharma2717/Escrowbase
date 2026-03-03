@@ -30,6 +30,7 @@ using SR.EscrowBaseWeb.EscrowDetails.Dtos;
 using SR.EscrowBaseWeb.EscrowFileMaster;
 using SR.EscrowBaseWeb.EsignCompany;
 using SR.EscrowBaseWeb.Friendships;
+using SR.EscrowBaseWeb.GetCurrentEscrow.Dtos;
 using SR.EscrowBaseWeb.Invitee;
 using SR.EscrowBaseWeb.Invitee.Dtos;
 using SR.EscrowBaseWeb.SrAssignedFilesDetails;
@@ -74,7 +75,7 @@ using System.Threading.Tasks;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
-
+using SR.EscrowBaseWeb.GetCurrentEscrow;
 //using GrapeCity.Documents.Pdf;
 //using System.Text;
 
@@ -117,6 +118,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         private readonly IRepository<ESignCompany, long> _esignCompanyRepository;
         private readonly IWebHostEnvironment _env;
         private readonly IDocuSignService _docuSignService;
+        private readonly ICurrentEscrowsAppService _currentEscrowRepository;
+
 
         ///<Summary>
         /// Static string parameters
@@ -167,7 +170,9 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             IEscrowFileHistoriesAppService escrowFileHistoriesAppService,
             IRepository<SREscrowFileMaster, long> srEscrowFileMasterRepository,
             IFriendshipAppService friendshipAppService,
-            IRepository<ESignCompany, long> esignCompanyRepository)
+            IRepository<ESignCompany, long> esignCompanyRepository,
+             ICurrentEscrowsAppService currentEscrowRepository)
+
 
         {
             _escrowClientRepository = escrowClientRepository;
@@ -199,6 +204,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             _srEscrowFileMasterRepository = srEscrowFileMasterRepository;
             _friendshipAppService = friendshipAppService;
             _esignCompanyRepository = esignCompanyRepository;
+            _currentEscrowRepository = currentEscrowRepository;
         }
 
         [HttpGet]
@@ -880,6 +886,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         obj.LicenesNo = Record.LicenesNo;
                         obj.Subcompany = Record.Subcompany;
                         obj.Logo = Record.Logo;
+                        obj.ESignProviderCode = "";
                         if (parent != "")
                         {
                             obj.ParentId = int.Parse(parent);
@@ -1711,6 +1718,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                 client.Timeout = -1;
                                 var request = new RestRequest(Method.GET);
                                 request.AddHeader("apikey", "iXb3be6bKcC7GfWoAQeLm6Ar1Q9d4Tzs");
+                                request.AddHeader("apikey", "iXb3be6bKcC7GfWoAQeLm6Ar1Q9d4Tzs");
                                 IRestResponse response = client.Execute(request);
                                 dynamic datasmtp = JsonConvert.DeserializeObject(response.Content);
                                 Console.WriteLine(response.Content);
@@ -1725,7 +1733,10 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                             }
                             if (isValidEmail == true)
                             {
-                                var check = _userRepository.GetAll().Where(x => x.EmailAddress == list[0]).FirstOrDefault();
+                                var email = list[0].Trim().ToLower();
+                                var check = _userRepository.GetAll()
+                                            .Where(x => x.EmailAddress.ToLower() == email)
+                                            .FirstOrDefault();
                                 var usrtypeschk = _escrowDetailRepository.GetAll().Where(x => list[5].Contains(x.Usertype) && x.EscrowId == list[4]).FirstOrDefault();
                                 if (usrtypeschk != null)
                                 {
@@ -1737,9 +1748,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                                         _escrowDetailRepository.Delete(usrtypeschk.Id);
                                         _srInvitationRecordRepository.Delete(usrtypeschk.Id);
-
                                         _userRepository.Delete(chk.Id);
-
 
                                         UserData userData = new UserData();
                                         userData.fromEmail = list[0].Trim();
@@ -1823,14 +1832,14 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                             }
                                         }
 
-                                        //string filename = Path.Combine(_hostingEnvironment.WebRootPath, @"Common\Paperless\AlreadyInvited.txt");
-                                        //if (!System.IO.File.Exists(filename))
-                                        //{
-                                        //    FileStream fs1 = new FileStream(filename, FileMode.OpenOrCreate, FileAccess.Write);
-                                        //}
-                                        //StreamWriter writer = new StreamWriter(filename, true);
-                                        //writer.WriteLine(line);
-                                        //writer.Close();
+                                        string filename = Path.Combine(_hostingEnvironment.WebRootPath, @"Common\Paperless\AlreadyInvited.txt");
+                                        if (!System.IO.File.Exists(filename))
+                                        {
+                                            FileStream fs1 = new FileStream(filename, FileMode.OpenOrCreate, FileAccess.Write);
+                                        }
+                                        StreamWriter writer = new StreamWriter(filename, true);
+                                        writer.WriteLine(line);
+                                        writer.Close();
                                     }
                                     else
                                     {
@@ -1855,28 +1864,17 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                         {
                                             status += "\n User Not Created";
                                         }
-                                        // create CompanyUserType
-                                        //var Sendmailescrow = SendMailEscrow(userData);
-                                        //status += "\n " + Sendmailescrow.message;
                                     }
                                 }
 
-
-                                //verifyemailbelow
                             }
                             else
                             {
                                 var escrow = _ISrEscrowRepository.GetAll().Where(x => x.EscrowNo == list[4]).FirstOrDefault();
-
-
-
                                 MailMessage mail = new MailMessage();
                                 mail.From = new MailAddress("Noreply@EscrowBasePortal.com");
                                 mail.To.Add(escrow.EOEmail);
                                 mail.Subject = "Invalid Email Added";
-                                //Attachment datas = new Attachment(filem, MediaTypeNames.Application.Octet);
-
-                                //mail.Attachments.Add(datas);
                                 string referer = conf["App:ClientRootAddress"].ToString();
                                 var Message = "Email not valid for " + line;
                                 Random rnd = new Random();
@@ -1888,7 +1886,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                 SmtpServer.Host = "smtp.gmail.com";
                                 SmtpServer.EnableSsl = true;
                                 SmtpServer.Send(mail);
-
                                 status += "\n " + "Email Invalid " + line;
                             }
                         }
@@ -1945,6 +1942,243 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
             return sanitizedFileName;
         }
+
+        ///<Summary>
+        /// Upload file for Current User
+        ///</Summary>
+        [HttpPost]
+        public async Task<responseBack> CurrentUser(string Paths, string Destination, string UserName, string source)
+        {
+            var response = new responseBack();
+            try
+            {
+                Destination = ValidFileName(Destination);
+                Destination = Destination.Replace("=", "\\").Replace(".\\", "\\");
+
+                bool isUploaded = false;
+                string[] subs = Destination.Split('\\', StringSplitOptions.RemoveEmptyEntries);
+
+                if (subs.Length < 2)
+                {
+                    response.Success = false;
+                    response.message = "Invalid destination format. Company and SubCompany missing.";
+                    return response;
+                }
+
+                var companyname = subs[0];
+                var subcompanyname = subs[1];
+
+                var files = Request?.Form?.Files;
+                if (files == null || files.Count == 0)
+                {
+                    response.Success = false;
+                    response.message = "No files were uploaded.";
+                    return response;
+                }
+
+                foreach (var file in files)
+                {
+
+                    try
+                    {
+                        string fileName = file.FileName;
+                        var rootPath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless");
+                        var destDir = Path.Combine(rootPath, Destination);
+
+                        if (!Directory.Exists(destDir))
+                        {
+                            Directory.CreateDirectory(destDir);
+                        }
+
+                        string destPath = Path.Combine(destDir, fileName);
+                        using (var stream = new FileStream(destPath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                            isUploaded = true;
+                        }
+
+                        string fileText;
+                        using (var reader = new StreamReader(new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                        {
+                            fileText = await reader.ReadToEndAsync();
+                        }
+
+                        var lines = fileText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                        string secondLine = lines.Length > 1 ? lines[1] : "";
+
+                        var input = new GetAllCurrentEscrowsInput
+                        {
+                            Filter = "",
+                            EscrowNoFilter = "",
+                            CompanyNameFilter = "",
+                            SubCompanyNameFilter = "",
+                            MinCreatedOnFilter = null,
+                            MaxCreatedOnFilter = null,
+                            Sorting = "id asc",
+                            MaxResultCount = int.MaxValue,
+                            SkipCount = 0
+                        };
+
+                        int? idCEscrow = null;
+                        var result = await _currentEscrowRepository.GetAll(input);
+                        foreach (var escrow in result.Items)
+                        {
+                            idCEscrow = escrow.CurrentEscrow.Id;
+                        }
+
+                        var coesfm = new CreateOrEditCurrentEscrowDto
+                        {
+                            Id = idCEscrow,
+                            EscrowNo = secondLine.Trim(),
+                            CompanyName = companyname,
+                            SubCompanyName = subcompanyname,
+                            FileName = fileName,
+                            CreatedOn = DateTime.Now,
+                            UserName = UserName,
+                            IsActive = !string.IsNullOrEmpty(secondLine)
+                        };
+
+                        await _currentEscrowRepository.CreateOrEdit(coesfm);
+                        await _hub.Clients.All.SendAsync("CurrentEscrow", coesfm);
+                    }
+                    catch (Exception innerEx)
+                    {
+                        Console.WriteLine($"File processing error: {innerEx.Message}");
+                        response.message += $" Error with file: {file.FileName} -> {innerEx.Message}.";
+                    }
+                }
+
+                response.Success = isUploaded;
+                response.message = isUploaded ? "Current Escrow Sent Successfully." : "Current Escrow Not Sent.";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in CurrentUser: {ex.Message}");
+                response.Success = false;
+                response.message = $"Unexpected error: {ex.Message}";
+            }
+
+            return response;
+        }
+
+        ///<Summary>
+        /// Upload Current Escrow files from a folder (no HTTP form dependency)
+        ///</Summary>
+        //[HttpPost]
+        //public async Task<responseBack> CurrentUser(string Destination, string UserName)
+        //{
+        //    var response = new responseBack();
+        //    bool isUploaded = false;
+
+        //    try
+        //    {
+        //        // Sanitize and normalize destination path
+        //        Destination = ValidFileName(Destination);
+        //        Destination = Destination.Replace("=", "\\").Replace(".\\", "\\");
+
+        //        // Extract Company and SubCompany from path
+        //        var subs = Destination.Split('\\', StringSplitOptions.RemoveEmptyEntries);
+        //        if (subs.Length < 2)
+        //        {
+        //            response.Success = false;
+        //            response.message = "Invalid destination format. Company and SubCompany missing.";
+        //            return response;
+        //        }
+
+        //        string companyName = subs[0];
+        //        string subCompanyName = subs[1];
+
+        //        // Prepare root folder for files
+        //        var rootPath = System.IO.Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless");
+        //        var destDir = System.IO.Path.Combine(rootPath, Destination);
+
+        //        // Ensure folder exists
+        //        System.IO.Directory.CreateDirectory(destDir);
+
+        //        // Get all files in the folder
+        //        var files = System.IO.Directory.GetFiles(destDir);
+        //        if (files.Length == 0)
+        //        {
+        //            response.Success = false;
+        //            response.message = "No files found in the destination folder.";
+        //            return response;
+        //        }
+
+        //        // Process each file
+        //        foreach (var filePath in files)
+        //        {
+        //            try
+        //            {
+        //                string fileName = System.IO.Path.GetFileName(filePath);
+
+        //                // Read file content safely
+        //                string fileText = await System.IO.File.ReadAllTextAsync(filePath);
+        //                var lines = fileText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        //                string escrowNo = lines.Length > 1 ? lines[1].Trim() : "";
+
+        //                // Get last CurrentEscrow Id (if exists)
+        //                int? idCEscrow = null;
+        //                try
+        //                {
+        //                    var result = await _currentEscrowRepository.GetAll(new GetAllCurrentEscrowsInput
+        //                    {
+        //                        MaxResultCount = int.MaxValue,
+        //                        SkipCount = 0,
+        //                        Sorting = "id asc"
+        //                    });
+        //                    idCEscrow = result.Items.LastOrDefault()?.CurrentEscrow.Id;
+        //                }
+        //                catch (Exception repoReadEx)
+        //                {
+        //                    response.message += $" Repository read failed for file {fileName}: {repoReadEx.Message}. ";
+        //                }
+
+        //                // Prepare DTO
+        //                var coesfm = new CreateOrEditCurrentEscrowDto
+        //                {
+        //                    Id = idCEscrow,
+        //                    EscrowNo = escrowNo,
+        //                    CompanyName = companyName,
+        //                    SubCompanyName = subCompanyName,
+        //                    FileName = fileName,
+        //                    CreatedOn = DateTime.Now,
+        //                    UserName = UserName,
+        //                    IsActive = !string.IsNullOrEmpty(escrowNo)
+        //                };
+
+        //                // Save to repository
+        //                try
+        //                {
+        //                    await _currentEscrowRepository.CreateOrEdit(coesfm);
+
+        //                    // Notify via SignalR
+        //                    await _hub.Clients.All.SendAsync("CurrentEscrow", coesfm);
+
+        //                    isUploaded = true;
+        //                }
+        //                catch (Exception repoCreateEx)
+        //                {
+        //                    response.message += $" Repository create failed for file {fileName}: {repoCreateEx.Message}. ";
+        //                }
+        //            }
+        //            catch (Exception fileEx)
+        //            {
+        //                response.message += $" File processing error for {filePath}: {fileEx.Message}. ";
+        //            }
+        //        }
+
+        //        response.Success = isUploaded;
+        //        response.message = isUploaded ? "Current Escrow Sent Successfully." : "Current Escrow Not Sent.";
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        response.Success = false;
+        //        response.message = $"Unexpected error: {ex.Message}";
+        //    }
+
+        //    return response;
+        //}
+
 
         ///<Summary>
         /// Upload all files for single user(file transfer)
@@ -5704,7 +5938,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
             return fullMessage;
         }
-
 
         private async Task<string> DownloadFileAsync(string fileUrl)
         {

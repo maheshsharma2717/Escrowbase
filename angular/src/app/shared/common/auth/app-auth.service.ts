@@ -8,7 +8,11 @@ export class AppAuthService {
     fileid: string;
 
     logout(reload?: boolean, returnUrl?: string): void {
-          
+
+        // 🔹 Save keys you want to keep
+        const sortField = localStorage.getItem('otherSortField');
+        const sortOrder = localStorage.getItem('otherSortOrder');
+
         let customHeaders = {
             [abp.multiTenancy.tenantIdCookieName]: abp.multiTenancy.getTenantIdCookie(),
             'Authorization': 'Bearer ' + abp.auth.getToken()
@@ -16,31 +20,38 @@ export class AppAuthService {
 
         XmlHttpRequestHelper.ajax(
             'GET',
-            AppConsts.remoteServiceBaseUrl + '/api/TokenAuth/LogOut', customHeaders, null, () => {
-                  
-               
-                    localStorage.removeItem('OpenTabList');
-                    localStorage.clear();
+            AppConsts.remoteServiceBaseUrl + '/api/TokenAuth/LogOut',
+            customHeaders,
+            null,
+            () => {
+
+                // ❌ REMOVE only what you WANT to remove
+                localStorage.removeItem('OpenTabList');
+
+                // ❌ Avoid localStorage.clear() — remove only what you need
+                // localStorage.clear();  // REMOVE THIS LINE
+
                 abp.auth.clearToken();
                 abp.auth.clearRefreshToken();
-              
-                new LocalStorageService().removeItem(AppConsts.authorization.encrptedAuthTokenName,
+
+                new LocalStorageService().removeItem(
+                    AppConsts.authorization.encrptedAuthTokenName,
                     () => {
-                         
+
+                        // 🔹 Restore your sort values
+                        if (sortField !== null) localStorage.setItem('otherSortField', sortField);
+                        if (sortOrder !== null) localStorage.setItem('otherSortOrder', sortOrder);
+
                         if (reload !== false) {
-                            if (returnUrl) {
-                                location.href = returnUrl;
-                            } else {
-                                location.href = '';
-                            }
+                            location.href = returnUrl || '';
                         }
                     }
                 );
             }
         );
-          localStorage.removeItem('activeTab');
-          localStorage.removeItem('OpenTabList');
-        //  localStorage.setItem('homeOpened','false'); 
-        //  location.href = '';
+
+        localStorage.removeItem('activeTab');
+        localStorage.removeItem('OpenTabList');
     }
+
 }

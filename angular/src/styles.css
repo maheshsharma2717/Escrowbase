@@ -207,7 +207,7 @@ li.data.ng-star-inserted {
 }
 
 .header-fixed.subheader-fixed.subheader-enabled .wrapper {
-  padding-top: 50 !important
+  padding-top: 0 !important
 }
 
 .modal-backdrop {
@@ -311,4 +311,11 @@ a.tabs {
 
 ul.nav.nav-tabs {
     flex-wrap: nowrap;
+}
+.py-2.py-lg-4.subheader.subheader-solid {
+  position: static !important;  
+}
+
+div#kt_header{
+   position: static !important; 
 }

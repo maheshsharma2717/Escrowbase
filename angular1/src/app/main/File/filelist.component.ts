@@ -466,72 +466,94 @@ this.isRename = true;
 
   uploadFile(filess) {
     debugger;
-    for (let index = 0; index < filess.length; index++) {
-      var element = filess[index];
-      this.filess.push(element.name);
-      this.file = filess
-      this.isFile = true;
-      this.fileName = this.file[0].name
-      this.sourcepath = this.fileManager.instance.getCurrentDirectory();
-      if (this.sourcepath == "") {
-        alert("Other file upload restricted due to zero file in main fileview");
-      } else {
-        debugger;
-        var uploadPath = this.sourcepath.path + "/Other";
-        debugger; 
-        var escrowNewId = this.sourcepath.path.split('/');
-        escrowNewId = escrowNewId[2];
-
-        localStorage.setItem('escrowNewID',escrowNewId);
-
-        let uploadpath1 = uploadPath.replace("/", "\\");
-         for(var i = 0; i < this.file.length; i++) {
-          var fileToUpload = <File>this.file[i];
-          const formData = new FormData();
-          formData.append('file', fileToUpload, fileToUpload.name);
-          this.http.post(this.folderPath + "ProcessRequest?path=" + uploadpath1 + "&&useriD=" + abp.session.userId, formData, { reportProgress: true, observe: 'events' })
-            .subscribe(res => {
-              let fileRes: any = res;
-              try {
-                let newResult = fileRes.body.result
-                this.fileManager1.instance.refresh();
-                this.check();
-                if (newResult.statusCode == 500) {
-                  this.spinnerUpl = false;
-                  this.file = null
-                  this.isFile = false;
-                  this.fileName = 'Select a file'
-                  alert("This name file is already exists please change file name");
-                  abp.notify.error('File already exists', 'Error');
-                }
-                if (newResult.statusCode == 200) {
-                  this.spinnerUpl = false;
-                  this.file = null
-                  this.isFile = false;
-                  this.fileName = 'Select a file'
-                  this.fileManager1.instance.refresh();
-                  abp.notify.success('File Uploaded Successfully', 'Success');
-                }
-                let checkFirstFile = this.fileManager1.instance.getCurrentDirectory();
-                if (checkFirstFile.path == "") {
-                  window.location.reload();
-                } else {
-                  this.fileManager1.instance.refresh(); this.check();
-                }
-              }
-              catch (error) { }
-            });
-
-          this.deleteAttachment(0);
-        }
-        this.sourcepath = "";
-        this.file = "";
+    // Set file properties
+    this.file = filess;
+    this.isFile = true;
+    
+    if (filess && filess.length > 0) {
+      const sanitizedFileName = this.sanitizeFileName(this.file[0].name);
+      this.fileName = sanitizedFileName;
+      
+      // Add file names to the filess array for tracking
+      for (let index = 0; index < filess.length; index++) {
+        var element = filess[index];
+        this.filess.push(element.name);
       }
+    }
+    
+    this.sourcepath = this.fileManager.instance.getCurrentDirectory();
+    if (this.sourcepath == "") {
+      alert("Other file upload restricted due to zero file in main fileview");
+    } else {
+      debugger;
+      var uploadPath = this.sourcepath.path + "/Other";
+      debugger; 
+      var escrowNewId = this.sourcepath.path.split('/');
+      escrowNewId = escrowNewId[2];
+
+      localStorage.setItem('escrowNewID',escrowNewId);
+
+      let uploadpath1 = uploadPath.replace("/", "\\");
+      
+      // Upload each file
+      for(var i = 0; i < this.file.length; i++) {
+        var fileToUpload = <File>this.file[i];
+        const sanitizedFileName = this.sanitizeFileName(fileToUpload.name);
+        const formData = new FormData();
+        formData.append('file', fileToUpload, sanitizedFileName);
+        this.http.post(this.folderPath + "ProcessRequest?path=" + uploadpath1 + "&&useriD=" + abp.session.userId, formData, { reportProgress: true, observe: 'events' })
+          .subscribe(res => {
+            let fileRes: any = res;
+            try {
+              let newResult = fileRes.body.result
+              this.fileManager1.instance.refresh();
+              this.check();
+              if (newResult.statusCode == 500) {
+                this.spinnerUpl = false;
+                this.file = null
+                this.isFile = false;
+                this.fileName = 'Select a file'
+                alert("This name file is already exists please change file name");
+                abp.notify.error('File already exists', 'Error');
+              }
+              if (newResult.statusCode == 200) {
+                this.spinnerUpl = false;
+                this.file = null
+                this.isFile = false;
+                this.fileName = 'Select a file'
+                this.fileManager1.instance.refresh();
+                abp.notify.success('File Uploaded Successfully', 'Success');
+              }
+              let checkFirstFile = this.fileManager1.instance.getCurrentDirectory();
+              if (checkFirstFile.path == "") {
+                window.location.reload();
+              } else {
+                this.fileManager1.instance.refresh(); this.check();
+              }
+            }
+            catch (error) { }
+          });
+
+        this.deleteAttachment(0);
+      }
+      this.sourcepath = "";
+      this.file = "";
     }
   }
   deleteAttachment(index) {
     this.filess.splice(index, 1)
   }
+  
+  sanitizeFileName(fileName) {
+    // Remove special characters including ~ which is used as a delimiter in the system
+    const sanitizedFileName = fileName.replace(/[&?=!@$%^+~]/g, '_');
+    const now = new Date();
+    const dateTimeStamp = now.toISOString().replace(/[:.]/g, '-');
+    const fileExtension = sanitizedFileName.substring(sanitizedFileName.lastIndexOf('.'));
+    const baseName = sanitizedFileName.substring(0, sanitizedFileName.lastIndexOf('.'));
+    return `${baseName}_${dateTimeStamp}${fileExtension}`;
+  }
+  
   select(evt) {
     
     var files = evt.target.files;
@@ -539,7 +561,8 @@ this.isRename = true;
     if (files && file) {
       this.file = files
       this.isFile = true;
-      this.fileName = this.file[0].name
+      const sanitizedFileName = this.sanitizeFileName(this.file[0].name);
+      this.fileName = sanitizedFileName
     }
     this.uploadFile(files);
   }

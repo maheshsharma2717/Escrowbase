@@ -49,6 +49,11 @@ export function appInitializerFactory(
             AppConsts.appBaseHref = getBaseHref(platformLocation);
             let appBaseUrl = getDocumentOrigin() + AppConsts.appBaseHref;
 
+            const fail = (err: any) => {
+                spinnerService.hide();
+                reject(err);
+            };
+
             AppPreBootstrap.run(appBaseUrl, () => {
 
                 handleLogoutRequest(injector.get(AppAuthService));
@@ -71,7 +76,7 @@ export function appInitializerFactory(
                     });
                 }
 
-            }, resolve, reject);
+            }, resolve, fail);
         });
     };
 }

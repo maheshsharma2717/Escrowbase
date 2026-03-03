@@ -70,6 +70,7 @@ export class ChatSignalrService extends AppComponentBase {
     }
 
     registerChatEvents(connection): void {
+        debugger
         connection.on('getChatMessage', message => {
             abp.event.trigger('app.chat.messageReceived', message);
         });
@@ -118,6 +119,15 @@ export class ChatSignalrService extends AppComponentBase {
            this.callComponentMethod();
         }
         });
+        connection.on('CurrentEscrow', (data) => {
+        console.log('Escrow received from server:', data);
+
+        // Option 1: push into observable
+        this.dataSource.next(data);
+
+        // Option 2: trigger ABP event so any component can listen
+        abp.event.trigger('app.currentEscrow.received', data);
+    });
     }
 
     callComponentMethod() {
@@ -164,4 +174,5 @@ export class ChatSignalrService extends AppComponentBase {
             });
         });
     }
+    
 }

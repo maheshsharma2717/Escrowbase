@@ -28,8 +28,9 @@ import { FileViewComponent } from '../File/filelist.component';
 import { TabsComponent } from '../../tabs/tabs.component';
 import { DefaultLayoutComponent } from '../../shared/layout/themes/default/default-layout.component'
 import { CookieConsentService } from '@shared/common/session/cookie-consent.service';
-
+import { SharedServices } from '../../shared/common/Shared/SharedService';
 declare var chrome: any;
+declare var abp: any;
 import Swal from 'sweetalert2/dist/sweetalert2.js';
 @Component({
 
@@ -99,6 +100,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     isAdminAssigned: boolean = false;
     showESignModal: boolean = false;
     tempDataNew: any = null;
+    isEOXUser: boolean = false;
 
     constructor(
         injector: Injector,
@@ -108,7 +110,8 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         private ChatSignalrService: ChatSignalrService,
         private _router: Router,
         private route: ActivatedRoute,
-        private _defaultLayoutComponent: DefaultLayoutComponent
+        private _defaultLayoutComponent: DefaultLayoutComponent,
+        private sharedServices: SharedServices
     ) {
         super(injector);
 
@@ -171,6 +174,10 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     }
 
     ngOnInit(): void {
+        this.sharedServices.escrow$.subscribe((data) => {
+            console.log("Received escrow data:", data);
+            this.checkAndOpenFile(data);
+        });
         console.log('Current Route' + this.router);
         if (localStorage.getItem('homeOpened') == 'true') {
             localStorage.setItem('notab', 'false');
@@ -213,6 +220,143 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     OpenOnSame() {
 
         window.location.replace("https://www.escrowbaseweb.com/app/main/Userdashboard")
+    }
+
+    availableEscrows: any[] = [];
+    recentEscrows: any[] = [];
+    selectedEscrow: any = "";
+
+    populateRecentDropdown() {
+        const url = AppConsts.remoteServiceBaseUrl + "/api/services/app/CurrentEscrows/GetAll";
+        this.http.get(url).subscribe((res: any) => {
+            const items = res?.result?.items;
+            if (items && items.length > 0) {
+                const currentEscrow = items[0].currentEscrow;
+                const { escrowNo, companyName, subCompanyName } = currentEscrow;
+
+                if (escrowNo) {
+                    // Only show the current escrow if this user actually has it in their escrow list
+                    const userOwnsEscrow = this.escrowList.some(x => x.escrowid === escrowNo);
+                    if (!userOwnsEscrow) {
+                        this.assembleDropdown(null);
+                    } else {
+                        const url1 = AppConsts.remoteServiceBaseUrl + "/api/services/app/SrInvitationRecords/GetAll";
+                        this.http.get(url1).subscribe((invRes: any) => {
+                            const userId = this.appSession.user.emailAddress.trim();
+                            const records = invRes?.result?.items;
+                            let userType = "EOX";
+
+                            if (records) {
+                                const match = records.find((x: any) =>
+                                    x.srInvitationRecord.email === userId &&
+                                    x.srInvitationRecord.escrowNumber === escrowNo &&
+                                    x.srInvitationRecord.escrowCompany === companyName
+                                );
+                                if (match) {
+                                    userType = match.srInvitationRecord.usertype;
+                                }
+                            }
+                            userType = userType.replace('{', '').replace('}', '');
+
+                            const dataNew = {
+                                c: btoa(companyName),
+                                e: btoa(escrowNo),
+                                sc: btoa(subCompanyName),
+                                u: btoa(userType),
+                                isId: false
+                            };
+
+                            this.assembleDropdown({
+                                label: `Current escrow :   ${escrowNo} - ${companyName}`,
+                                value: dataNew
+                            });
+                        }, error => {
+                            this.assembleDropdown(null);
+                        });
+                    }
+                } else {
+                    this.assembleDropdown(null);
+                }
+            } else {
+                this.assembleDropdown(null);
+            }
+        }, error => {
+            this.assembleDropdown(null);
+        });
+    }
+
+    assembleDropdown(currentEscrowItem) {
+        debugger;
+        this.availableEscrows = [];
+
+        // Add "Current/Selected" escrow item first if it exists and is valid
+        if (currentEscrowItem && currentEscrowItem.value !== '') {
+            this.availableEscrows.push(currentEscrowItem);
+        } else {
+            // Keep the placeholder if no current escrow, but ensure it doesn't duplicate the HTML "Select Escrow"
+            this.availableEscrows.push({ label: 'Current escrow not sent', value: '', disabled: true });
+        }
+
+        // Fetch recent escrows from backend
+        const url = AppConsts.remoteServiceBaseUrl + "/api/services/app/EscrowAccessHistories/GetRecentEscrows";
+
+        let headers = new HttpHeaders();
+        if (abp.auth.getToken()) {
+            headers = headers.set('Authorization', 'Bearer ' + abp.auth.getToken());
+        }
+
+        this.http.get(url, { headers: headers }).subscribe((res: any) => {
+            const items = res?.result;
+            if (items && items.length > 0) {
+                this.recentEscrows = items; // Store for fallback lookup
+
+                // Patch the current escrow item with the real ID if it matches one of the recent items
+                // This ensures LogAccess receives the ID even for the 'Current' selection
+                if (this.availableEscrows.length > 0 && this.availableEscrows[0].value && this.availableEscrows[0].value.e) {
+                    const currentNum = atob(this.availableEscrows[0].value.e);
+                    const match = items.find(i => i.escrowNumber === currentNum);
+                    if (match) {
+                        this.availableEscrows[0].value.realId = btoa(match.escrowId.toString());
+                    }
+                }
+
+                items.forEach(item => {
+                    const label = `${item.escrowNumber} - ${item.companyName}`;
+
+
+                    // Skip invalid items (e.g. no escrowId)
+                    if (!item.escrowId) {
+                        return;
+                    }
+
+                    // Only show recent escrows the user actually has access to
+                    const userOwnsThis = this.escrowList.some(x => x.escrowid === item.escrowNumber);
+                    if (!userOwnsThis) {
+                        return;
+                    }
+
+                    const dataNew = {
+                        c: btoa(item.companyName || ''),
+                        e: btoa(item.escrowNumber || ''), // Use escrowNumber for correct tab labeling
+                        realId: btoa(item.escrowId.toString()), // Store valid ID for logging
+                        sc: btoa(item.subCompanyName || ''),
+                        u: btoa(item.userType || ''),
+                        isId: false
+                    };
+
+                    this.availableEscrows.push({
+                        label: label,
+                        value: dataNew
+                    });
+                });
+            }
+        });
+    }
+
+    onEscrowSelect() {
+        if (this.selectedEscrow) {
+            this.checkAndOpenFile(this.selectedEscrow);
+        }
     }
 
     getEscrowClients(event?: LazyLoadEvent, IsRefresh: boolean = false) {
@@ -272,10 +416,15 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                         e: btoa(this.output['escrowId']),
                         sc: btoa(sub),
                         u: btoa(split),
+                        isId: true
                     }
                     this.escrowList.push(customObj);
                     //this._defaultLayoutComponent.onOpenAbout(customObj.dataNew);
                 }
+
+                // Check if any record corresponds to an EOX user
+                this.isEOXUser = this.escrowList.some(x => x.type && x.type.includes("EOX"));
+
                 this.escrowList = this.escrowList.filter((test, index, array) =>
                     index === array.findIndex((findTest) =>
                         findTest.escrowid === test.escrowid && findTest.type === test.type && findTest.subCompany === test.subCompany
@@ -290,6 +439,11 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                     this.primengTableHelper.records = this.escrowList;
                 }
                 this.primengTableHelper.hideLoadingIndicator();
+
+                // Auto-populate escrow type dropdown if EOX user
+                if (this.isEOXUser) {
+                    this.populateRecentDropdown();
+                }
 
 
                 this.fileid = localStorage.getItem('EscrowBaseWeb/abpzerotemplate_local_storage/Escrow');
@@ -349,22 +503,39 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
             }, 500)
 
         }
-        var listOfOpenTab = localStorage.getItem("OpenTabList")
-        if (listOfOpenTab != null || listOfOpenTab !== undefined || listOfOpenTab != "") {
-            if (listOfOpenTab != "" && listOfOpenTab != null && listOfOpenTab != undefined) {
-                var list = JSON.parse(listOfOpenTab);
 
-                for (let i = 0; i < list.length; i++) {
-                    let data = {
-                        c: list[i].c,
-                        e: list[i].e,
-                        sc: list[i].sc,
-                        u: list[i].u,
+        // Always restore tabs from OpenTabList so they remain visible in the UI
+        // On dashboard reload, tabs will be created but not selected, then dashboard tab will be selected
+        const navEntry = performance.getEntriesByType('navigation')[0] as any;
+        const isReload = navEntry?.type === 'reload';
+        const isDashboardRoute = this._router.url?.includes('/main/dashboard') || this._router.url?.includes('/main/Userdashboard');
+
+        const listOfOpenTab = localStorage.getItem('OpenTabList');
+        if (listOfOpenTab != null && listOfOpenTab !== '') {
+            const list = JSON.parse(listOfOpenTab);
+
+            for (let i = 0; i < list.length; i++) {
+                const data = {
+                    c: list[i].c,
+                    e: list[i].e,
+                    sc: list[i].sc,
+                    u: list[i].u,
+                };
+                setTimeout(() => {
+                    this._defaultLayoutComponent.onOpenAbout(data, true);
+                }, 500);
+            }
+
+            // After restoring all tabs, if on dashboard reload AND no escrow tab was active, ensure dashboard tab is selected
+            // If an escrow tab was active, it will be restored by TabsComponent.restoreSavedTab()
+            const savedTab = localStorage.getItem('activeTab');
+            if (isReload && isDashboardRoute && (!savedTab || savedTab === 'Dashboard')) {
+                setTimeout(() => {
+                    // Select the dashboard tab (first static tab) after tabs are restored
+                    if (this._defaultLayoutComponent.tabsComponent?.tabs?.first) {
+                        this._defaultLayoutComponent.tabsComponent.selectTab1(this._defaultLayoutComponent.tabsComponent.tabs.first);
                     }
-                    setTimeout(() => {
-                        this._defaultLayoutComponent.onOpenAbout(data, true);
-                    }, 500)
-                }
+                }, 1000);
             }
         }
     }
@@ -399,21 +570,98 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
 
     onOpenFileManager(dataNew, fromUI) {
         debugger
+        console.log('onOpenFileManager called', dataNew, fromUI);
         if (fromUI == true) {
             var queryParams = dataNew;
             const Key = 'accessTYpe' + atob(queryParams['e']);
-            localStorage.setItem(Key, atob(queryParams['u']))
+            const userType = atob(queryParams['u']);
+            localStorage.setItem(Key, userType);
+
+            // Log access to backend ONLY if userType is EOX
+            if (userType === 'EOX') {
+                console.log('Calling logEscrowAccess for EOX user');
+
+                let idToLog = atob(queryParams['e']);
+                let isIdLog = queryParams['isId'];
+
+                if (queryParams['realId']) {
+                    idToLog = atob(queryParams['realId']);
+                    isIdLog = true;
+                }
+
+                this.logEscrowAccess(idToLog, isIdLog);
+            }
         }
 
         this._defaultLayoutComponent.onOpenAbout(dataNew, false);
         this.setListOfOpenTab(dataNew);
-        localStorage.setItem('activeTab', atob(queryParams['e']));
-
+        localStorage.setItem('activeTab', atob(dataNew.e));
     }
+
+    logEscrowAccess(escrowIdOrNumber: string, isId: boolean = false) {
+        debugger;
+        console.log('logEscrowAccess called', escrowIdOrNumber, isId);
+
+        // IMPORTANT: The 'isId' flag is unreliable. The value might be:
+        // 1. A numeric ID as a string (e.g., "123")
+        // 2. An alphanumeric escrow number (e.g., "CB125")
+        // Always try to parse as a number first.
+
+        let id: number | null = null;
+        let num: string | null = null;
+
+        const parsedId = parseInt(escrowIdOrNumber);
+        console.log('Attempting to parse:', escrowIdOrNumber, '→ parseInt result:', parsedId, 'isNaN:', isNaN(parsedId));
+
+        if (!isNaN(parsedId) && parsedId > 0) {
+            // Successfully parsed as a numeric ID
+            id = parsedId;
+            console.log('Successfully parsed as numeric ID:', id);
+        } else {
+            // Not a valid number, treat as escrow number
+            num = escrowIdOrNumber;
+            console.log('Treating as escrowNumber:', num);
+
+            // Fallback lookup from recent list
+            if (this.recentEscrows && this.recentEscrows.length > 0) {
+                const match = this.recentEscrows.find(x => x.escrowNumber == num);
+                if (match) {
+                    id = match.escrowId;
+                    console.log('Resolved ID from recentEscrows:', id);
+                }
+            }
+        }
+
+        let url = AppConsts.remoteServiceBaseUrl + "/api/services/app/EscrowAccessHistories/LogAccess";
+        const body = {
+            escrowId: id,
+            escrowNumber: num
+        };
+
+        console.log('LogAccess URL:', url, 'Body:', body);
+
+        let headers = new HttpHeaders();
+        if (abp.auth.getToken()) {
+            headers = headers.set('Authorization', 'Bearer ' + abp.auth.getToken());
+        }
+
+        this.http.post(url, body, { headers: headers }).subscribe(() => {
+            console.log('LogAccess success, populating dropdown (with delay)');
+            // Add slight delay to ensure backend commit propagation
+            setTimeout(() => {
+                this.populateRecentDropdown();
+            }, 500);
+        }, error => {
+            console.error('LogAccess failed', error);
+        });
+    }
+
+
     SearchChange() {
         this.searchText = "";
         this.filterGrid();
     }
+
     filterGrid() {
         if (this.filterLabel) {
             if (this.searchText) {
@@ -429,7 +677,6 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                 this.primengTableHelper.totalRecordsCount = this.escrowList.length;
             }
         } else {
-
             this.primengTableHelper.records = this.escrowList;
             this.primengTableHelper.totalRecordsCount = this.escrowList.length;
         }
@@ -480,6 +727,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         }
     }
     checkAndOpenFile(dataNew: any) {
+        debugger;
         debugger;
         const enterpriseName = atob(dataNew.c);
         const url = AppConsts.remoteServiceBaseUrl + "/GetEsignStatus?escrowId=" + enterpriseName;
@@ -539,6 +787,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     //         }
     //     });
     // }
+
     editESignCreds(dataNew: any) {
         const enterpriseId = atob(dataNew.c);
         const url = AppConsts.remoteServiceBaseUrl + "/GetUserCreds?enterpriseId=" + enterpriseId;
@@ -679,6 +928,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     //         this.isAdminAssigned = false;
     //     }
     // }
+
     onESignCompanyChange() {
         this.eSignCreds = {
             clientId: '',
@@ -694,8 +944,6 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         // Update admin flag based on selection
         this.isAdminAssigned = (this.selectedESignCompany === 'admin-suggested');
     }
-
-
 }
 
 export class escrows {

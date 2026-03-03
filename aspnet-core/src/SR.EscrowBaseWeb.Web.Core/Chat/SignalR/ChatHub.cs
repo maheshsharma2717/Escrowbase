@@ -11,6 +11,7 @@ using Castle.Core.Logging;
 using Castle.Windsor;
 using Microsoft.AspNetCore.SignalR;
 using SR.EscrowBaseWeb.Chat;
+using SR.EscrowBaseWeb.GetCurrentEscrow.Dtos;
 
 namespace SR.EscrowBaseWeb.Web.Chat.SignalR
 {
@@ -100,6 +101,11 @@ namespace SR.EscrowBaseWeb.Web.Chat.SignalR
                 _isCallByRelease = true;
                 _windsorContainer.Release(this);
             }
+        }
+        public async Task SendCurrentEscrow(CreateOrEditCurrentEscrowDto escrow)
+        {
+            // Broadcast to all connected clients
+            await Clients.All.SendAsync("CurrentEscrow", escrow);
         }
     }
 }

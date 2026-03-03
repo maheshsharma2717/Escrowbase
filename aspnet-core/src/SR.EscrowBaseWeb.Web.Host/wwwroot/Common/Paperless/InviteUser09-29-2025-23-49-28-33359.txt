@@ -1,0 +1,4 @@
+Email, User Name, Company, Invitee, Esc#, Access Types
+"asus@yopmail.com","Narender","Samsung123","JEANNIE MILLER","Samsungescrow","{EOX}"
+"nokia@yopmail.com","Narender","Samsung123","JEANNIE MILLER","Samsungescrow","{BR1}"
+"apple@yopmail.com","Narender","Samsung123","JEANNIE MILLER","Samsungescrow","{SR1}"

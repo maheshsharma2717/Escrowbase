@@ -54,36 +54,34 @@ namespace SR.EscrowBaseWeb.SrInvitationRecords
                 .OrderBy(input.Sorting ?? "id asc")
                 .PageBy(input);
 
-			var srInvitationRecords = from o in pagedAndFilteredSrInvitationRecords
-                         join o1 in _lookup_userRepository.GetAll() on o.UserId equals o1.Id into j1
-                         from s1 in j1.DefaultIfEmpty()
-                         
-                         select new GetSrInvitationRecordForViewDto() {
-							SrInvitationRecord = new SrInvitationRecordDto
-							{
-                                Email = o.Email,
-                                DomainAccessInstance = o.DomainAccessInstance,
-                                EscrowCompany = o.EscrowCompany,
-                                EscrowOfficer = o.EscrowOfficer,
-                                EscrowContactEmail = o.EscrowContactEmail,
-                                EscrowNumber = o.EscrowNumber,
-                                Usertype = o.Usertype,
-                                UserId = o.UserId,
-                                EscrowOfficerPhoneNumber = o.EscrowOfficerPhoneNumber,
-                                Id = o.Id
-							},
-                         	UserName = s1 == null || s1.Name == null ? "" : s1.Name.ToString()
-						};
+            var srInvitationRecords = from o in filteredSrInvitationRecords
+                                      join o1 in _lookup_userRepository.GetAll() on o.UserId equals o1.Id into j1
+                                      from s1 in j1.DefaultIfEmpty()
+                                      select new GetSrInvitationRecordForViewDto
+                                      {
+                                          SrInvitationRecord = new SrInvitationRecordDto
+                                          {
+                                              Email = o.Email,
+                                              DomainAccessInstance = o.DomainAccessInstance,
+                                              EscrowCompany = o.EscrowCompany,
+                                              EscrowNumber = o.EscrowNumber,
+                                              Usertype = o.Usertype,
+                                              UserId = o.UserId,
+                                              Id = o.Id
+                                          },
+                                          UserName = s1 == null ? "" : s1.Name
+                                      };
 
-            var totalCount = await filteredSrInvitationRecords.CountAsync();
+            var resultList = await srInvitationRecords.ToListAsync();
 
             return new PagedResultDto<GetSrInvitationRecordForViewDto>(
-                totalCount,
-                await srInvitationRecords.ToListAsync()
+                resultList.Count,   // or totalCount
+                resultList
             );
-         }
-		 
-		 [AbpAuthorize(AppPermissions.Pages_SrInvitationRecords_Edit)]
+
+        }
+
+        [AbpAuthorize(AppPermissions.Pages_SrInvitationRecords_Edit)]
 		 public async Task<GetSrInvitationRecordForEditOutput> GetSrInvitationRecordForEdit(EntityDto<long> input)
          {
             var srInvitationRecord = await _srInvitationRecordRepository.FirstOrDefaultAsync(input.Id);

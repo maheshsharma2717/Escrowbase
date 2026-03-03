@@ -59198,8 +59198,7 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
 .swal2-popup {
   padding: 2rem;
   border-radius: 0.42rem; }
-  .swal2-popup .swal2-icon {
-    margin: 2rem 0 0rem 0; }
+
   .swal2-popup .swal2-title {
     font-weight: 500;
     font-size: 1.3rem;

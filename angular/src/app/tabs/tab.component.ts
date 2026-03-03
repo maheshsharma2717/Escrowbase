@@ -12,14 +12,14 @@ import { Component, Input } from '@angular/core';
   `
   ],
   template: `
-    <div [hidden]="!active" >
+    <ng-container *ngIf="active">
       <ng-content></ng-content>
       <ng-container *ngIf="template"
         [ngTemplateOutlet]="template"
         [ngTemplateOutletContext]="{ person: dataContext }"
       >
       </ng-container>
-    </div>
+    </ng-container>
   `
 })
 export class TabComponent {

@@ -143,7 +143,7 @@ export class EscrowUsertagsComponent extends AppComponentBase {
           });
           return;
         }
-      
+
         Swal.fire({
           title: this.editMode ? 'Tag updated successfully.' : 'Tag saved successfully.',
           icon: 'success',
@@ -158,7 +158,7 @@ export class EscrowUsertagsComponent extends AppComponentBase {
         this.editMode = false;
         this.editingTagId = null;
         this.textinput();
-       
+
 
         setTimeout(() => {
           this.tagTabSet.tabs[1].active = true;
@@ -169,7 +169,7 @@ export class EscrowUsertagsComponent extends AppComponentBase {
       }
     });
   }
- 
+
   deleteTag(id: number) {
     debugger;
     let EscrowTab = localStorage.getItem("activeTab")
@@ -178,7 +178,8 @@ export class EscrowUsertagsComponent extends AppComponentBase {
     if (disallowedTypes.includes(userType)) {
       abp.notify.error("You are not allowed to delete the tags.");
       return;
-    }    
+    }
+
     Swal.fire({
       title: 'Are you sure?',
       text: 'Do you really want to delete this tag?',

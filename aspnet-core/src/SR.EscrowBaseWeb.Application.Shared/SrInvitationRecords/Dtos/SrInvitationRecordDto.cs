@@ -21,9 +21,9 @@ namespace SR.EscrowBaseWeb.SrInvitationRecords.Dtos
 		public string Usertype { get; set; }
 
 		public string EscrowOfficerPhoneNumber { get; set; }
+		public string SubCompanyName { get; set; }
 
-
-		 public long? UserId { get; set; }
+		public long? UserId { get; set; }
 
 		 
     }

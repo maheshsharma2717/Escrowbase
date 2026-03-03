@@ -30,6 +30,16 @@ namespace SR.EscrowBaseWeb.Authorization
 
             var pages = context.GetPermissionOrNull(AppPermissions.Pages) ?? context.CreatePermission(AppPermissions.Pages, L("Pages"));
 
+            var escrowAccessHistories = pages.CreateChildPermission(AppPermissions.Pages_EscrowAccessHistories, L("EscrowAccessHistories"), multiTenancySides: MultiTenancySides.Tenant);
+            escrowAccessHistories.CreateChildPermission(AppPermissions.Pages_EscrowAccessHistories_Create, L("CreateNewEscrowAccessHistory"), multiTenancySides: MultiTenancySides.Tenant);
+            escrowAccessHistories.CreateChildPermission(AppPermissions.Pages_EscrowAccessHistories_Edit, L("EditEscrowAccessHistory"), multiTenancySides: MultiTenancySides.Tenant);
+            escrowAccessHistories.CreateChildPermission(AppPermissions.Pages_EscrowAccessHistories_Delete, L("DeleteEscrowAccessHistory"), multiTenancySides: MultiTenancySides.Tenant);
+
+            var currentEscrows = pages.CreateChildPermission(AppPermissions.Pages_CurrentEscrows, L("CurrentEscrows"));
+            currentEscrows.CreateChildPermission(AppPermissions.Pages_CurrentEscrows_Create, L("CreateNewCurrentEscrow"));
+            currentEscrows.CreateChildPermission(AppPermissions.Pages_CurrentEscrows_Edit, L("EditCurrentEscrow"));
+            currentEscrows.CreateChildPermission(AppPermissions.Pages_CurrentEscrows_Delete, L("DeleteCurrentEscrow"));
+
             var tagsAndFileMappingses = pages.CreateChildPermission(AppPermissions.Pages_TagsAndFileMappingses, L("TagsAndFileMappingses"), multiTenancySides: MultiTenancySides.Host);
             tagsAndFileMappingses.CreateChildPermission(AppPermissions.Pages_TagsAndFileMappingses_Create, L("CreateNewTagsAndFileMappings"), multiTenancySides: MultiTenancySides.Host);
             tagsAndFileMappingses.CreateChildPermission(AppPermissions.Pages_TagsAndFileMappingses_Edit, L("EditTagsAndFileMappings"), multiTenancySides: MultiTenancySides.Host);

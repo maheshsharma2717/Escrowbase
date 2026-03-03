@@ -11,16 +11,21 @@ td {
   border: 1px solid #ddd;
 }
 
-/* th {
-    background-color: #f2f2f2;
-} */
+th input[type="checkbox"] {
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+td input[type="checkbox"] {
+  cursor: pointer;
+}
+
 tr:hover {
-  background-color: #f9f9f9;
+  background-color: #f9f9f9
 }
 
 td {
   border: none !important;
-  padding-left: 10px;
 }
 
 th {
@@ -79,7 +84,7 @@ th {
   background: white;
   z-index: 9999;
   overflow: auto;
-  padding: 10px;
+
 }
 
 tbody tr:nth-child(odd) {
@@ -145,10 +150,10 @@ tbody tr:nth-child(even) {
 
 .fullscreen-container-main.fullscreen-container-main {
   position: fixed;
-  top: 0;
+  top: 100px;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: calc(100vh - 100px);
   background-color: white;
   overflow: auto;
   z-index: 9999;
@@ -211,13 +216,15 @@ thead {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%; /* container controls the width */
+  max-width: 100%;
+  /* container controls the width */
   vertical-align: middle;
 }
 
 @media (max-width: 768px) {
   .truncate-ellipsis {
-    max-width: 150px; /* adjust as needed */
+    max-width: 150px;
+    /* adjust as needed */
   }
 }
 
@@ -230,23 +237,27 @@ table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
-  min-width: 800px; /* Minimum width for scroll */
+  min-width: 800px;
+  /* Minimum width for scroll */
 }
 
-th, td {
+th,
+td {
 
   text-align: left;
   white-space: nowrap;
 }
 
 .context-menu {
-  white-space: normal; /* For better wrapping in small screen context menu */
+  white-space: normal;
+  /* For better wrapping in small screen context menu */
 }
 
 @media screen and (max-width: 768px) {
   table {
     font-size: 12px;
   }
+
   .context-menu {
     width: 100%;
     min-width: auto;
@@ -265,7 +276,7 @@ th, td {
 .note-input:focus {
   border: 1px solid rgb(33, 150, 243);
   outline: none;
-    background-color: white;
+  background-color: white;
 }
 
 /* Placeholder color */
@@ -279,16 +290,44 @@ th, td {
   font-family: inherit;
   resize: none;
   transition: height 0.2s ease;
-  height: 20px; /* default height */
+  height: 20px;
+  /* default height */
+  background-color: transparent;
 }
 
-i {    
+tbody i {
   font-size: 12px;
   margin-left: 3px;
-  color:#888;
+  color: #888;
+}
+
+.fullscreen-toggle-icon {
+  font-size: 16px !important;
+  color: #464E5F !important;
+  margin-left: 0 !important;
 }
 
 .hover-row:hover {
-  background-color: #e0f2fe;
+  background-color: #c6e2ff !important;
 }
 
+.btn-xs-custom {
+  padding: 1px 6px !important;
+  font-size: 11px !important;
+  line-height: normal !important;
+  height: 24px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fade-btn {
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.fade-btn.visible {
+  opacity: 1;
+  visibility: visible;
+}

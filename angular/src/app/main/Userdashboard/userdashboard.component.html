@@ -1,5 +1,5 @@
 <div>
-    <div class="content d-flex flex-column flex-column-fluid" style="padding: 0px !important; margin-top: 70px">
+    <div class="content d-flex flex-column flex-column-fluid" style="padding: 0px !important">
 
         <sub-header style="left: 0 !important; top: 80px;" title="">
 
@@ -10,15 +10,21 @@
             <div class="card card-custom gutter-b" style="
             box-shadow: 0px 0px 30px 0px rgb(82 63 105);">
 
-                <div class="card-body">
+                <div class="card-body" style="padding: 15px;">
                     <div class="kt-portlet kt-portlet--mobile">
                         <div class="kt-portlet__body">
                             <div class="row">
-                                <div class="col-md-6">
-                                    <!-- <button (click)="openNewTab()">Click Me</button>  -->
+                                <div class="col-md-3" style="padding-bottom: 5px;" *ngIf="isEOXUser">
+                                    <span class="searchlable">Recent escrow</span>
+                                    <select class="form-control" [(ngModel)]="selectedEscrow"
+                                        (change)="onEscrowSelect()">
+                                        <option value="">Select Escrow</option>
+                                        <option *ngFor="let escrow of availableEscrows" [ngValue]="escrow.value"
+                                            [disabled]="escrow.disabled">
+                                            {{escrow.label}}</option>
+                                    </select>
                                 </div>
-                                <div class=" col-md-3" style="
-                                padding-bottom: 10px;">
+                                <div class=" col-md-3 ml-auto" style="padding-bottom: 5px;">
                                     <span class="searchlable">Search With</span>
                                     <select class="form-control" [(ngModel)]="filterLabel" (change)="SearchChange()">
                                         <option value="">Please Select</option>
@@ -30,8 +36,7 @@
                                         <option value="seller">Seller</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3" style="
-                                padding-bottom: 10px;">
+                                <div class="col-md-3" style="padding-bottom: 5px;">
                                     <span class="searchlable">Search Value</span>
                                     <input type="tel" class="form-control" [(ngModel)]="searchText" placeholder="Search"
                                         name="search" (keyup)="filterGrid()">
@@ -42,7 +47,8 @@
                                 <div class="primeng-datatable-container col-12" [busyIf]="primengTableHelper.isLoading">
                                     <p-table (onLazyLoad)="getEscrowClients($event)"
                                         [value]="primengTableHelper?.records" [lazy]="false"
-                                        [globalFilterFields]="['subCompany', 'escrowid', 'type', 'address', 'buyer', 'seller']">
+                                        [globalFilterFields]="['subCompany', 'escrowid', 'type', 'address', 'buyer', 'seller']"
+                                        styleClass="p-datatable-sm">
 
                                         <ng-template pTemplate="header">
                                             <tr>
@@ -77,44 +83,47 @@
                                                     <!-- <p-sortIcon field="record.seller"></p-sortIcon> -->
                                                 </th>
 
-                                                <th style="width: 130px">
+                                                <th style="width: 200px">
                                                     {{l('Actions')}}</th>
                                             </tr>
                                         </ng-template>
                                         <ng-template pTemplate="body" let-record>
-                                            <tr class="p-selectable-row">
+                                            <tr>
 
-                                                <td style="width:150px">
+                                                <td style="width:150px; font-size:80%">
                                                     <!-- <span class="ui-column-title"> {{l('Company')}}</span> -->
                                                     <span class="p-column-title"> subCompany </span>
                                                     <b>{{record.subCompany}}</b>
                                                 </td>
-                                                <td style="width:150px">
+                                                <td style="width:150px; font-size: 80%">
                                                     <!-- <span class="ui-column-title"> {{l('EscrowId')}}</span> -->
                                                     <span class="p-column-title"> escrowid </span>
                                                     {{record.escrowid}}
                                                 </td>
-                                                <td style="width:150px">
+                                                <td style="width:150px; font-size: 80%">
                                                     <!-- <span class="ui-column-title"> {{l('Action')}}</span> -->
                                                     <span class="p-column-title"> type </span>
                                                     {{record.type}}
                                                 </td>
 
-                                                <td style="width:150px">
+                                                <td style="width:150px; font-size: 80%">
                                                     <!-- <span class="ui-column-title"> {{l('StreetAddress')}}</span> -->
-                                                    {{record.address}}
+                                                    <span tooltip="{{record.address}}" placement="top">
+                                                        {{ record.address.length > 20 ? (record.address | slice:0:20) +
+                                                        '…' : record.address }}
+                                                    </span>
                                                 </td>
-                                                <td style="width:150px">
+                                                <td style="width:150px; font-size: 80%">
                                                     <!-- <span class="ui-column-title"> {{l('Buyer')}}</span> -->
                                                     {{record.buyer}}
                                                 </td>
-                                                <td style="width:150px">
+                                                <td style="width:150px; font-size: 80%">
                                                     <!-- <span class="ui-column-title"> {{l('Seller')}}</span> -->
                                                     {{record.seller}}
                                                 </td>
 
-                                                <td style="width: 130px">
-                                                    <div class="btn-group">
+                                                <td style="width: 200px; font-size: 80%">
+                                                    <div class="d-flex align-items-center gap-2">
                                                         <!-- <app-upload-file></app-upload-file> -->
                                                         <!-- <button class="btn btn-sm btn-primary"
                                                             (click)="onOpenFileManager(record.dataNew,true)">
@@ -124,15 +133,15 @@
                                                         </button> -->
                                                         <button class="btn btn-sm btn-primary"
                                                             (click)="checkAndOpenFile(record.dataNew)">
-                                                            <a style="color: white;">
-                                                                <i class="fa fa-cog"></i><span class="caret"></span>
+                                                            <a style="color: white; white-space: nowrap;">
+                                                                <i class="fa fa-cog"></i>
                                                                 {{ l("Go To Fileview") }}
                                                             </a>
                                                         </button>
                                                         <button class="btn btn-sm btn-success"
                                                             (click)="editESignCreds(record.dataNew)">
-                                                            <a style="color: white;">
-                                                                <i class="fa fa-pen"></i><span class="caret"></span>
+                                                            <a style="color: white; white-space: nowrap;">
+                                                                <i class="fa fa-pen"></i>
                                                                 {{ l("Edit") }}
                                                             </a>
                                                         </button>
@@ -168,278 +177,282 @@
                                             {{l('TotalRecordsCount', primengTableHelper.totalRecordsCount)}}
                                         </span>
                                     </div>
+                                    <!--<Primeng-Datatable-End>-->
                                 </div>
-                                <!--<Primeng-Datatable-End>-->
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            <createOrEditEscrowClientModal #createOrEditEscrowClientModal (modalSave)="getEscrowClients()">
+            </createOrEditEscrowClientModal>
+            <viewEscrowClientModal #viewEscrowClientModal></viewEscrowClientModal>
+            <entityTypeHistoryModal #entityTypeHistoryModal></entityTypeHistoryModal>
         </div>
-        <createOrEditEscrowClientModal #createOrEditEscrowClientModal (modalSave)="getEscrowClients()">
-        </createOrEditEscrowClientModal>
-        <viewEscrowClientModal #viewEscrowClientModal></viewEscrowClientModal>
-        <entityTypeHistoryModal #entityTypeHistoryModal></entityTypeHistoryModal>
     </div>
-</div>
 
-<div class="modal-overlay" *ngIf="showESignModal">
-    <div class="modal-content compact">
-        <div class="modal-header">
-            <h4 class="m-0">Select E-Sign Company</h4>
-            <button class="close-btn" (click)="closeModal()">×</button>
-        </div>
-
-        <div class="modal-body">
-            <div class="form-group mb-2">
-                <select id="esignCompany" class="form-control" [(ngModel)]="selectedESignCompany"
-                    (change)="onESignCompanyChange()">
-                    <option value="">-- Select --</option>
-                    <option value="2001">Zoho Sign</option>
-                    <option value="3001">DocuSign</option>
-                    <option value="4001">SutiSoft</option>
-                    <option value="admin-suggested">Admin Suggested</option>
-                </select>
-                <span class="text-danger small" *ngIf="isFormSubmitted && !selectedESignCompany?.trim()">Required</span>
+    <div class="modal-overlay" *ngIf="showESignModal">
+        <div class="modal-content compact">
+            <div class="modal-header">
+                <h4 class="m-0">Select E-Sign Company</h4>
+                <button class="close-btn" (click)="closeModal()">×</button>
             </div>
 
-            <div *ngIf="selectedESignCompany !== 'admin-suggested'">
-                <div class="grid">
-                    <!-- Client ID -->
-                    <div class="form-group mb-2">
-                        <label for="clientId">{{ selectedESignCompany === '4001' ? 'Access Key' : 'Client ID' }}</label>
-                        <textarea id="clientId" rows="2" class="form-control"
-                            [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.clientId?.trim()}"
-                            [(ngModel)]="eSignCreds.clientId"></textarea>
-                        <span class="text-danger small"
-                            *ngIf="isFormSubmitted && !eSignCreds.clientId?.trim()">Required</span>
-                    </div>
+            <div class="modal-body">
+                <div class="form-group mb-2">
+                    <select id="esignCompany" class="form-control" [(ngModel)]="selectedESignCompany"
+                        (change)="onESignCompanyChange()">
+                        <option value="">-- Select --</option>
+                        <option value="2001">Zoho Sign</option>
+                        <option value="3001">DocuSign</option>
+                        <option value="4001">SutiSoft</option>
+                        <option value="admin-suggested">Admin Suggested</option>
+                    </select>
+                    <span class="text-danger small"
+                        *ngIf="isFormSubmitted && !selectedESignCompany?.trim()">Required</span>
+                </div>
 
-                    <!-- Client Secret -->
-                    <div class="form-group mb-2">
-                        <label for="clientSecret">{{ selectedESignCompany === '4001' ? 'Product Key' : 'Client Secret'
-                            }}</label>
-                        <textarea id="clientSecret" rows="2" class="form-control"
-                            [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.clientSecret?.trim()}"
-                            [(ngModel)]="eSignCreds.clientSecret"></textarea>
-                        <span class="text-danger small"
-                            *ngIf="isFormSubmitted && !eSignCreds.clientSecret?.trim()">Required</span>
-                    </div>
+                <div *ngIf="selectedESignCompany !== 'admin-suggested'">
+                    <div class="grid">
+                        <!-- Client ID -->
+                        <div class="form-group mb-2">
+                            <label for="clientId">{{ selectedESignCompany === '4001' ? 'Access Key' : 'Client ID'
+                                }}</label>
+                            <textarea id="clientId" rows="2" class="form-control"
+                                [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.clientId?.trim()}"
+                                [(ngModel)]="eSignCreds.clientId"></textarea>
+                            <span class="text-danger small"
+                                *ngIf="isFormSubmitted && !eSignCreds.clientId?.trim()">Required</span>
+                        </div>
 
-                    <!-- API Account ID -->
-                    <div class="form-group mb-2" *ngIf="selectedESignCompany !== '2001'">
-                        <label for="apiAccountId">{{ selectedESignCompany === '4001' ? 'Company ID' : 'API Account ID'
-                            }}</label>
-                        <textarea id="apiAccountId" rows="2" class="form-control"
-                            [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.apiAccountId?.trim()}"
-                            [(ngModel)]="eSignCreds.apiAccountId"></textarea>
-                        <span class="text-danger small"
-                            *ngIf="isFormSubmitted && !eSignCreds.apiAccountId?.trim()">Required</span>
-                    </div>
+                        <!-- Client Secret -->
+                        <div class="form-group mb-2">
+                            <label for="clientSecret">{{ selectedESignCompany === '4001' ? 'Product Key' : 'Client
+                                Secret'
+                                }}</label>
+                            <textarea id="clientSecret" rows="2" class="form-control"
+                                [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.clientSecret?.trim()}"
+                                [(ngModel)]="eSignCreds.clientSecret"></textarea>
+                            <span class="text-danger small"
+                                *ngIf="isFormSubmitted && !eSignCreds.clientSecret?.trim()">Required</span>
+                        </div>
 
-                    <!-- User ID -->
-                    <div class="form-group mb-2" *ngIf="selectedESignCompany !== '2001'">
-                        <label for="userId">User ID</label>
-                        <textarea id="userId" rows="2" class="form-control"
-                            [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.userId?.trim()}"
-                            [(ngModel)]="eSignCreds.userId"></textarea>
-                        <span class="text-danger small"
-                            *ngIf="isFormSubmitted && !eSignCreds.userId?.trim()">Required</span>
-                    </div>
+                        <!-- API Account ID -->
+                        <div class="form-group mb-2" *ngIf="selectedESignCompany !== '2001'">
+                            <label for="apiAccountId">{{ selectedESignCompany === '4001' ? 'Company ID' : 'API Account
+                                ID'
+                                }}</label>
+                            <textarea id="apiAccountId" rows="2" class="form-control"
+                                [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.apiAccountId?.trim()}"
+                                [(ngModel)]="eSignCreds.apiAccountId"></textarea>
+                            <span class="text-danger small"
+                                *ngIf="isFormSubmitted && !eSignCreds.apiAccountId?.trim()">Required</span>
+                        </div>
 
-                    <!-- Folder ID (Zoho only) -->
-                    <div class="form-group mb-2" *ngIf="selectedESignCompany === '2001'">
-                        <label for="folderId">Folder ID</label>
-                        <textarea id="folderId" rows="2" class="form-control"
-                            [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.folderId?.trim()}"
-                            [(ngModel)]="eSignCreds.folderId"></textarea>
-                        <span class="text-danger small"
-                            *ngIf="isFormSubmitted && !eSignCreds.folderId?.trim()">Required</span>
-                    </div>
+                        <!-- User ID -->
+                        <div class="form-group mb-2" *ngIf="selectedESignCompany !== '2001'">
+                            <label for="userId">User ID</label>
+                            <textarea id="userId" rows="2" class="form-control"
+                                [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.userId?.trim()}"
+                                [(ngModel)]="eSignCreds.userId"></textarea>
+                            <span class="text-danger small"
+                                *ngIf="isFormSubmitted && !eSignCreds.userId?.trim()">Required</span>
+                        </div>
 
-                    <!-- Refresh Token -->
-                    <div class="form-group mb-2" *ngIf="selectedESignCompany !== '4001'">
-                        <label for="refreshToken">Refresh Token</label>
-                        <textarea id="refreshToken" rows="2" class="form-control"
-                            [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.refreshToken?.trim()}"
-                            [(ngModel)]="eSignCreds.refreshToken"></textarea>
-                        <span class="text-danger small"
-                            *ngIf="isFormSubmitted && !eSignCreds.refreshToken?.trim()">Required</span>
-                    </div>
+                        <!-- Folder ID (Zoho only) -->
+                        <div class="form-group mb-2" *ngIf="selectedESignCompany === '2001'">
+                            <label for="folderId">Folder ID</label>
+                            <textarea id="folderId" rows="2" class="form-control"
+                                [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.folderId?.trim()}"
+                                [(ngModel)]="eSignCreds.folderId"></textarea>
+                            <span class="text-danger small"
+                                *ngIf="isFormSubmitted && !eSignCreds.folderId?.trim()">Required</span>
+                        </div>
 
-                    <!-- Access Token -->
-                    <div class="form-group mb-2" *ngIf="selectedESignCompany !== '4001'">
-                        <label for="accessToken">Access Token</label>
-                        <textarea id="accessToken" rows="2" class="form-control"
-                            [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.accessToken?.trim()}"
-                            [(ngModel)]="eSignCreds.accessToken"></textarea>
-                        <span class="text-danger small"
-                            *ngIf="isFormSubmitted && !eSignCreds.accessToken?.trim()">Required</span>
-                    </div>
+                        <!-- Refresh Token -->
+                        <div class="form-group mb-2" *ngIf="selectedESignCompany !== '4001'">
+                            <label for="refreshToken">Refresh Token</label>
+                            <textarea id="refreshToken" rows="2" class="form-control"
+                                [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.refreshToken?.trim()}"
+                                [(ngModel)]="eSignCreds.refreshToken"></textarea>
+                            <span class="text-danger small"
+                                *ngIf="isFormSubmitted && !eSignCreds.refreshToken?.trim()">Required</span>
+                        </div>
 
-                    <!-- Access Token Time -->
-                    <div class="form-group mb-2" *ngIf="selectedESignCompany !== '4001'">
-                        <label for="accessTokenTime">Access Token Time</label>
-                        <input id="accessTokenTime" type="datetime-local" class="form-control"
-                            [(ngModel)]="eSignCreds.accessTokenTime" />
+                        <!-- Access Token -->
+                        <div class="form-group mb-2" *ngIf="selectedESignCompany !== '4001'">
+                            <label for="accessToken">Access Token</label>
+                            <textarea id="accessToken" rows="2" class="form-control"
+                                [ngClass]="{'is-invalid': isFormSubmitted && !eSignCreds.accessToken?.trim()}"
+                                [(ngModel)]="eSignCreds.accessToken"></textarea>
+                            <span class="text-danger small"
+                                *ngIf="isFormSubmitted && !eSignCreds.accessToken?.trim()">Required</span>
+                        </div>
+
+                        <!-- Access Token Time -->
+                        <div class="form-group mb-2" *ngIf="selectedESignCompany !== '4001'">
+                            <label for="accessTokenTime">Access Token Time</label>
+                            <input id="accessTokenTime" type="datetime-local" class="form-control"
+                                [(ngModel)]="eSignCreds.accessTokenTime" />
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="modal-footer">
-            <button class="btn btn-primary w-40" (click)="saveESignAndContinue()">Save</button>
-            <button class="btn btn-primary w-40" (click)="closeModal()">Cancel</button>
+            <div class="modal-footer">
+                <button class="btn btn-primary w-40" (click)="saveESignAndContinue()">Save</button>
+                <button class="btn btn-primary w-40" (click)="closeModal()">Cancel</button>
+            </div>
         </div>
     </div>
-</div>
 
-<style>
-    .background {
-        background-image: url(/assets/common/images/EscrowBase.jpg);
-        min-height: 100%;
-        min-width: 100%;
-        height: 100vh;
-    }
+    <style>
+        .background {
+            background-image: url(/assets/common/images/EscrowBase.jpg);
+            min-height: 100%;
+            min-width: 100%;
+            height: 100vh;
+        }
 
-    .container-fluid {
-        padding-left: 20px;
-        padding-right: 20px;
-        padding-top: 17px;
-        min-height: 75vh;
-    }
+        .container-fluid {
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-top: 17px;
+            min-height: 75vh;
+        }
 
-    body .ui-table .ui-table-thead>tr>th {
-        color: #fff8f8 !important;
-        background-color: #409ee7 !important;
-    }
+        body .ui-table .ui-table-thead>tr>th {
+            color: #fff8f8 !important;
+            background-color: #409ee7 !important;
+        }
 
-    .line-hight {
-        line-height: 40px;
-    }
 
-    .subheader {
-        left: 0 !important;
-    }
+        .line-hight {
+            line-height: 40px;
+        }
 
-    h5 {
-        padding: 14px 0px 0px 0px !important;
-    }
+        .subheader {
+            left: 0 !important;
+        }
 
-    .searchlable {
-        font-size: 14px;
-        font-weight: bold;
-    }
+        h5 {
+            padding: 14px 0px 0px 0px !important;
+        }
 
-    /* Modal */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.6);
-        z-index: 1050;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-    }
+        .searchlable {
+            font-size: 14px;
+            font-weight: bold;
+        }
 
-    .modal-content {
-        background: #fff;
-        border-radius: 12px;
-        width: 95%;
-        /* wider form */
-        max-width: 900px;
-        /* max width */
-        height: 90vh;
-        /* fits viewport height */
-        box-shadow: 0 0 25px rgba(0, 0, 0, 0.35);
-        display: flex;
-        flex-direction: column;
-        position: relative;
-        padding: 0;
-    }
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 1050;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
 
-    .modal-header {
-        padding: 0.75rem 1rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
-        flex-shrink: 0;
-        /* prevent collapsing */
-    }
+        .modal-content {
+            background: #fff;
+            border-radius: 12px;
+            width: 95%;
+            /* wider form */
+            max-width: 900px;
+            /* max width */
+            height: 90vh;
+            /* fits viewport height */
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.35);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding: 0;
+        }
 
-    .modal-header h4 {
-        margin: 0;
-        font-size: 1rem;
-    }
+        .modal-header {
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            flex-shrink: 0;
+            /* prevent collapsing */
+        }
 
-    .close-btn {
-        font-size: 1.1rem;
-        font-weight: bold;
-        color: #fff;
-        background-color: #dc3545;
-        border: none;
-        cursor: pointer;
-        padding: 5px 10px;
-        border-radius: 5px;
-        line-height: 1;
-    }
+        .modal-header h4 {
+            margin: 0;
+            font-size: 1rem;
+        }
 
-    .modal-body {
-        padding: 1rem;
-        overflow-y: auto;
-        /* only body scrolls */
-        flex: 1;
-        /* take all available space */
-    }
+        .close-btn {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+            background-color: #dc3545;
+            border: none;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            line-height: 1;
+        }
 
-    .modal-footer {
-        padding: 0.75rem 1rem;
-        border-top: 1px solid #dee2e6;
-        background: #f8f9fa;
-        flex-shrink: 0;
-        /* keep fixed */
-    }
+        .modal-body {
+            padding: 1rem;
+            overflow-y: auto;
+            /* only body scrolls */
+            flex: 1;
+            /* take all available space */
+        }
 
-    .form-group {
-        margin-bottom: 0.6rem;
-    }
+        .modal-footer {
+            padding: 0.75rem 1rem;
+            border-top: 1px solid #dee2e6;
+            background: #f8f9fa;
+            flex-shrink: 0;
+            /* keep fixed */
+        }
 
-    .form-group label {
-        font-size: 0.85rem;
-        margin-bottom: 0.25rem;
-        display: block;
-    }
+        .form-group {
+            margin-bottom: 0.6rem;
+        }
 
-    .form-control {
-        padding: 0.35rem 0.5rem;
-        font-size: 0.85rem;
-    }
+        .form-group label {
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
 
-    .is-invalid {
-        border: 1.5px solid #dc3545 !important;
-    }
+        .form-control {
+            padding: 0.35rem 0.5rem;
+            font-size: 0.85rem;
+        }
 
-    .required-small {
-        font-size: 11px;
-        margin-left: 2px;
-    }
+        .is-invalid {
+            border: 1.5px solid #dc3545 !important;
+        }
 
-    .grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        /* always one column */
-        gap: 0.75rem 0;
-        /* vertical spacing only */
-    }
+        .required-small {
+            font-size: 11px;
+            margin-left: 2px;
+        }
 
-    .grid .form-group {
-        width: 100%;
-        /* force each field to use full width */
-    }
-</style>
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            /* always one column */
+            gap: 0.75rem 0;
+            /* vertical spacing only */
+        }
+
+        .grid .form-group {
+            width: 100%;
+            /* force each field to use full width */
+        }
+    </style>

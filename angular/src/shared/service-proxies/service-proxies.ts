@@ -1807,6 +1807,330 @@ export class CommonLookupServiceProxy {
 }
 
 @Injectable()
+export class CurrentEscrowsServiceProxy {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+    }
+
+    /**
+     * @param filter (optional) 
+     * @param escrowNoFilter (optional) 
+     * @param companyNameFilter (optional) 
+     * @param subCompanyNameFilter (optional) 
+     * @param maxCreatedOnFilter (optional) 
+     * @param minCreatedOnFilter (optional) 
+     * @param sorting (optional) 
+     * @param skipCount (optional) 
+     * @param maxResultCount (optional) 
+     * @return Success
+     */
+    getAll(filter: string | undefined, escrowNoFilter: string | undefined, companyNameFilter: string | undefined, subCompanyNameFilter: string | undefined, maxCreatedOnFilter: DateTime | undefined, minCreatedOnFilter: DateTime | undefined, sorting: string | undefined, skipCount: number | undefined, maxResultCount: number | undefined): Observable<PagedResultDtoOfGetCurrentEscrowForViewDto> {
+        let url_ = this.baseUrl + "/api/services/app/CurrentEscrows/GetAll?";
+        if (filter === null)
+            throw new Error("The parameter 'filter' cannot be null.");
+        else if (filter !== undefined)
+            url_ += "Filter=" + encodeURIComponent("" + filter) + "&";
+        if (escrowNoFilter === null)
+            throw new Error("The parameter 'escrowNoFilter' cannot be null.");
+        else if (escrowNoFilter !== undefined)
+            url_ += "EscrowNoFilter=" + encodeURIComponent("" + escrowNoFilter) + "&";
+        if (companyNameFilter === null)
+            throw new Error("The parameter 'companyNameFilter' cannot be null.");
+        else if (companyNameFilter !== undefined)
+            url_ += "CompanyNameFilter=" + encodeURIComponent("" + companyNameFilter) + "&";
+        if (subCompanyNameFilter === null)
+            throw new Error("The parameter 'subCompanyNameFilter' cannot be null.");
+        else if (subCompanyNameFilter !== undefined)
+            url_ += "SubCompanyNameFilter=" + encodeURIComponent("" + subCompanyNameFilter) + "&";
+        if (maxCreatedOnFilter === null)
+            throw new Error("The parameter 'maxCreatedOnFilter' cannot be null.");
+        else if (maxCreatedOnFilter !== undefined)
+            url_ += "MaxCreatedOnFilter=" + encodeURIComponent(maxCreatedOnFilter ? "" + maxCreatedOnFilter.toString() : "") + "&";
+        if (minCreatedOnFilter === null)
+            throw new Error("The parameter 'minCreatedOnFilter' cannot be null.");
+        else if (minCreatedOnFilter !== undefined)
+            url_ += "MinCreatedOnFilter=" + encodeURIComponent(minCreatedOnFilter ? "" + minCreatedOnFilter.toString() : "") + "&";
+        if (sorting === null)
+            throw new Error("The parameter 'sorting' cannot be null.");
+        else if (sorting !== undefined)
+            url_ += "Sorting=" + encodeURIComponent("" + sorting) + "&";
+        if (skipCount === null)
+            throw new Error("The parameter 'skipCount' cannot be null.");
+        else if (skipCount !== undefined)
+            url_ += "SkipCount=" + encodeURIComponent("" + skipCount) + "&";
+        if (maxResultCount === null)
+            throw new Error("The parameter 'maxResultCount' cannot be null.");
+        else if (maxResultCount !== undefined)
+            url_ += "MaxResultCount=" + encodeURIComponent("" + maxResultCount) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAll(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAll(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultDtoOfGetCurrentEscrowForViewDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultDtoOfGetCurrentEscrowForViewDto>;
+        }));
+    }
+
+    protected processGetAll(response: HttpResponseBase): Observable<PagedResultDtoOfGetCurrentEscrowForViewDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = PagedResultDtoOfGetCurrentEscrowForViewDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<PagedResultDtoOfGetCurrentEscrowForViewDto>(null as any);
+    }
+
+    /**
+     * @param id (optional) 
+     * @return Success
+     */
+    getCurrentEscrowForView(id: number | undefined): Observable<GetCurrentEscrowForViewDto> {
+        let url_ = this.baseUrl + "/api/services/app/CurrentEscrows/GetCurrentEscrowForView?";
+        if (id === null)
+            throw new Error("The parameter 'id' cannot be null.");
+        else if (id !== undefined)
+            url_ += "id=" + encodeURIComponent("" + id) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetCurrentEscrowForView(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetCurrentEscrowForView(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GetCurrentEscrowForViewDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GetCurrentEscrowForViewDto>;
+        }));
+    }
+
+    protected processGetCurrentEscrowForView(response: HttpResponseBase): Observable<GetCurrentEscrowForViewDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = GetCurrentEscrowForViewDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<GetCurrentEscrowForViewDto>(null as any);
+    }
+
+    /**
+     * @param id (optional) 
+     * @return Success
+     */
+    getCurrentEscrowForEdit(id: number | undefined): Observable<GetCurrentEscrowForEditOutput> {
+        let url_ = this.baseUrl + "/api/services/app/CurrentEscrows/GetCurrentEscrowForEdit?";
+        if (id === null)
+            throw new Error("The parameter 'id' cannot be null.");
+        else if (id !== undefined)
+            url_ += "Id=" + encodeURIComponent("" + id) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetCurrentEscrowForEdit(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetCurrentEscrowForEdit(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GetCurrentEscrowForEditOutput>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GetCurrentEscrowForEditOutput>;
+        }));
+    }
+
+    protected processGetCurrentEscrowForEdit(response: HttpResponseBase): Observable<GetCurrentEscrowForEditOutput> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = GetCurrentEscrowForEditOutput.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<GetCurrentEscrowForEditOutput>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return Success
+     */
+    createOrEdit(body: CreateOrEditCurrentEscrowDto | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/services/app/CurrentEscrows/CreateOrEdit";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json-patch+json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateOrEdit(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateOrEdit(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processCreateOrEdit(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return _observableOf<void>(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<void>(null as any);
+    }
+
+    /**
+     * @param id (optional) 
+     * @return Success
+     */
+    delete(id: number | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/services/app/CurrentEscrows/Delete?";
+        if (id === null)
+            throw new Error("The parameter 'id' cannot be null.");
+        else if (id !== undefined)
+            url_ += "Id=" + encodeURIComponent("" + id) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDelete(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDelete(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDelete(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return _observableOf<void>(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<void>(null as any);
+    }
+}
+
+@Injectable()
 export class DashboardCustomizationServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -5762,6 +6086,577 @@ export class EnterprisesServiceProxy {
 }
 
 @Injectable()
+export class EscrowAccessHistoriesServiceProxy {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+    }
+
+    /**
+     * @param filter (optional) 
+     * @param maxCreatedAtFilter (optional) 
+     * @param minCreatedAtFilter (optional) 
+     * @param userNameFilter (optional) 
+     * @param escrowClientNameFilter (optional) 
+     * @param sorting (optional) 
+     * @param skipCount (optional) 
+     * @param maxResultCount (optional) 
+     * @return Success
+     */
+    getAll(filter: string | undefined, maxCreatedAtFilter: DateTime | undefined, minCreatedAtFilter: DateTime | undefined, userNameFilter: string | undefined, escrowClientNameFilter: string | undefined, sorting: string | undefined, skipCount: number | undefined, maxResultCount: number | undefined): Observable<PagedResultDtoOfGetEscrowAccessHistoryForViewDto> {
+        let url_ = this.baseUrl + "/api/services/app/EscrowAccessHistories/GetAll?";
+        if (filter === null)
+            throw new Error("The parameter 'filter' cannot be null.");
+        else if (filter !== undefined)
+            url_ += "Filter=" + encodeURIComponent("" + filter) + "&";
+        if (maxCreatedAtFilter === null)
+            throw new Error("The parameter 'maxCreatedAtFilter' cannot be null.");
+        else if (maxCreatedAtFilter !== undefined)
+            url_ += "MaxCreatedAtFilter=" + encodeURIComponent(maxCreatedAtFilter ? "" + maxCreatedAtFilter.toString() : "") + "&";
+        if (minCreatedAtFilter === null)
+            throw new Error("The parameter 'minCreatedAtFilter' cannot be null.");
+        else if (minCreatedAtFilter !== undefined)
+            url_ += "MinCreatedAtFilter=" + encodeURIComponent(minCreatedAtFilter ? "" + minCreatedAtFilter.toString() : "") + "&";
+        if (userNameFilter === null)
+            throw new Error("The parameter 'userNameFilter' cannot be null.");
+        else if (userNameFilter !== undefined)
+            url_ += "UserNameFilter=" + encodeURIComponent("" + userNameFilter) + "&";
+        if (escrowClientNameFilter === null)
+            throw new Error("The parameter 'escrowClientNameFilter' cannot be null.");
+        else if (escrowClientNameFilter !== undefined)
+            url_ += "EscrowClientNameFilter=" + encodeURIComponent("" + escrowClientNameFilter) + "&";
+        if (sorting === null)
+            throw new Error("The parameter 'sorting' cannot be null.");
+        else if (sorting !== undefined)
+            url_ += "Sorting=" + encodeURIComponent("" + sorting) + "&";
+        if (skipCount === null)
+            throw new Error("The parameter 'skipCount' cannot be null.");
+        else if (skipCount !== undefined)
+            url_ += "SkipCount=" + encodeURIComponent("" + skipCount) + "&";
+        if (maxResultCount === null)
+            throw new Error("The parameter 'maxResultCount' cannot be null.");
+        else if (maxResultCount !== undefined)
+            url_ += "MaxResultCount=" + encodeURIComponent("" + maxResultCount) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAll(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAll(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultDtoOfGetEscrowAccessHistoryForViewDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultDtoOfGetEscrowAccessHistoryForViewDto>;
+        }));
+    }
+
+    protected processGetAll(response: HttpResponseBase): Observable<PagedResultDtoOfGetEscrowAccessHistoryForViewDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = PagedResultDtoOfGetEscrowAccessHistoryForViewDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<PagedResultDtoOfGetEscrowAccessHistoryForViewDto>(null as any);
+    }
+
+    /**
+     * @param id (optional) 
+     * @return Success
+     */
+    getEscrowAccessHistoryForView(id: number | undefined): Observable<GetEscrowAccessHistoryForViewDto> {
+        let url_ = this.baseUrl + "/api/services/app/EscrowAccessHistories/GetEscrowAccessHistoryForView?";
+        if (id === null)
+            throw new Error("The parameter 'id' cannot be null.");
+        else if (id !== undefined)
+            url_ += "id=" + encodeURIComponent("" + id) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetEscrowAccessHistoryForView(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetEscrowAccessHistoryForView(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GetEscrowAccessHistoryForViewDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GetEscrowAccessHistoryForViewDto>;
+        }));
+    }
+
+    protected processGetEscrowAccessHistoryForView(response: HttpResponseBase): Observable<GetEscrowAccessHistoryForViewDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = GetEscrowAccessHistoryForViewDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<GetEscrowAccessHistoryForViewDto>(null as any);
+    }
+
+    /**
+     * @param id (optional) 
+     * @return Success
+     */
+    getEscrowAccessHistoryForEdit(id: number | undefined): Observable<GetEscrowAccessHistoryForEditOutput> {
+        let url_ = this.baseUrl + "/api/services/app/EscrowAccessHistories/GetEscrowAccessHistoryForEdit?";
+        if (id === null)
+            throw new Error("The parameter 'id' cannot be null.");
+        else if (id !== undefined)
+            url_ += "Id=" + encodeURIComponent("" + id) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetEscrowAccessHistoryForEdit(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetEscrowAccessHistoryForEdit(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GetEscrowAccessHistoryForEditOutput>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GetEscrowAccessHistoryForEditOutput>;
+        }));
+    }
+
+    protected processGetEscrowAccessHistoryForEdit(response: HttpResponseBase): Observable<GetEscrowAccessHistoryForEditOutput> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = GetEscrowAccessHistoryForEditOutput.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<GetEscrowAccessHistoryForEditOutput>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return Success
+     */
+    createOrEdit(body: CreateOrEditEscrowAccessHistoryDto | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/services/app/EscrowAccessHistories/CreateOrEdit";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json-patch+json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateOrEdit(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateOrEdit(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processCreateOrEdit(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return _observableOf<void>(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<void>(null as any);
+    }
+
+    /**
+     * @param id (optional) 
+     * @return Success
+     */
+    delete(id: number | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/services/app/EscrowAccessHistories/Delete?";
+        if (id === null)
+            throw new Error("The parameter 'id' cannot be null.");
+        else if (id !== undefined)
+            url_ += "Id=" + encodeURIComponent("" + id) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDelete(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDelete(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDelete(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return _observableOf<void>(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<void>(null as any);
+    }
+
+    /**
+     * @param filter (optional) 
+     * @param sorting (optional) 
+     * @param skipCount (optional) 
+     * @param maxResultCount (optional) 
+     * @return Success
+     */
+    getAllUserForLookupTable(filter: string | undefined, sorting: string | undefined, skipCount: number | undefined, maxResultCount: number | undefined): Observable<PagedResultDtoOfEscrowAccessHistoryUserLookupTableDto> {
+        let url_ = this.baseUrl + "/api/services/app/EscrowAccessHistories/GetAllUserForLookupTable?";
+        if (filter === null)
+            throw new Error("The parameter 'filter' cannot be null.");
+        else if (filter !== undefined)
+            url_ += "Filter=" + encodeURIComponent("" + filter) + "&";
+        if (sorting === null)
+            throw new Error("The parameter 'sorting' cannot be null.");
+        else if (sorting !== undefined)
+            url_ += "Sorting=" + encodeURIComponent("" + sorting) + "&";
+        if (skipCount === null)
+            throw new Error("The parameter 'skipCount' cannot be null.");
+        else if (skipCount !== undefined)
+            url_ += "SkipCount=" + encodeURIComponent("" + skipCount) + "&";
+        if (maxResultCount === null)
+            throw new Error("The parameter 'maxResultCount' cannot be null.");
+        else if (maxResultCount !== undefined)
+            url_ += "MaxResultCount=" + encodeURIComponent("" + maxResultCount) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAllUserForLookupTable(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAllUserForLookupTable(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultDtoOfEscrowAccessHistoryUserLookupTableDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultDtoOfEscrowAccessHistoryUserLookupTableDto>;
+        }));
+    }
+
+    protected processGetAllUserForLookupTable(response: HttpResponseBase): Observable<PagedResultDtoOfEscrowAccessHistoryUserLookupTableDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = PagedResultDtoOfEscrowAccessHistoryUserLookupTableDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<PagedResultDtoOfEscrowAccessHistoryUserLookupTableDto>(null as any);
+    }
+
+    /**
+     * @param filter (optional) 
+     * @param sorting (optional) 
+     * @param skipCount (optional) 
+     * @param maxResultCount (optional) 
+     * @return Success
+     */
+    getAllEscrowClientForLookupTable(filter: string | undefined, sorting: string | undefined, skipCount: number | undefined, maxResultCount: number | undefined): Observable<PagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto> {
+        let url_ = this.baseUrl + "/api/services/app/EscrowAccessHistories/GetAllEscrowClientForLookupTable?";
+        if (filter === null)
+            throw new Error("The parameter 'filter' cannot be null.");
+        else if (filter !== undefined)
+            url_ += "Filter=" + encodeURIComponent("" + filter) + "&";
+        if (sorting === null)
+            throw new Error("The parameter 'sorting' cannot be null.");
+        else if (sorting !== undefined)
+            url_ += "Sorting=" + encodeURIComponent("" + sorting) + "&";
+        if (skipCount === null)
+            throw new Error("The parameter 'skipCount' cannot be null.");
+        else if (skipCount !== undefined)
+            url_ += "SkipCount=" + encodeURIComponent("" + skipCount) + "&";
+        if (maxResultCount === null)
+            throw new Error("The parameter 'maxResultCount' cannot be null.");
+        else if (maxResultCount !== undefined)
+            url_ += "MaxResultCount=" + encodeURIComponent("" + maxResultCount) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAllEscrowClientForLookupTable(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAllEscrowClientForLookupTable(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto>;
+        }));
+    }
+
+    protected processGetAllEscrowClientForLookupTable(response: HttpResponseBase): Observable<PagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = PagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<PagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return Success
+     */
+    logAccess(body: LogAccessInput | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/services/app/EscrowAccessHistories/LogAccess";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json-patch+json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processLogAccess(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processLogAccess(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processLogAccess(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return _observableOf<void>(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<void>(null as any);
+    }
+
+    /**
+     * @return Success
+     */
+    getRecentEscrows(): Observable<RecentEscrowDto[]> {
+        let url_ = this.baseUrl + "/api/services/app/EscrowAccessHistories/GetRecentEscrows";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetRecentEscrows(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetRecentEscrows(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RecentEscrowDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RecentEscrowDto[]>;
+        }));
+    }
+
+    protected processGetRecentEscrows(response: HttpResponseBase): Observable<RecentEscrowDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(RecentEscrowDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<RecentEscrowDto[]>(null as any);
+    }
+}
+
+@Injectable()
 export class EscrowClientsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -6407,6 +7302,72 @@ export class EscrowDetailsServiceProxy {
     }
 
     protected processGetEscrowDetailForByUserId(response: HttpResponseBase): Observable<GetEscrowDetailForEditOutput> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = GetEscrowDetailForEditOutput.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<GetEscrowDetailForEditOutput>(null as any);
+    }
+
+    /**
+     * @param userId (optional) 
+     * @param escrow (optional) 
+     * @param userType (optional) 
+     * @return Success
+     */
+    getEscrowDetailsForByStringUserId(userId: string | undefined, escrow: string | undefined, userType: string | undefined): Observable<GetEscrowDetailForEditOutput> {
+        let url_ = this.baseUrl + "/api/services/app/EscrowDetails/GetEscrowDetailsForByStringUserId?";
+        if (userId === null)
+            throw new Error("The parameter 'userId' cannot be null.");
+        else if (userId !== undefined)
+            url_ += "userId=" + encodeURIComponent("" + userId) + "&";
+        if (escrow === null)
+            throw new Error("The parameter 'escrow' cannot be null.");
+        else if (escrow !== undefined)
+            url_ += "escrow=" + encodeURIComponent("" + escrow) + "&";
+        if (userType === null)
+            throw new Error("The parameter 'userType' cannot be null.");
+        else if (userType !== undefined)
+            url_ += "userType=" + encodeURIComponent("" + userType) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "text/plain"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetEscrowDetailsForByStringUserId(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetEscrowDetailsForByStringUserId(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GetEscrowDetailForEditOutput>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GetEscrowDetailForEditOutput>;
+        }));
+    }
+
+    protected processGetEscrowDetailsForByStringUserId(response: HttpResponseBase): Observable<GetEscrowDetailForEditOutput> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -9486,6 +10447,335 @@ export class FriendshipServiceProxy {
 }
 
 @Injectable()
+export class ServiceProxy {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+    }
+
+    /**
+     * @param code (optional) 
+     * @return Success
+     */
+    exchangeCode(code: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/exchange-code?";
+        if (code === null)
+            throw new Error("The parameter 'code' cannot be null.");
+        else if (code !== undefined)
+            url_ += "code=" + encodeURIComponent("" + code) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processExchangeCode(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processExchangeCode(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processExchangeCode(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return _observableOf<void>(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<void>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return Success
+     */
+    saveUserCreds(body: ESignCredsDto | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/SaveUserCreds";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json-patch+json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSaveUserCreds(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSaveUserCreds(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processSaveUserCreds(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return _observableOf<void>(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<void>(null as any);
+    }
+
+    /**
+     * @param escrowId (optional) 
+     * @return Success
+     */
+    getEsignStatus(escrowId: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/GetEsignStatus?";
+        if (escrowId === null)
+            throw new Error("The parameter 'escrowId' cannot be null.");
+        else if (escrowId !== undefined)
+            url_ += "escrowId=" + encodeURIComponent("" + escrowId) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetEsignStatus(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetEsignStatus(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processGetEsignStatus(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return _observableOf<void>(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<void>(null as any);
+    }
+
+    /**
+     * @param enterpriseId (optional) 
+     * @return Success
+     */
+    getUserCreds(enterpriseId: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/GetUserCreds?";
+        if (enterpriseId === null)
+            throw new Error("The parameter 'enterpriseId' cannot be null.");
+        else if (enterpriseId !== undefined)
+            url_ += "enterpriseId=" + encodeURIComponent("" + enterpriseId) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetUserCreds(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetUserCreds(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processGetUserCreds(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return _observableOf<void>(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<void>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return Success
+     */
+    receiveWebhook(body: ZohoSignWebhookPayload | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/ReceiveWebhook";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json-patch+json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processReceiveWebhook(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processReceiveWebhook(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processReceiveWebhook(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return _observableOf<void>(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<void>(null as any);
+    }
+
+    /**
+     * @param clientId (optional) 
+     * @param redirectUri (optional) 
+     * @return Success
+     */
+    getDocusignAuthUrl(clientId: string | undefined, redirectUri: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/get-docusign-auth-url?";
+        if (clientId === null)
+            throw new Error("The parameter 'clientId' cannot be null.");
+        else if (clientId !== undefined)
+            url_ += "clientId=" + encodeURIComponent("" + clientId) + "&";
+        if (redirectUri === null)
+            throw new Error("The parameter 'redirectUri' cannot be null.");
+        else if (redirectUri !== undefined)
+            url_ += "redirectUri=" + encodeURIComponent("" + redirectUri) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDocusignAuthUrl(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDocusignAuthUrl(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processGetDocusignAuthUrl(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return _observableOf<void>(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap(_responseText => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf<void>(null as any);
+    }
+}
+
+@Injectable()
 export class HomeServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -9500,7 +10790,7 @@ export class HomeServiceProxy {
      * @return Success
      */
     getAllCompanies(): Observable<EsignCompanyDto[]> {
-        let url_ = this.baseUrl + "/api/services/app/Home/GetAllCompaniesAsync";
+        let url_ = this.baseUrl + "/Home/GetAllCompaniesAsync";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -9553,25 +10843,13 @@ export class HomeServiceProxy {
         }
         return _observableOf<EsignCompanyDto[]>(null as any);
     }
-}
-
-@Injectable()
-export class ServiceProxy {
-    private http: HttpClient;
-    private baseUrl: string;
-    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
-
-    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
-        this.http = http;
-        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
-    }
 
     /**
      * @param body (optional) 
      * @return Success
      */
-    receiveWebhook(body: ZohoSignWebhookPayload | undefined): Observable<void> {
-        let url_ = this.baseUrl + "/ReceiveWebhook";
+    setActiveCompany(body: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/Home/SetActiveCompany";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(body);
@@ -9586,11 +10864,11 @@ export class ServiceProxy {
         };
 
         return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processReceiveWebhook(response_);
+            return this.processSetActiveCompany(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processReceiveWebhook(response_ as any);
+                    return this.processSetActiveCompany(response_ as any);
                 } catch (e) {
                     return _observableThrow(e) as any as Observable<void>;
                 }
@@ -9599,7 +10877,7 @@ export class ServiceProxy {
         }));
     }
 
-    protected processReceiveWebhook(response: HttpResponseBase): Observable<void> {
+    protected processSetActiveCompany(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -19539,6 +20817,7 @@ export class ApiServiceProxy {
         return _observableOf<void>(null as any);
     }
 
+
     /**
      * @param body (optional) 
      * @return Success
@@ -25365,6 +26644,70 @@ export interface ICreateInvoiceDto {
     subscriptionPaymentId: number;
 }
 
+export class CreateOrEditCurrentEscrowDto implements ICreateOrEditCurrentEscrowDto {
+    escrowNo!: string;
+    companyName!: string;
+    subCompanyName!: string;
+    createdOn!: DateTime | undefined;
+    fileName!: string;
+    userName!: string;
+    isActive!: boolean;
+    id!: number | undefined;
+
+    constructor(data?: ICreateOrEditCurrentEscrowDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.escrowNo = _data["escrowNo"];
+            this.companyName = _data["companyName"];
+            this.subCompanyName = _data["subCompanyName"];
+            this.createdOn = _data["createdOn"] ? DateTime.fromISO(_data["createdOn"].toString()) : <any>undefined;
+            this.fileName = _data["fileName"];
+            this.userName = _data["userName"];
+            this.isActive = _data["isActive"];
+            this.id = _data["id"];
+        }
+    }
+
+    static fromJS(data: any): CreateOrEditCurrentEscrowDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateOrEditCurrentEscrowDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["escrowNo"] = this.escrowNo;
+        data["companyName"] = this.companyName;
+        data["subCompanyName"] = this.subCompanyName;
+        data["createdOn"] = this.createdOn ? this.createdOn.toString() : <any>undefined;
+        data["fileName"] = this.fileName;
+        data["userName"] = this.userName;
+        data["isActive"] = this.isActive;
+        data["id"] = this.id;
+        return data;
+    }
+}
+
+export interface ICreateOrEditCurrentEscrowDto {
+    escrowNo: string;
+    companyName: string;
+    subCompanyName: string;
+    createdOn: DateTime | undefined;
+    fileName: string;
+    userName: string;
+    isActive: boolean;
+    id: number | undefined;
+}
+
 export class CreateOrEditDocuSignDto implements ICreateOrEditDocuSignDto {
     email!: string | undefined;
     name!: string | undefined;
@@ -25634,6 +26977,54 @@ export interface ICreateOrEditEnterpriseDto {
     pinCode: string | undefined;
     contry: string | undefined;
     parentId: number | undefined;
+    id: number | undefined;
+}
+
+export class CreateOrEditEscrowAccessHistoryDto implements ICreateOrEditEscrowAccessHistoryDto {
+    createdAt!: DateTime;
+    userId!: number | undefined;
+    escrowId!: number | undefined;
+    id!: number | undefined;
+
+    constructor(data?: ICreateOrEditEscrowAccessHistoryDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.createdAt = _data["createdAt"] ? DateTime.fromISO(_data["createdAt"].toString()) : <any>undefined;
+            this.userId = _data["userId"];
+            this.escrowId = _data["escrowId"];
+            this.id = _data["id"];
+        }
+    }
+
+    static fromJS(data: any): CreateOrEditEscrowAccessHistoryDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateOrEditEscrowAccessHistoryDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["createdAt"] = this.createdAt ? this.createdAt.toString() : <any>undefined;
+        data["userId"] = this.userId;
+        data["escrowId"] = this.escrowId;
+        data["id"] = this.id;
+        return data;
+    }
+}
+
+export interface ICreateOrEditEscrowAccessHistoryDto {
+    createdAt: DateTime;
+    userId: number | undefined;
+    escrowId: number | undefined;
     id: number | undefined;
 }
 
@@ -27259,6 +28650,70 @@ export interface ICreateUserDelegationDto {
     endTime: DateTime;
 }
 
+export class CurrentEscrowDto implements ICurrentEscrowDto {
+    escrowNo!: string | undefined;
+    companyName!: string | undefined;
+    subCompanyName!: string | undefined;
+    createdOn!: DateTime;
+    fileName!: string | undefined;
+    userName!: string | undefined;
+    isActive!: boolean;
+    id!: number;
+
+    constructor(data?: ICurrentEscrowDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.escrowNo = _data["escrowNo"];
+            this.companyName = _data["companyName"];
+            this.subCompanyName = _data["subCompanyName"];
+            this.createdOn = _data["createdOn"] ? DateTime.fromISO(_data["createdOn"].toString()) : <any>undefined;
+            this.fileName = _data["fileName"];
+            this.userName = _data["userName"];
+            this.isActive = _data["isActive"];
+            this.id = _data["id"];
+        }
+    }
+
+    static fromJS(data: any): CurrentEscrowDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new CurrentEscrowDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["escrowNo"] = this.escrowNo;
+        data["companyName"] = this.companyName;
+        data["subCompanyName"] = this.subCompanyName;
+        data["createdOn"] = this.createdOn ? this.createdOn.toString() : <any>undefined;
+        data["fileName"] = this.fileName;
+        data["userName"] = this.userName;
+        data["isActive"] = this.isActive;
+        data["id"] = this.id;
+        return data;
+    }
+}
+
+export interface ICurrentEscrowDto {
+    escrowNo: string | undefined;
+    companyName: string | undefined;
+    subCompanyName: string | undefined;
+    createdOn: DateTime;
+    fileName: string | undefined;
+    userName: string | undefined;
+    isActive: boolean;
+    id: number;
+}
+
 export class CurrentUserProfileEditDto implements ICurrentUserProfileEditDto {
     name!: string;
     surname!: string;
@@ -28820,6 +30275,134 @@ export interface IEntityPropertyChangeDto {
     id: number;
 }
 
+export class EscrowAccessHistoryDto implements IEscrowAccessHistoryDto {
+    createdAt!: DateTime;
+    userId!: number | undefined;
+    escrowId!: number | undefined;
+    id!: number;
+
+    constructor(data?: IEscrowAccessHistoryDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.createdAt = _data["createdAt"] ? DateTime.fromISO(_data["createdAt"].toString()) : <any>undefined;
+            this.userId = _data["userId"];
+            this.escrowId = _data["escrowId"];
+            this.id = _data["id"];
+        }
+    }
+
+    static fromJS(data: any): EscrowAccessHistoryDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new EscrowAccessHistoryDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["createdAt"] = this.createdAt ? this.createdAt.toString() : <any>undefined;
+        data["userId"] = this.userId;
+        data["escrowId"] = this.escrowId;
+        data["id"] = this.id;
+        return data;
+    }
+}
+
+export interface IEscrowAccessHistoryDto {
+    createdAt: DateTime;
+    userId: number | undefined;
+    escrowId: number | undefined;
+    id: number;
+}
+
+export class EscrowAccessHistoryEscrowClientLookupTableDto implements IEscrowAccessHistoryEscrowClientLookupTableDto {
+    id!: number;
+    displayName!: string | undefined;
+
+    constructor(data?: IEscrowAccessHistoryEscrowClientLookupTableDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.displayName = _data["displayName"];
+        }
+    }
+
+    static fromJS(data: any): EscrowAccessHistoryEscrowClientLookupTableDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new EscrowAccessHistoryEscrowClientLookupTableDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["displayName"] = this.displayName;
+        return data;
+    }
+}
+
+export interface IEscrowAccessHistoryEscrowClientLookupTableDto {
+    id: number;
+    displayName: string | undefined;
+}
+
+export class EscrowAccessHistoryUserLookupTableDto implements IEscrowAccessHistoryUserLookupTableDto {
+    id!: number;
+    displayName!: string | undefined;
+
+    constructor(data?: IEscrowAccessHistoryUserLookupTableDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.displayName = _data["displayName"];
+        }
+    }
+
+    static fromJS(data: any): EscrowAccessHistoryUserLookupTableDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new EscrowAccessHistoryUserLookupTableDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["displayName"] = this.displayName;
+        return data;
+    }
+}
+
+export interface IEscrowAccessHistoryUserLookupTableDto {
+    id: number;
+    displayName: string | undefined;
+}
+
 export class EscrowClientDto implements IEscrowClientDto {
     escrowNumber!: string | undefined;
     name!: string | undefined;
@@ -29654,6 +31237,86 @@ export interface IEsignCompanyMappingDto {
     comanyName: string | undefined;
     isActive: string | undefined;
     id: number;
+}
+
+export class ESignCredsDto implements IESignCredsDto {
+    enterpriseId!: number;
+    eSignProviderCode!: string | undefined;
+    eSignClientId!: string | undefined;
+    eSignClientSecret!: string | undefined;
+    eSignApiAccountId!: string | undefined;
+    eSignUserId!: string | undefined;
+    eSignFolderId!: string | undefined;
+    refreshToken!: string | undefined;
+    accessToken!: string | undefined;
+    accessTokenTime!: DateTime | undefined;
+    isAdminAssigned!: boolean;
+    isActive!: boolean;
+
+    constructor(data?: IESignCredsDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.enterpriseId = _data["enterpriseId"];
+            this.eSignProviderCode = _data["eSignProviderCode"];
+            this.eSignClientId = _data["eSignClientId"];
+            this.eSignClientSecret = _data["eSignClientSecret"];
+            this.eSignApiAccountId = _data["eSignApiAccountId"];
+            this.eSignUserId = _data["eSignUserId"];
+            this.eSignFolderId = _data["eSignFolderId"];
+            this.refreshToken = _data["refreshToken"];
+            this.accessToken = _data["accessToken"];
+            this.accessTokenTime = _data["accessTokenTime"] ? DateTime.fromISO(_data["accessTokenTime"].toString()) : <any>undefined;
+            this.isAdminAssigned = _data["isAdminAssigned"];
+            this.isActive = _data["isActive"];
+        }
+    }
+
+    static fromJS(data: any): ESignCredsDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new ESignCredsDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["enterpriseId"] = this.enterpriseId;
+        data["eSignProviderCode"] = this.eSignProviderCode;
+        data["eSignClientId"] = this.eSignClientId;
+        data["eSignClientSecret"] = this.eSignClientSecret;
+        data["eSignApiAccountId"] = this.eSignApiAccountId;
+        data["eSignUserId"] = this.eSignUserId;
+        data["eSignFolderId"] = this.eSignFolderId;
+        data["refreshToken"] = this.refreshToken;
+        data["accessToken"] = this.accessToken;
+        data["accessTokenTime"] = this.accessTokenTime ? this.accessTokenTime.toString() : <any>undefined;
+        data["isAdminAssigned"] = this.isAdminAssigned;
+        data["isActive"] = this.isActive;
+        return data;
+    }
+}
+
+export interface IESignCredsDto {
+    enterpriseId: number;
+    eSignProviderCode: string | undefined;
+    eSignClientId: string | undefined;
+    eSignClientSecret: string | undefined;
+    eSignApiAccountId: string | undefined;
+    eSignUserId: string | undefined;
+    eSignFolderId: string | undefined;
+    refreshToken: string | undefined;
+    accessToken: string | undefined;
+    accessTokenTime: DateTime | undefined;
+    isAdminAssigned: boolean;
+    isActive: boolean;
 }
 
 export class EsignRoleMappingsDto implements IEsignRoleMappingsDto {
@@ -31029,6 +32692,78 @@ export interface IGetAllSubscriptionsOutput {
     id: string;
 }
 
+export class GetCurrentEscrowForEditOutput implements IGetCurrentEscrowForEditOutput {
+    currentEscrow!: CreateOrEditCurrentEscrowDto;
+
+    constructor(data?: IGetCurrentEscrowForEditOutput) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.currentEscrow = _data["currentEscrow"] ? CreateOrEditCurrentEscrowDto.fromJS(_data["currentEscrow"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): GetCurrentEscrowForEditOutput {
+        data = typeof data === 'object' ? data : {};
+        let result = new GetCurrentEscrowForEditOutput();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["currentEscrow"] = this.currentEscrow ? this.currentEscrow.toJSON() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IGetCurrentEscrowForEditOutput {
+    currentEscrow: CreateOrEditCurrentEscrowDto;
+}
+
+export class GetCurrentEscrowForViewDto implements IGetCurrentEscrowForViewDto {
+    currentEscrow!: CurrentEscrowDto;
+
+    constructor(data?: IGetCurrentEscrowForViewDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.currentEscrow = _data["currentEscrow"] ? CurrentEscrowDto.fromJS(_data["currentEscrow"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): GetCurrentEscrowForViewDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new GetCurrentEscrowForViewDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["currentEscrow"] = this.currentEscrow ? this.currentEscrow.toJSON() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IGetCurrentEscrowForViewDto {
+    currentEscrow: CurrentEscrowDto;
+}
+
 export class GetCurrentLoginInformationsOutput implements IGetCurrentLoginInformationsOutput {
     user!: UserLoginInfoDto;
     impersonatorUser!: UserLoginInfoDto;
@@ -31523,6 +33258,94 @@ export class GetEnterpriseForViewDto implements IGetEnterpriseForViewDto {
 
 export interface IGetEnterpriseForViewDto {
     enterprise: EnterpriseDto;
+}
+
+export class GetEscrowAccessHistoryForEditOutput implements IGetEscrowAccessHistoryForEditOutput {
+    escrowAccessHistory!: CreateOrEditEscrowAccessHistoryDto;
+    userName!: string | undefined;
+    escrowClientName!: string | undefined;
+
+    constructor(data?: IGetEscrowAccessHistoryForEditOutput) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.escrowAccessHistory = _data["escrowAccessHistory"] ? CreateOrEditEscrowAccessHistoryDto.fromJS(_data["escrowAccessHistory"]) : <any>undefined;
+            this.userName = _data["userName"];
+            this.escrowClientName = _data["escrowClientName"];
+        }
+    }
+
+    static fromJS(data: any): GetEscrowAccessHistoryForEditOutput {
+        data = typeof data === 'object' ? data : {};
+        let result = new GetEscrowAccessHistoryForEditOutput();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["escrowAccessHistory"] = this.escrowAccessHistory ? this.escrowAccessHistory.toJSON() : <any>undefined;
+        data["userName"] = this.userName;
+        data["escrowClientName"] = this.escrowClientName;
+        return data;
+    }
+}
+
+export interface IGetEscrowAccessHistoryForEditOutput {
+    escrowAccessHistory: CreateOrEditEscrowAccessHistoryDto;
+    userName: string | undefined;
+    escrowClientName: string | undefined;
+}
+
+export class GetEscrowAccessHistoryForViewDto implements IGetEscrowAccessHistoryForViewDto {
+    escrowAccessHistory!: EscrowAccessHistoryDto;
+    userName!: string | undefined;
+    escrowClientName!: string | undefined;
+
+    constructor(data?: IGetEscrowAccessHistoryForViewDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.escrowAccessHistory = _data["escrowAccessHistory"] ? EscrowAccessHistoryDto.fromJS(_data["escrowAccessHistory"]) : <any>undefined;
+            this.userName = _data["userName"];
+            this.escrowClientName = _data["escrowClientName"];
+        }
+    }
+
+    static fromJS(data: any): GetEscrowAccessHistoryForViewDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new GetEscrowAccessHistoryForViewDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["escrowAccessHistory"] = this.escrowAccessHistory ? this.escrowAccessHistory.toJSON() : <any>undefined;
+        data["userName"] = this.userName;
+        data["escrowClientName"] = this.escrowClientName;
+        return data;
+    }
+}
+
+export interface IGetEscrowAccessHistoryForViewDto {
+    escrowAccessHistory: EscrowAccessHistoryDto;
+    userName: string | undefined;
+    escrowClientName: string | undefined;
 }
 
 export class GetEscrowClientForEditOutput implements IGetEscrowClientForEditOutput {
@@ -36192,6 +38015,46 @@ export interface ILocalizableComboboxItemSourceDto {
     items: LocalizableComboboxItemDto[] | undefined;
 }
 
+export class LogAccessInput implements ILogAccessInput {
+    escrowId!: number | undefined;
+    escrowNumber!: string | undefined;
+
+    constructor(data?: ILogAccessInput) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.escrowId = _data["escrowId"];
+            this.escrowNumber = _data["escrowNumber"];
+        }
+    }
+
+    static fromJS(data: any): LogAccessInput {
+        data = typeof data === 'object' ? data : {};
+        let result = new LogAccessInput();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["escrowId"] = this.escrowId;
+        data["escrowNumber"] = this.escrowNumber;
+        return data;
+    }
+}
+
+export interface ILogAccessInput {
+    escrowId: number | undefined;
+    escrowNumber: string | undefined;
+}
+
 export class MarkAllUnreadMessagesOfUserAsReadInput implements IMarkAllUnreadMessagesOfUserAsReadInput {
     tenantId!: number | undefined;
     userId!: number;
@@ -37088,6 +38951,102 @@ export interface IPagedResultDtoOfEntityChangeListDto {
     items: EntityChangeListDto[] | undefined;
 }
 
+export class PagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto implements IPagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto {
+    totalCount!: number;
+    items!: EscrowAccessHistoryEscrowClientLookupTableDto[] | undefined;
+
+    constructor(data?: IPagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.totalCount = _data["totalCount"];
+            if (Array.isArray(_data["items"])) {
+                this.items = [] as any;
+                for (let item of _data["items"])
+                    this.items!.push(EscrowAccessHistoryEscrowClientLookupTableDto.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): PagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new PagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["totalCount"] = this.totalCount;
+        if (Array.isArray(this.items)) {
+            data["items"] = [];
+            for (let item of this.items)
+                data["items"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IPagedResultDtoOfEscrowAccessHistoryEscrowClientLookupTableDto {
+    totalCount: number;
+    items: EscrowAccessHistoryEscrowClientLookupTableDto[] | undefined;
+}
+
+export class PagedResultDtoOfEscrowAccessHistoryUserLookupTableDto implements IPagedResultDtoOfEscrowAccessHistoryUserLookupTableDto {
+    totalCount!: number;
+    items!: EscrowAccessHistoryUserLookupTableDto[] | undefined;
+
+    constructor(data?: IPagedResultDtoOfEscrowAccessHistoryUserLookupTableDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.totalCount = _data["totalCount"];
+            if (Array.isArray(_data["items"])) {
+                this.items = [] as any;
+                for (let item of _data["items"])
+                    this.items!.push(EscrowAccessHistoryUserLookupTableDto.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): PagedResultDtoOfEscrowAccessHistoryUserLookupTableDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new PagedResultDtoOfEscrowAccessHistoryUserLookupTableDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["totalCount"] = this.totalCount;
+        if (Array.isArray(this.items)) {
+            data["items"] = [];
+            for (let item of this.items)
+                data["items"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IPagedResultDtoOfEscrowAccessHistoryUserLookupTableDto {
+    totalCount: number;
+    items: EscrowAccessHistoryUserLookupTableDto[] | undefined;
+}
+
 export class PagedResultDtoOfEscrowDetailUserLookupTableDto implements IPagedResultDtoOfEscrowDetailUserLookupTableDto {
     totalCount!: number;
     items!: EscrowDetailUserLookupTableDto[] | undefined;
@@ -37424,6 +39383,54 @@ export interface IPagedResultDtoOfGetAllSendAttemptsOutput {
     items: GetAllSendAttemptsOutput[] | undefined;
 }
 
+export class PagedResultDtoOfGetCurrentEscrowForViewDto implements IPagedResultDtoOfGetCurrentEscrowForViewDto {
+    totalCount!: number;
+    items!: GetCurrentEscrowForViewDto[] | undefined;
+
+    constructor(data?: IPagedResultDtoOfGetCurrentEscrowForViewDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.totalCount = _data["totalCount"];
+            if (Array.isArray(_data["items"])) {
+                this.items = [] as any;
+                for (let item of _data["items"])
+                    this.items!.push(GetCurrentEscrowForViewDto.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): PagedResultDtoOfGetCurrentEscrowForViewDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new PagedResultDtoOfGetCurrentEscrowForViewDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["totalCount"] = this.totalCount;
+        if (Array.isArray(this.items)) {
+            data["items"] = [];
+            for (let item of this.items)
+                data["items"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IPagedResultDtoOfGetCurrentEscrowForViewDto {
+    totalCount: number;
+    items: GetCurrentEscrowForViewDto[] | undefined;
+}
+
 export class PagedResultDtoOfGetE_SignRecordForViewDto implements IPagedResultDtoOfGetE_SignRecordForViewDto {
     totalCount!: number;
     items!: GetE_SignRecordForViewDto[] | undefined;
@@ -37518,6 +39525,54 @@ export class PagedResultDtoOfGetEnterpriseForViewDto implements IPagedResultDtoO
 export interface IPagedResultDtoOfGetEnterpriseForViewDto {
     totalCount: number;
     items: GetEnterpriseForViewDto[] | undefined;
+}
+
+export class PagedResultDtoOfGetEscrowAccessHistoryForViewDto implements IPagedResultDtoOfGetEscrowAccessHistoryForViewDto {
+    totalCount!: number;
+    items!: GetEscrowAccessHistoryForViewDto[] | undefined;
+
+    constructor(data?: IPagedResultDtoOfGetEscrowAccessHistoryForViewDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.totalCount = _data["totalCount"];
+            if (Array.isArray(_data["items"])) {
+                this.items = [] as any;
+                for (let item of _data["items"])
+                    this.items!.push(GetEscrowAccessHistoryForViewDto.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): PagedResultDtoOfGetEscrowAccessHistoryForViewDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new PagedResultDtoOfGetEscrowAccessHistoryForViewDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["totalCount"] = this.totalCount;
+        if (Array.isArray(this.items)) {
+            data["items"] = [];
+            for (let item of this.items)
+                data["items"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IPagedResultDtoOfGetEscrowAccessHistoryForViewDto {
+    totalCount: number;
+    items: GetEscrowAccessHistoryForViewDto[] | undefined;
 }
 
 export class PagedResultDtoOfGetEscrowClientForViewDto implements IPagedResultDtoOfGetEscrowClientForViewDto {
@@ -39431,6 +41486,62 @@ export interface IPayPalConfigurationDto {
     demoPassword: string | undefined;
 }
 
+export class RecentEscrowDto implements IRecentEscrowDto {
+    escrowId!: number;
+    escrowNumber!: string | undefined;
+    companyName!: string | undefined;
+    subCompanyName!: string | undefined;
+    userType!: string | undefined;
+    lastAccessTime!: DateTime;
+
+    constructor(data?: IRecentEscrowDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.escrowId = _data["escrowId"];
+            this.escrowNumber = _data["escrowNumber"];
+            this.companyName = _data["companyName"];
+            this.subCompanyName = _data["subCompanyName"];
+            this.userType = _data["userType"];
+            this.lastAccessTime = _data["lastAccessTime"] ? DateTime.fromISO(_data["lastAccessTime"].toString()) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): RecentEscrowDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new RecentEscrowDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["escrowId"] = this.escrowId;
+        data["escrowNumber"] = this.escrowNumber;
+        data["companyName"] = this.companyName;
+        data["subCompanyName"] = this.subCompanyName;
+        data["userType"] = this.userType;
+        data["lastAccessTime"] = this.lastAccessTime ? this.lastAccessTime.toString() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IRecentEscrowDto {
+    escrowId: number;
+    escrowNumber: string | undefined;
+    companyName: string | undefined;
+    subCompanyName: string | undefined;
+    userType: string | undefined;
+    lastAccessTime: DateTime;
+}
+
 export class RecentTenant implements IRecentTenant {
     id!: number;
     name!: string | undefined;
@@ -41325,6 +43436,7 @@ export class SrInvitationRecordDto implements ISrInvitationRecordDto {
     escrowNumber!: string | undefined;
     usertype!: string | undefined;
     escrowOfficerPhoneNumber!: string | undefined;
+    subCompanyName!: string | undefined;
     userId!: number | undefined;
     id!: number;
 
@@ -41347,6 +43459,7 @@ export class SrInvitationRecordDto implements ISrInvitationRecordDto {
             this.escrowNumber = _data["escrowNumber"];
             this.usertype = _data["usertype"];
             this.escrowOfficerPhoneNumber = _data["escrowOfficerPhoneNumber"];
+            this.subCompanyName = _data["subCompanyName"];
             this.userId = _data["userId"];
             this.id = _data["id"];
         }
@@ -41369,6 +43482,7 @@ export class SrInvitationRecordDto implements ISrInvitationRecordDto {
         data["escrowNumber"] = this.escrowNumber;
         data["usertype"] = this.usertype;
         data["escrowOfficerPhoneNumber"] = this.escrowOfficerPhoneNumber;
+        data["subCompanyName"] = this.subCompanyName;
         data["userId"] = this.userId;
         data["id"] = this.id;
         return data;
@@ -41384,6 +43498,7 @@ export interface ISrInvitationRecordDto {
     escrowNumber: string | undefined;
     usertype: string | undefined;
     escrowOfficerPhoneNumber: string | undefined;
+    subCompanyName: string | undefined;
     userId: number | undefined;
     id: number;
 }

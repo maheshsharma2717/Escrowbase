@@ -1,6 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <localizationDictionary culture="en">
-  <texts>    <text name="TagsAndFileMapping">Tags and file mapping</text>
+  <texts>    <text name="EscrowHistory">Escrow history</text>
+    <text name="EscrowAccessHistory">Escrow access history</text>
+    <text name="CreateNewEscrowAccessHistory">Create new escrow access history</text>
+    <text name="EditEscrowAccessHistory">Edit escrow access history</text>
+    <text name="DeleteEscrowAccessHistory">Delete escrow access history</text>
+    <text name="GetCurrentEscrow">Get current escrow</text>
+    <text name="CurrentEscrow">Current escrow</text>
+    <text name="CreateNewCurrentEscrow">Create new current escrow</text>
+    <text name="EditCurrentEscrow">Edit current escrow</text>
+    <text name="DeleteCurrentEscrow">Delete current escrow</text>
+    <text name="TagsAndFileMapping">Tags and file mapping</text>
     <text name="TagsAndFileMappings">Tags and file mappings</text>
     <text name="CreateNewTagsAndFileMappings">Create new tags and file mappings</text>
     <text name="EditTagsAndFileMappings">Edit tags and file mappings</text>

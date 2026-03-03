@@ -1,4 +1,6 @@
-﻿using SR.EscrowBaseWeb.TagsAndFileMapping;
+﻿using SR.EscrowBaseWeb.EscrowHistory;
+using SR.EscrowBaseWeb.GetCurrentEscrow;
+using SR.EscrowBaseWeb.TagsAndFileMapping;
 using SR.EscrowBaseWeb.EscrowFileTag;
 using SR.EscrowBaseWeb.EscrowUserNote;
 using SR.EscrowBaseWeb.EscrowDirectMessage;
@@ -36,11 +38,14 @@ using SR.EscrowBaseWeb.SRSecurityQuestion;
 using Abp.IdentityServer4vNext;
 using SR.EscrowBaseWeb.EsignCompany;
 
-
 namespace SR.EscrowBaseWeb.EntityFrameworkCore
 {
     public class EscrowBaseWebDbContext : AbpZeroDbContext<Tenant, Role, User, EscrowBaseWebDbContext>, IAbpPersistedGrantDbContext
     {
+        public virtual DbSet<EscrowAccessHistory> EscrowAccessHistories { get; set; }
+
+        public virtual DbSet<CurrentEscrow> CurrentEscrows { get; set; }
+
         public virtual DbSet<TagsAndFileMappings> TagsAndFileMappingses { get; set; }
 
         public virtual DbSet<EscrowFileTags> EscrowFileTagses { get; set; }
@@ -103,7 +108,6 @@ namespace SR.EscrowBaseWeb.EntityFrameworkCore
         public virtual DbSet<SecurityQuestion> SecurityQuestions { get; set; }
         public virtual DbSet<ESignCompany> ESignCompanies { get; set; }
 
-
         public EscrowBaseWebDbContext(DbContextOptions<EscrowBaseWebDbContext> options)
             : base(options)
         {
@@ -114,10 +118,18 @@ namespace SR.EscrowBaseWeb.EntityFrameworkCore
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<EscrowFileTags>(x =>
+            modelBuilder.Entity<EscrowAccessHistory>(x =>
             {
                 x.HasIndex(e => new { e.TenantId });
             });
+            modelBuilder.Entity<CurrentEscrow>(c =>
+                       {
+                           c.HasIndex(e => new { e.TenantId });
+                       });
+            modelBuilder.Entity<EscrowFileTags>(x =>
+                       {
+                           x.HasIndex(e => new { e.TenantId });
+                       });
             modelBuilder.Entity<EscrowUserNotes>(x =>
                        {
                            x.HasIndex(e => new { e.TenantId });

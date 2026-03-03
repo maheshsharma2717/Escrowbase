@@ -1,4 +1,8 @@
-﻿using SR.EscrowBaseWeb.TagsAndFileMapping.Dtos;
+﻿using SR.EscrowBaseWeb.EscrowHistory.Dtos;
+using SR.EscrowBaseWeb.EscrowHistory;
+using SR.EscrowBaseWeb.GetCurrentEscrow.Dtos;
+using SR.EscrowBaseWeb.GetCurrentEscrow;
+using SR.EscrowBaseWeb.TagsAndFileMapping.Dtos;
 using SR.EscrowBaseWeb.TagsAndFileMapping;
 using SR.EscrowBaseWeb.EscrowFileTag.Dtos;
 using SR.EscrowBaseWeb.EscrowFileTag;
@@ -90,6 +94,10 @@ namespace SR.EscrowBaseWeb
     {
         public static void CreateMappings(IMapperConfigurationExpression configuration)
         {
+            configuration.CreateMap<CreateOrEditEscrowAccessHistoryDto, EscrowAccessHistory>().ReverseMap();
+            configuration.CreateMap<EscrowAccessHistoryDto, EscrowAccessHistory>().ReverseMap();
+            configuration.CreateMap<CreateOrEditCurrentEscrowDto, CurrentEscrow>().ReverseMap();
+            configuration.CreateMap<CurrentEscrowDto, CurrentEscrow>().ReverseMap();
             configuration.CreateMap<CreateOrEditTagsAndFileMappingsDto, TagsAndFileMappings>().ReverseMap();
             configuration.CreateMap<TagsAndFileMappingsDto, TagsAndFileMappings>().ReverseMap();
             configuration.CreateMap<CreateOrEditEscrowFileTagsDto, EscrowFileTags>().ReverseMap();

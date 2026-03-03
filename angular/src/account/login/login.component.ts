@@ -26,7 +26,7 @@ export class LoginComponent extends AppComponentBase implements OnInit {
     username: any;
     password: any;
     demo: any;
-    escrow:any;
+    escrow: any;
     orderby: string;
     fieldTextType: boolean;
 
@@ -39,9 +39,9 @@ export class LoginComponent extends AppComponentBase implements OnInit {
         private _reCaptchaV3Service: ReCaptchaV3Service,
         private _activateroute: ActivatedRoute,
         private route: ActivatedRoute,
-         private _authService: AppAuthService,
+        private _authService: AppAuthService,
         private _localStorageService: LocalStorageService
-            ) {
+    ) {
         super(injector);
     }
 
@@ -60,116 +60,125 @@ export class LoginComponent extends AppComponentBase implements OnInit {
 
         return this.setting.getBoolean('App.UserManagement.AllowSelfRegistration');
     }
-   
+
     ngOnInit(): void {
-       
+
         this.escrow = this.route.snapshot.queryParams['Escrow'];
-         //this.escrow="0007"
-        if(this.escrow != null || this.escrow != undefined || this.escrow!=""){
-           // localStorage.clear();
-         this._localStorageService.setItem("Escrow", this.escrow);
+        //this.escrow="0007"
+        if (this.escrow != null || this.escrow != undefined || this.escrow != "") {
+            // localStorage.clear();
+            this._localStorageService.setItem("Escrow", this.escrow);
 
-        
 
-         // JavaScript
-        //  var a = document.getElementById('opener'), w;        
-        //  a.onclick = function() {
-        //    if (!w || w.closed) {
-        //    //  w = window.open("https://www.google.com","_blank","menubar = 0, scrollbars = 0");
-        //    } else {
-        //      console.log('window is already opened');
-        //    }
-        //    w.focus();
-        //  };
+
+            // JavaScript
+            //  var a = document.getElementById('opener'), w;        
+            //  a.onclick = function() {
+            //    if (!w || w.closed) {
+            //    //  w = window.open("https://www.google.com","_blank","menubar = 0, scrollbars = 0");
+            //    } else {
+            //      console.log('window is already opened');
+            //    }
+            //    w.focus();
+            //  };
 
 
 
 
 
         }
-  
+
         if (this._sessionService.userId > 0 && UrlHelper.getReturnUrl() && UrlHelper.getSingleSignIn()) {
             this._sessionAppService.updateUserSignInToken()
                 .subscribe((result: UpdateUserSignInTokenOutput) => {
-                      
+
                     const initialReturnUrl = UrlHelper.getReturnUrl();
                     const returnUrl = initialReturnUrl + (initialReturnUrl.indexOf('?') >= 0 ? '&' : '?') +
                         'accessToken=' + result.signInToken +
                         '&userId=' + result.encodedUserId +
                         '&tenantId=' + result.encodedTenantId;
-                      
+
                     location.href = returnUrl;
-                   
+
                 });
         }
         this.demo = this.route.snapshot.queryParams['username'];
 
 
-        
-        
-        if(this.demo!=null)
-        {
-        this.loginService.authenticateModel.userNameOrEmailAddress = atob(this.demo);
+
+
+        if (this.demo != null) {
+            this.loginService.authenticateModel.userNameOrEmailAddress = atob(this.demo);
         }
         let state = UrlHelper.getQueryParametersUsingHash().state;
         if (state && state.indexOf('openIdConnect') >= 0) {
             this.loginService.openIdConnectLoginCallback({});
         }
         this.route.queryParams
-        .subscribe(params => {
-              
-            
-           this.username = params.UsernameOrEmailAddress;
-           this.password = params.password;
-           if(this.username!=undefined && this.password!=undefined )
-           {
-               
-           this.loginService.authenticateModel.userNameOrEmailAddress = atob(this.username);
-           this.loginService.authenticateModel.password = atob(this.password);
-           this.login();
-        }else if(params.logout){
-            this._authService.logout();
-            
-               
-        }
-        }
-        
-      );
+            .subscribe(params => {
+
+
+                this.username = params.UsernameOrEmailAddress;
+                this.password = params.password;
+                if (this.username != undefined && this.password != undefined) {
+
+                    this.loginService.authenticateModel.userNameOrEmailAddress = atob(this.username);
+                    this.loginService.authenticateModel.password = atob(this.password);
+                    this.login();
+                } else if (params.logout) {
+                    this._authService.logout();
+
+
+                }
+            }
+
+            );
     }
 
     login(): void {
-           
-       // window.close();
-        try{
-            localStorage.clear();
-        let recaptchaCallback = (token: string) => {
-            this.showMainSpinner();
+        debugger;
+        try {
+            // ❗ DO NOT clear all local storage — this deletes sorting!
+            // localStorage.clear();
 
-            this.submitting = true;
+            // ✅ Clear only keys that MUST reset on login
             localStorage.removeItem('OpenTabList');
-           
-            this.loginService.authenticate(
-                () => {
-                    this.submitting = false;
+            localStorage.removeItem('activeTab');
+            localStorage.removeItem('EscrowBaseWeb/abpzerotemplate_local_storage/enc_auth_token');
+            // (add more keys here ONLY if needed)
 
-                    this.hideMainSpinner();
-                },
-                null,
-                token
-            );
-        };
+            let recaptchaCallback = (token: string) => {
+                this.showMainSpinner();
+                this.submitting = true;
 
-        if (this.useCaptcha) {
-            this._reCaptchaV3Service.execute(this.recaptchaSiteKey, 'login', (token) => {
-                recaptchaCallback(token);
-            });
-        } else {
-            recaptchaCallback(null);
+                // This is already removed above, but harmless if called twice
+                localStorage.removeItem('OpenTabList');
+
+                this.loginService.authenticate(
+                    () => {
+                        this.submitting = false;
+                        this.hideMainSpinner();
+                    },
+                    null,
+                    token
+                );
+            };
+
+            if (this.useCaptcha) {
+                this._reCaptchaV3Service.execute(
+                    this.recaptchaSiteKey,
+                    'login',
+                    (token) => recaptchaCallback(token)
+                );
+            } else {
+                recaptchaCallback(null);
+            }
+
+        } catch (error) {
+            console.log(error);
         }
-    }catch(error){
-console.log(error);
     }
-    }
+
 
 
     externalLogin(provider: ExternalLoginProvider) {
@@ -182,7 +191,7 @@ console.log(error);
 
 
 
-toggleFieldTextType() {
-  this.fieldTextType = !this.fieldTextType;
-}
+    toggleFieldTextType() {
+        this.fieldTextType = !this.fieldTextType;
+    }
 }

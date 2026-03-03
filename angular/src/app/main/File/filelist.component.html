@@ -1,5 +1,6 @@
 <div>
-  <div class="row user-type-sec" style="margin-right: auto; font-size: 14px;">
+  <div class="row user-type-sec" [class.fullscreen-header-fixed]="isMainFullScreen || isOtherFullScreen"
+    style="margin-right: auto; font-size: 14px;">
 
     <div class="col-md-12"
       style="display: flex; justify-content: space-between; align-items: center; padding: 3 0 0 0;">
@@ -13,6 +14,12 @@
 
       <!-- Buttons & Dropdown -->
       <div class="usertypes col-md-6" style="display: flex; gap: 12px; justify-content: flex-end; align-items: center;">
+        <!-- Username Display -->
+        <!-- <div style="margin-right: 10px;">
+          <span style="font-size: large; color: black; padding: inherit;">
+            <b>{{userName}} - {{userType}}</b>
+          </span>
+        </div> -->
 
         <!-- Message Button -->
         <div *ngIf="isEscrowOfficerUserExist && UsertypeModel != 'EOX'" style="text-align: center; cursor: pointer;">
@@ -46,7 +53,6 @@
             <i style="color: black; font-weight: 600; font-size: 11px;">Access Level Type(s)</i>
           </div>
         </div>
-
       </div>
     </div>
 
@@ -120,7 +126,7 @@
           &nbsp;&nbsp; Total Items -: {{itemCount}}</div>
 
         <dx-file-manager #data id="fileManager" [fileSystemProvider]="remoteProvider" height="600"
-          rootFolderName="Companies" selectionMode="single" (onContextMenuItemClick)="onItemClick($event)"
+          rootFolderName="Companies" selectionMode="multiple" (onContextMenuItemClick)="onItemClick($event)"
           (onSelectionChanged)="handleShownEvent($event)" (onSelectedFileOpened)="displayImagePopupFromMain($event)"
           [currentPath]="currentpath">
 
@@ -142,6 +148,28 @@
             </dxo-details>
           </dxo-item-view>
 
+          <dxo-toolbar>
+            <dxi-item name="showNavPane" visible="true"></dxi-item>
+            <dxi-item name="separator"></dxi-item>
+            <dxi-item name="create"></dxi-item>
+
+            <dxi-item widget="dxButton" location="after" [options]="{
+              text: 'Download All',
+              icon: 'download',
+              onClick: DownloadAll
+            }">
+            </dxi-item>
+            <dxi-item widget="dxButton" location="after" [options]="{
+                          text: 'Delete All',
+                          icon: 'trash',
+                          onClick: DeleteAll
+                        }" [visible]="deletePermission">
+            </dxi-item>
+
+            <dxi-item name="refresh"></dxi-item>
+            <dxi-item name="separator" location="after"></dxi-item>
+            <dxi-item name="switchView"></dxi-item>
+          </dxo-toolbar>
           <dxo-context-menu (onClick)="handleShowingEvent($event)">
             <dxi-item *ngIf=" editPermission == false" name="View/Edit" text="View" [visible]="readPermission"
               [options]="{view: popupesign}"></dxi-item>
@@ -185,12 +213,18 @@
     </div>
     <div>
 
-      <div *ngIf="inputPerson">
+      <div *ngIf="inputPerson" [hidden]="isOtherFullScreen">
         <app-file-main #fileMainComponent [inputPerson]="inputPerson" (onRefresh)="onRefresh($event)"
-          (saveEvent)="handelSaveMainFile($event)"> </app-file-main>
+          (saveEvent)="handelSaveMainFile($event)" [deletePermission]="deletePermission"
+          [editPermission]="editPermission" [readPermission]="readPermission"
+          [viewHistoryPermission]="viewHistoryPermission" [downloadPermission]="downloadPermission"
+          [viewFullNamePermission]="viewFullNamePermission" [renamePermission]="renamePermission"
+          [esignPermission]="esignPermission" (fullScreenToggled)="onMainFullScreen($event)"> </app-file-main>
       </div>
 
-      <app-file-other #fileOtherComponent [inputPerson]="inputPerson" (saveEvent)="handleSave($event)"></app-file-other>
+      <app-file-other [hidden]="isMainFullScreen" #fileOtherComponent [inputPerson]="inputPerson"
+        [deletePermission]="deletePermission" (saveEvent)="handleSave($event)"
+        (fullScreenToggled)="onOtherFullScreen($event)"></app-file-other>
       <div style="display: none;">
         <dx-file-manager id="fileManager1" #targetDataGrid [fileSystemProvider]="remoteProvider1" height="300"
           (onContextMenuItemClick)="onItemClick1($event)" rootFolderName="Companies" selectionMode="single"
@@ -228,13 +262,11 @@
           </dxo-context-menu>
 
         </dx-file-manager>
-
-
       </div>
     </div>
 
     <!-- <div id="hideDiv1" style="font-size: large;" *ngIf="fullnamepopup1">{{fileFullName1}}</div> -->
-    <table style="width:100% ">
+    <table style="width:100%" [hidden]="isMainFullScreen || isOtherFullScreen">
       <thead>
         <tr>
 
@@ -248,7 +280,7 @@
                 <h5 style="text-align:Centre; color: black;">Drag And Drop Here</h5>
                 <p *ngIf="UsertypeModel =='EOX'">Press Ctrl+V to paste the file </p>
               </div>
-              <input hidden type="file" #fileInput (change)="select($event)">
+              <input hidden type="file" #fileInput multiple (change)="select($event)">
             </div>
           </th>
 
@@ -259,7 +291,7 @@
     </table>
 
   </div>
-  <footer-bar></footer-bar>
+  <footer-bar [hidden]="isMainFullScreen || isOtherFullScreen"></footer-bar>
   <app-message-escrow-officer #messageToEscrowOfficerModal></app-message-escrow-officer>
   <app-sticky-notes #stickyNotesComponent></app-sticky-notes>
   <app-escrow-usertags #escrowUsertagsComponent></app-escrow-usertags>
@@ -308,7 +340,6 @@
         [showBookmarkButton]="false" [showSecondaryToolbarButton]="false" [showRotateButton]="false"
         [showSpreadButton]="false" [showPropertiesButton]="false"
         [showDownloadButton]="false"></ngx-extended-pdf-viewer>
-
 
       <div *ngIf="eSign" style="height: 100%; width: 100%; overflow: hidden;" data-role="content">
         <iframe *ngIf="eSign" id="esignIframe" [src]="EMBED_SESSION_URL"
@@ -743,19 +774,21 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(255,255,255,0.7);
+    background: rgba(255, 255, 255, 0.7);
     z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+
   .signing-center {
     text-align: center;
     background: #fff;
     padding: 40px 30px;
     border-radius: 12px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
   }
+
   .modern-spinner {
     width: 64px;
     height: 64px;
@@ -767,22 +800,38 @@
     border-left: 6px solid #3699FF;
     animation: spin 1s linear infinite, pulse 1.2s infinite;
     margin: 0 auto;
-    box-shadow: 0 0 16px rgba(54,153,255,0.15);
+    box-shadow: 0 0 16px rgba(54, 153, 255, 0.15);
   }
+
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
   }
+
   @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 16px rgba(36,205,217,0.15); }
-    50% { box-shadow: 0 0 32px rgba(36,205,217,0.25); }
+
+    0%,
+    100% {
+      box-shadow: 0 0 16px rgba(36, 205, 217, 0.15);
+    }
+
+    50% {
+      box-shadow: 0 0 32px rgba(36, 205, 217, 0.25);
+    }
   }
+
   .animated-dots {
     display: flex;
     justify-content: center;
     margin-top: 18px;
     margin-bottom: 8px;
   }
+
   .animated-dots span {
     width: 10px;
     height: 10px;
@@ -792,15 +841,25 @@
     display: inline-block;
     animation: bounce 1.2s infinite;
   }
+
   .animated-dots span:nth-child(2) {
     animation-delay: 0.2s;
   }
+
   .animated-dots span:nth-child(3) {
     animation-delay: 0.4s;
   }
+
   @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-12px); }
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-12px);
+    }
   }
 </style>
 

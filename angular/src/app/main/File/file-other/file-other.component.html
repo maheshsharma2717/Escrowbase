@@ -14,78 +14,102 @@
     </div>
 
     <!-- Toolbar Section -->
-    <div
-        style="background-color: #adcde9; padding: 3px 10px; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold; font-size: 14px;">Total Items -: {{files.length}}</span>
-
-        <!-- Search by Tags Dropdown -->
-        <div #dropdownWrapper style="position: relative; margin-left: auto;">
-            <button (click)="toggleDropdown()" class="btn btn-primary"
-                style="height: 22px; padding: 2px 7px; font-size: 12px; line-height: 1; margin-right: 20px;">
-                Search by Tags
+    <div style="background-color: #adcde9; padding: 3px 10px; display: flex; align-items: center;">
+        <span style="font-weight: bold; font-size: 14px;">Total Items: {{files.length}}</span>
+        <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
+            <button class="btn btn-primary btn-xs-custom fade-btn" (click)="downloadSelected()"
+                [class.visible]="selectedFiles.size > 0" [disabled]="selectedFiles.size === 0">
+                <i class="fa fa-download" style="font-size: 10px;"></i> Download Selected
             </button>
-
-            <div *ngIf="showDropdown" class="dropdown-container"
-                style="width: 200px; position: absolute; top: 100%; right: 0;">
-                <input type="text" [(ngModel)]="searchQuery2" placeholder="Search text" class="search-input"
-                    style="width: 100%" />
-                <ul>
-                    <li (click)="selectTag3('all')">Clear</li>
-
-                    <li *ngFor="let item of filteredItems2()" (click)="selectTag3(item)">
-                        <i class="fas fa-tag" [ngStyle]="{ 
-                        'color': item.tagColor.split(',')[0].trim(), 
-                        'font-size': 'small',
-                        'margin-right': '5px'
-                      }">
-                        </i>
-                        <span class="tag-description" [ngStyle]="{ 
-                        'color': item.tagColor.split(',')[1]?.trim()  
-                      }">
-                            {{ item.tagDescription }}
-                        </span>
-                    </li>
-                </ul>
-            </div>
+            <button class="btn btn-danger btn-xs-custom fade-btn" (click)="deleteSelected()"
+                [class.visible]="selectedFiles.size > 0" [disabled]="selectedFiles.size === 0">
+                <i class="fa fa-trash" style="font-size: 10px;"></i> Delete Selected
+            </button>
+            <span (click)="toggleFullScreen(fullscreenElement)" style="cursor: pointer; margin-left: 5px;"
+                [title]="isFullScreen ? 'Show main area' : 'Hide main area'">
+                <i class="fas fullscreen-toggle-icon"
+                    [ngClass]="{ 'fa-expand-alt': !isFullScreen, 'fa-compress-alt': isFullScreen }"
+                    style="font-size: 15px; color: #464E5F;"></i>
+            </span>
         </div>
 
-        <!-- Fullscreen Toggle (Only One Remaining) -->
-        <span (click)="toggleFullScreen(fullscreenElement)" style="cursor: pointer;">
-            <i class="fas" [ngClass]="{ 'fa-expand': !isFullScreen, 'fa-compress': isFullScreen }"
-                style="font-size: 15px; color: #464E5F;"></i>
-        </span>
+
     </div>
 
     <!-- Table Section -->
     <div class="table-container" style="min-height: 400px; background-color: white; overflow-y: auto">
         <table *ngIf="!isCollapsed" style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <thead>
-                <tr style="height: 26px;">
-                    <th style="width: 45%; cursor: pointer; padding-left: 10px;" (click)="sortTable('name')">
+                <tr style="height: 31px;">
+                    <th style="width: 48%; cursor: pointer; padding-left: 10px;" (click)="sortTable('name')">
+                        <input type="checkbox" [checked]="isAllSelected" (change)="toggleSelectAll($event)"
+                            (click)="$event.stopPropagation()" style="margin-right: 5px; cursor: pointer;" />
                         Name
                         <span *ngIf="currentSortField === 'name'">
                             <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
                         </span>
                     </th>
-                    <th style="width: 55%; cursor: pointer; padding: 4px;" (click)="sortTable('tags')">
-                        Tags
-                        <span *ngIf="currentSortField === 'tags'">
-                            <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
-                        </span>
+                    <th style="width: 55%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span (click)="sortTable('tags')" style="cursor: pointer;">
+                                Tags
+                                <span *ngIf="currentSortField === 'tags'">
+                                    <i
+                                        [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                                </span>
+                            </span>
+
+                            <!-- Search by Tags Dropdown -->
+                            <div #dropdownWrapper style="position: relative;" (click)="$event.stopPropagation()">
+                                <button (click)="toggleDropdown()" class="btn btn-primary"
+                                    style="height: 22px; padding: 2px 7px; font-size: 12px; line-height: 1; margin-right: 38px;">
+                                    Search by Tags
+                                </button>
+
+                                <div *ngIf="showDropdown" class="dropdown-container"
+                                    style="width: 200px; position: absolute; top: 100%; right: 0; z-index: 1000; text-align: left; font-weight: normal;">
+                                    <input type="text" [(ngModel)]="searchQuery2" placeholder="Search text"
+                                        class="search-input" style="width: 100%" />
+                                    <ul>
+                                        <li (click)="selectTag3('all')">Clear</li>
+
+                                        <li *ngFor="let item of filteredItems2()" (click)="selectTag3(item)">
+                                            <i class="fas fa-tag" [ngStyle]="{ 
+                                            'color': item.tagColor.split(',')[0].trim(), 
+                                            'font-size': 'small',
+                                            'margin-right': '5px'
+                                            }">
+                                            </i>
+                                            <span class="tag-description" [ngStyle]="{ 
+                                            'color': item.tagColor.split(',')[1]?.trim()  
+                                            }">
+                                                {{ item.tagDescription }}
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </th>
                 </tr>
             </thead>
 
             <tbody style="position: relative">
                 <tr style="border-bottom: 1px;" *ngIf="!files.length">
-                    <td colspan="2" style="text-align: center; padding: 5px;">
+                    <td colspan="3" style="text-align: center; padding: 5px;">
                         No data available
                     </td>
                 </tr>
 
-                <tr *ngFor="let file of files; let i = index"  class="hover-row">
-                    <td (contextmenu)="onRightClick($event, i, file, 'All')"style="position: relative;">
-                        <img [src]="apiUrl + file.fileType" alt="Image" style="width: 22px; margin-right: 5px;">
+                <tr *ngFor="let file of files; let i = index" class="hover-row" draggable="true"
+                    (dragstart)="onDragStart($event, file)">
+                    <td (contextmenu)="onRightClick($event, i, file, 'All')"
+                        style="position: relative; padding-left: 10px;">
+                        <input type="checkbox" [checked]="selectedFiles.has(file.srAssignedFileId || file.key)"
+                            (change)="toggleSelection(file)"
+                            [style.display]="selectedFiles.size > 0 ? 'inline-block' : null"
+                            style="margin-right: 5px;" />
+                        <span [innerHTML]="getFileIcon(file.name)" style="margin-right: 5px;"></span>
 
                         <span class="file-name" [title]="file.name">
                             {{ file.name.length > 50 ? (file.name | slice:0:50) + '…' : file.name }}
@@ -95,17 +119,27 @@
                             class="context-menu dropdown-menus" [style.top.px]="contextMenuPosition.y"
                             [style.left.px]="contextMenuPosition.x" style="position: absolute; z-index: 9999;">
                             <ul>
-                                <li *ngIf="readPermissionOtherArea" (click)="onItemClickMain('view1')">View</li>
-                                <li *ngIf="editPermissionOtherArea" (click)="onItemClickMain('view1')">View/Edit</li>
-                                <li (click)="onItemClickMain('renameFile')">Rename</li>
-                                <li (click)="onItemClickMain('deleteFile')">Delete</li>
-                                <li (click)="onItemClickMain('FullName1')">View FullName</li>
-                                <li *ngIf="editPermissionOtherArea" (click)="moveToMain('Move')">Move to main</li>
+                                <ng-container *ngIf="selectedFiles.size <= 1">
+                                    <li *ngIf="readPermissionOtherArea" (click)="onItemClickMain('view1')">View</li>
+                                    <li *ngIf="editPermissionOtherArea" (click)="onItemClickMain('view1')">View/Edit
+                                    </li>
+                                    <li (click)="onItemClickMain('renameFile')">Rename</li>
+                                    <li (click)="onItemClickMain('deleteFile')">Delete</li>
+                                    <li *ngIf="downloadPermission" (click)="DownloadFile(file)">Download File</li>
+                                    <li (click)="onItemClickMain('FullName1')">View FullName</li>
+                                    <li *ngIf="editPermissionOtherArea" (click)="moveToMain('Move')">Move to main</li>
+                                </ng-container>
+                                <li *ngIf="selectedFiles.size > 1" (click)="downloadSelected()">
+                                    Download Selected
+                                </li>
+                                <li *ngIf="selectedFiles.size > 1" (click)="deleteSelected()">
+                                    Delete Selected
+                                </li>
                             </ul>
                         </div>
                     </td>
 
-                    <td (contextmenu)="onRightClick2($event, i, file, 'Tags')"style="position: relative;">
+                    <td (contextmenu)="onRightClick2($event, i, file, 'Tags')" style="position: relative;">
                         <div class="tags-container" style="display: flex; flex-wrap: wrap; gap: 6px;">
                             <span *ngFor="let item of file.escrowFileTags; let index = index; trackBy: trackByTagId"
                                 [ngStyle]="{
@@ -147,10 +181,10 @@
         </table>
     </div>
 
-
     <div class="context-wrapper" (contextmenu)="openContextMenu($event, file)"> </div>
 
-    <div *ngIf="showContextMenuTags" [style.top.px]="contextMenuPosition.y" [style.left.px]="contextMenuPosition.x" class="context-menu "> </div>
+    <div *ngIf="showContextMenuTags" [style.top.px]="contextMenuPosition.y" [style.left.px]="contextMenuPosition.x"
+        class="context-menu "> </div>
 
     <app-escrow-usertags #escrowUsertagsComponent [selectedFile]="selectedFile"
         (modalClosed)="onChildModalClose()"></app-escrow-usertags>

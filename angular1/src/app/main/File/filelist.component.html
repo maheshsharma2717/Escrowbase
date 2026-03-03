@@ -149,7 +149,7 @@
                 src="\assets\common\images\drop.png">
               <h5 style="text-align:Centre; color: black;">Drag And Drop Here</h5>
             </div>
-            <input hidden type="file" #fileInput (change)="select($event)">
+            <input hidden type="file" #fileInput multiple (change)="select($event)">
           </div>
 
         </th>

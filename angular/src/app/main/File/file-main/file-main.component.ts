@@ -1,5 +1,6 @@
 import { Component, HostListener, Injector, Input, EventEmitter, OnInit, Output, Optional, Inject } from '@angular/core';
 import { Observable } from '@node_modules/rxjs';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AppComponentBase } from '@shared/common/app-component-base';
 import { EscrowFileTagsesServiceProxy, SREscrowFileMastersServiceProxy, API_BASE_URL } from '@shared/service-proxies/service-proxies';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -12,6 +13,8 @@ export class FileMainComponent extends AppComponentBase {
   @Input() inputPerson: any;
   @Output() saveEvent = new EventEmitter<any>();
   @Input() onRefresh = new EventEmitter<any>();
+  selectedFiles: Set<string> = new Set();
+  isAllSelected: boolean = false;
   selectedFile: any;
   contextMenuPosition = { x: 0, y: 0 };
   showContextMenu: boolean;
@@ -23,7 +26,7 @@ export class FileMainComponent extends AppComponentBase {
   allTagsList: any[] = [];
   fileTagService: any;
   isCollapsed: boolean = false;
-  sanitizer: any;
+
   filteredFiles = [...this.files];
   availableTags: string[] = [];
   showTagSearch = false;
@@ -34,16 +37,16 @@ export class FileMainComponent extends AppComponentBase {
   folderPath: any;
   parentPath: any;
   tableData: any = [];
-  editPermission: boolean;
-  readPermission: boolean;
-  viewHistoryPermission: boolean;
-  downloadPermission: boolean;
-  viewFullNamePermission: boolean;
-  renamePermission: boolean;
+  @Input() editPermission: boolean;
+  @Input() readPermission: boolean;
+  @Input() viewHistoryPermission: boolean;
+  @Input() downloadPermission: boolean;
+  @Input() viewFullNamePermission: boolean;
+  @Input() renamePermission: boolean;
   renameFileName: boolean;
   reminderPermission: boolean;
-  deletePermission: boolean;
-  esignPermission: boolean;
+  @Input() deletePermission: boolean;
+  @Input() esignPermission: boolean;
   isRename: boolean;
   isFullScreenMain: boolean = false;
   currentSortField: string = '';
@@ -59,10 +62,11 @@ export class FileMainComponent extends AppComponentBase {
   constructor(
     private escrowFileTagsServiceProxy: EscrowFileTagsesServiceProxy,
     private _srEscrowFileMastersServiceProxy: SREscrowFileMastersServiceProxy,
-    
+
     private http: HttpClient,
 
     injector: Injector,
+    public sanitizer: DomSanitizer,
     @Optional() @Inject(API_BASE_URL) baseUrl?: string,
   ) {
     super(injector);
@@ -76,7 +80,7 @@ export class FileMainComponent extends AppComponentBase {
   }
 
   getAllFiles(): void {
-    debugger;
+
     var queryParams = this.inputPerson;
     let Name = this.appSession.user.name + " " + this.appSession.user.surname;
     let subCompanyName = this.validFileName(atob(queryParams['sc']))
@@ -90,13 +94,149 @@ export class FileMainComponent extends AppComponentBase {
       .getAllFilesApi(companyName, subCompanyName, EscrowTab, this.appSession.user.id.toString(), userType)
       .subscribe(
         (response) => {
-          debugger;
+
           this.tableData = response.result;
         },
         (error) => {
           console.error('Error fetching files:', error);
         }
       );
+  }
+
+  getFileIcon(file: any): SafeHtml {
+    let fileName = file.key || file.name;
+    let fileExtension = fileName.split('.').pop()?.toLowerCase();
+    let iconHtml: string;
+
+    switch (fileExtension) {
+      case "pdf":
+        iconHtml = "<i class='fas fa-file-pdf' style='color: #e74c3c;'></i>";
+        break;
+      case "xls":
+      case "xlsx":
+        iconHtml = "<i class='fas fa-file-excel' style='color: #27ae60;'></i>"; // Green Excel
+        break;
+      case "doc":
+      case "docx":
+        iconHtml = "<i class='fas fa-file-word' style='color: #2b78e4;'></i>"; // Blue Word
+        break;
+      case "txt":
+        iconHtml = "<i class='fas fa-file-alt' style='color: #f39c12;'></i>"; // Orange Text
+        break;
+      case "eml":
+        iconHtml = "<i class='fas fa-envelope' style='color: #16a085;'></i>"; // Green Email
+        break;
+      case "msg":
+        iconHtml = "<i class='fas fa-envelope-open-text' style='color: #d35400;'></i>"; // Brown Message
+        break;
+      case "rtf":
+        iconHtml = "<img src='https://cdn-icons-png.flaticon.com/512/337/337932.png' width='20' height='20' title='RTF File' alt='RTF File Icon'>"; // Purple RTF
+        break;
+      default:
+        iconHtml = "<i class='fas fa-file' style='color: #95a5a6;'></i>"; // Default gray file
+        break;
+    }
+    return this.sanitizer.bypassSecurityTrustHtml(iconHtml);
+  }
+
+
+  toggleSelectAll(event: any) {
+    this.isAllSelected = event.target.checked;
+    if (this.isAllSelected) {
+      this.tableData.forEach(file => {
+        if (file.srAssignedFileId) {
+          this.selectedFiles.add(file.srAssignedFileId);
+        } else if (file.key) {
+          this.selectedFiles.add(file.key);
+        }
+      });
+    } else {
+      this.selectedFiles.clear();
+    }
+  }
+
+  toggleSelection(file: any) {
+    const id = file.srAssignedFileId || file.key;
+    if (this.selectedFiles.has(id)) {
+      this.selectedFiles.delete(id);
+    } else {
+      this.selectedFiles.add(id);
+    }
+    this.isAllSelected = this.selectedFiles.size === this.tableData.length && this.tableData.length > 0;
+  }
+
+  downloadSelected() {
+    if (this.selectedFiles.size === 0) {
+      abp.notify.warn('Please select files to download');
+      return;
+    }
+
+    if (this.selectedFiles.size > 5) {
+      this.downloadAsZip();
+      return;
+    }
+
+    this.tableData.forEach(file => {
+      const id = file.srAssignedFileId || file.key;
+      if (this.selectedFiles.has(id)) {
+        // Create a mock event for DownloadFile
+        this.selectedFile = file;
+        this.DownloadFile({});
+      }
+    });
+  }
+
+  downloadAsZip() {
+    const filesToDownload = this.tableData.filter(file => {
+      const id = file.srAssignedFileId || file.key;
+      return this.selectedFiles.has(id);
+    }).map(file => ({
+      key: file.key,
+      name: file.name
+    }));
+
+    const input = {
+      parentPath: this.parentPath,
+      files: filesToDownload,
+      userId: this.appSession.user.id
+    };
+
+    this.notify.info('Compressing and downloading files...');
+
+    this.http.post(`${this.apiUrl}/FileManager/DownloadZip`, input, { responseType: 'blob' })
+      .subscribe((blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Documents_${new Date().getTime()}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        this.notify.success('Download completed');
+      }, error => {
+        console.error(error);
+        this.notify.error('Failed to download zip');
+      });
+  }
+
+  deleteSelected() {
+    if (this.selectedFiles.size === 0) {
+      abp.notify.warn('Please select files to delete');
+      return;
+    }
+
+    const filesToDelete = this.tableData.filter(file => {
+      const id = file.srAssignedFileId || file.key;
+      return this.selectedFiles.has(id);
+    });
+
+    var obj = {
+      selectedFiles: filesToDelete,
+      templateRef: 'deleteAll',
+      folderPath: this.parentPath
+    }
+    this.saveEvent.emit(obj);
   }
 
   validFileName(folderName) {
@@ -165,7 +305,7 @@ export class FileMainComponent extends AppComponentBase {
   }
 
   DownloadFile(event) {
-    debugger;
+
     let compare;
     let strcheck;
     if (!this.selectedFile.key) {
@@ -199,49 +339,26 @@ export class FileMainComponent extends AppComponentBase {
       let key = this.selectedFile.key;
       let encodedPath = path.replace(/#/g, "%23");
       let encodedKey = key.replace(/#/g, "%23");
-      let srId = this.selectedFile.srAssignedFileId;
+      let srId = this.selectedFile.srAssignedFileId || 0;
       this.downloadname = key;
-      const token = 'my JWT';
-      const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
-      var userId = abp.session.userId;
-      this.http.get(this.apiUrl + "/FileManager/DownloadFile" + "?path=" + encodedPath + this.selectedFile.name + "&key=" + encodedKey + "&srAssignedFileId=" + srId + "&userId=" + userId, { headers, responseType: 'blob' as 'json' }).subscribe((response: any) => {
-        let fileRes: any = response;
-        let dataType = response.type;
-        let binaryData = [];
-        binaryData.push(response);
-        let downloadLink = document.createElement('a');
-        downloadLink.href = window.URL.createObjectURL(new Blob(binaryData, { type: dataType }));
+      let userId = abp.session.userId;
+      const token = abp.auth.getToken();
 
-        if (this.downloadname.includes("~")) {
-          this.downloadname = this.downloadname.replace("~", "~");
-        }
+      const downloadUrl = this.apiUrl + "/FileManager/DownloadFile" +
+        "?path=" + encodeURIComponent(encodedPath + this.selectedFile.name) +
+        "&key=" + encodeURIComponent(encodedKey) +
+        "&srAssignedFileId=" + srId +
+        "&userId=" + userId +
+        "&enc_auth_token=" + encodeURIComponent(token);
 
-        if (encodedKey) {
-          let startIndex = this.downloadname.indexOf("~");
-          if (startIndex > 0) {
-            const fileExtension = this.getFileExtension(this.downloadname);
-          }
-        }
-        downloadLink.setAttribute('download', this.downloadname);
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = downloadUrl;
+      document.body.appendChild(iframe);
 
-        try {
-          let newResult = fileRes.status;
-          if (newResult == 500) {
-
-          }
-          if (newResult == 200) {
-            alert("File downloaded successfully :)");
-
-          } else {
-
-          }
-        } catch (error) {
-          alert(error);
-        }
-
-      });
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 60000);
     }
   }
 
@@ -251,7 +368,7 @@ export class FileMainComponent extends AppComponentBase {
   }
 
   onItemClickMain(eventType) {
-    debugger;
+
     var obj = {
       selectedFile: this.selectedFile,
       templateRef: eventType,
@@ -269,7 +386,7 @@ export class FileMainComponent extends AppComponentBase {
   }
 
   handleShownEvent(e) {
-    debugger;
+
     this.readPermission = false;
     this.editPermission = false;
 
@@ -330,9 +447,12 @@ export class FileMainComponent extends AppComponentBase {
     }
   }
 
+  @Output() fullScreenToggled = new EventEmitter<boolean>();
+
   toggleFullScreenMain(fullscreenElement: HTMLElement) {
-    debugger;
+
     this.isFullScreenMain = !this.isFullScreenMain;
+    this.fullScreenToggled.emit(this.isFullScreenMain);
   }
 
   sortTable(field: string) {
@@ -374,7 +494,7 @@ export class FileMainComponent extends AppComponentBase {
   }
 
   onOtherActionChanged(file: any): void {
-    debugger;
+
     if (!file?.srAssignedFileId) {
       this.notify.warn('Invalid file selected');
       return;
@@ -438,5 +558,52 @@ export class FileMainComponent extends AppComponentBase {
     }, 0);
   }
 
-  
+  onDragStart(event: DragEvent, file: any) {
+    if (!file || !file.key) {
+      return;
+    }
+
+    let path = this.folderPath;
+    let key = file.key;
+    let encodedPath = path.replace(/#/g, "%23");
+    let encodedKey = key.replace(/#/g, "%23");
+    let srId = file.srAssignedFileId || '';
+    let userId = this.appSession.userId;
+    const token = abp.auth.getToken();
+
+    const downloadUrl = this.apiUrl + "/FileManager/DownloadFile" +
+      "?path=" + encodeURIComponent(encodedPath + file.name) +
+      "&key=" + encodeURIComponent(encodedKey) +
+      "&srAssignedFileId=" + srId +
+      "&userId=" + userId +
+      "&enc_auth_token=" + encodeURIComponent(token);
+
+    const mimeType = this.getMimeType(file.name) || 'application/octet-stream';
+    const dragData = `${mimeType}:${file.name}:${downloadUrl}`;
+
+    const htmlContent = `<a href="${downloadUrl}" target="_blank" style="text-decoration:none">📎 ${file.name}</a>`;
+
+    event.dataTransfer.setData('DownloadURL', dragData);
+    event.dataTransfer.setData('text/plain', downloadUrl);
+    event.dataTransfer.setData('text/html', htmlContent);
+    event.dataTransfer.effectAllowed = 'copy';
+  }
+
+  getMimeType(fileName: string): string {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    const mimeTypes: { [key: string]: string } = {
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'txt': 'text/plain',
+      'msg': 'application/vnd.ms-outlook',
+      'eml': 'message/rfc822'
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
+  }
 }

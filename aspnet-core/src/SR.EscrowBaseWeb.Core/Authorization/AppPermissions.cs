@@ -6,6 +6,16 @@
     /// </summary>
     public static class AppPermissions
     {
+        public const string Pages_EscrowAccessHistories = "Pages.EscrowAccessHistories";
+        public const string Pages_EscrowAccessHistories_Create = "Pages.EscrowAccessHistories.Create";
+        public const string Pages_EscrowAccessHistories_Edit = "Pages.EscrowAccessHistories.Edit";
+        public const string Pages_EscrowAccessHistories_Delete = "Pages.EscrowAccessHistories.Delete";
+
+        public const string Pages_CurrentEscrows = "Pages.CurrentEscrows";
+        public const string Pages_CurrentEscrows_Create = "Pages.CurrentEscrows.Create";
+        public const string Pages_CurrentEscrows_Edit = "Pages.CurrentEscrows.Edit";
+        public const string Pages_CurrentEscrows_Delete = "Pages.CurrentEscrows.Delete";
+
         public const string Pages_TagsAndFileMappingses = "Pages.TagsAndFileMappingses";
         public const string Pages_TagsAndFileMappingses_Create = "Pages.TagsAndFileMappingses.Create";
         public const string Pages_TagsAndFileMappingses_Edit = "Pages.TagsAndFileMappingses.Edit";
