@@ -4,6 +4,7 @@ import { AppComponentBase } from '@shared/common/app-component-base';
 import { EscrowFileTagsesServiceProxy, API_BASE_URL, TagsAndFileMappingsesServiceProxy, CreateOrEditTagsAndFileMappingsDto } from '@shared/service-proxies/service-proxies';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { AppConsts } from '@shared/AppConsts';
 import { EscrowUsertagsComponent } from '@app/main/escrow-usertags/escrow-usertags.component';
 import { SafeHtml } from '@node_modules/@angular/platform-browser/platform-browser';
 import { FileMainComponent } from '../file-main/file-main.component';
@@ -599,36 +600,97 @@ export class FileOtherComponent extends AppComponentBase {
       return;
     }
 
-    let path = file.path; // FileOther uses file.path usually, or this.completeEnterprisePathOther
-    let key = file.key;
-    let encodedPath = (path || this.completeEnterprisePathOther).replace(/#/g, "%23");
-    let encodedKey = key.replace(/#/g, "%23");
-    let srId = file.srAssignedFileId || this.files[0]?.dataItem?.srAssignedFileId || ''; // Try to get srId
-    let userId = this.appSession.userId;
-    const token = abp.auth.getToken();
+    try {
+      // Provide visual feedback for the drag without actually putting native file URLs that break Chrome
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'copy';
 
-    const downloadUrl = this.apiUrl + "/FileManager/DownloadFile" +
-      "?path=" + encodeURIComponent(encodedPath) + // For other files, path might handle filename diferently, verify Download implementation
-      "&key=" + encodeURIComponent(encodedKey) +
-      "&srAssignedFileId=" + srId +
-      "&userId=" + userId +
-      "&enc_auth_token=" + encodeURIComponent(token);
+        // Optional: Custom drag image if you have a specific icon, otherwise browser uses the clicked row.
+        // It's important NOT to preventDefault() immediately if we want Chrome's native ghost image to appear.
+        // But removing preventDefault() means Chrome might try to handle it.
+        // Let's create a custom ghost element manually or let Chrome handle the visual aspect.
+        const dragIcon = document.createElement('div');
+        dragIcon.textContent = `📄 ${file.name}`;
+        dragIcon.style.position = 'absolute';
+        dragIcon.style.top = '-1000px';
+        dragIcon.style.backgroundColor = 'white';
+        dragIcon.style.padding = '5px 10px';
+        dragIcon.style.border = '1px solid #ccc';
+        dragIcon.style.borderRadius = '4px';
+        dragIcon.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+        dragIcon.style.zIndex = '9999';
+        document.body.appendChild(dragIcon);
 
-    // NOTE: In Download() of file-other, it uses: "?path=" + strng + "&key=" + strng1
-    // where strng = element.path.replace(/#/g, "%23") and strng1 = element.key.replace(/#/g, "%23")
-    // It does NOT append filename to path in the query string for DownloadFile endpoint used there (line 1468).
-    // So logic above is slightly different from FileMain.
+        event.dataTransfer.setDragImage(dragIcon, 10, 10);
 
-    const mimeType = this.getMimeType(file.name) || 'application/octet-stream';
-    const dragData = `${mimeType}:${file.name}:${downloadUrl}`;
+        // Clean up the temporary element shortly after drag starts
+        setTimeout(() => {
+          if (document.body.contains(dragIcon)) {
+            document.body.removeChild(dragIcon);
+          }
+        }, 100);
+      }
 
-    // Add HTML representation for Outlook/Mail clients (hyperlink)
-    const htmlContent = `<a href="${downloadUrl}" target="_blank" style="text-decoration:none">📎 ${file.name}</a>`;
+      // event.preventDefault() stops the HTML5 drag from finishing natively in Chrome, but we need the native drag to start to get the ghost image.
+      // So we do NOT preventDefault() here since we WANT the drag visual to follow the mouse, but we override it via C# `ESC` immediately anyway!
+      // event.preventDefault();
 
-    event.dataTransfer.setData('DownloadURL', dragData);
-    event.dataTransfer.setData('text/plain', downloadUrl);
-    event.dataTransfer.setData('text/html', htmlContent);
-    event.dataTransfer.effectAllowed = 'copy';
+      let path = file.path; // FileOther uses file.path usually, or this.completeEnterprisePathOther
+      let key = file.key;
+      let encodedPath = (path || this.completeEnterprisePathOther).replace(/#/g, "%23");
+      let encodedKey = key.replace(/#/g, "%23");
+      let srId = file.srAssignedFileId || this.files[0]?.dataItem?.srAssignedFileId || ''; // Try to get srId
+      let userId = this.appSession.userId;
+      const token = abp.auth.getToken();
+
+      const downloadUrl = this.apiUrl + "/FileManager/DownloadFile" +
+        "?path=" + encodeURIComponent(encodedPath + file.name) + // For other files, path might handle filename diferently, verify Download implementation
+        "&key=" + encodeURIComponent(encodedKey) +
+        "&srAssignedFileId=" + srId +
+        "&userId=" + userId +
+        "&enc_auth_token=" + encodeURIComponent(token);
+
+      fetch('https://localhost:5123/prepare-drag', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          downloadUrl: downloadUrl,
+          fileName: file.key,
+          token: token ? `Bearer ${token}` : undefined
+        })
+      }).then(response => {
+        if (!response.ok) {
+          abp.notify.error('Failed to prepare file for drag. The local drag service returned an error.');
+          console.error('Drag service HTTP error:', response);
+        }
+      }).catch(err => {
+        console.error('Drag service error:', err);
+        // abp.notify.warn('Local drag service not running.');
+        abp.message.confirm(
+          'To drag file you need the Escrow Drag Tool installed and running.',
+          'Escrow Drag Tool Required',
+          async (isConfirmed) => {
+            if (isConfirmed) {
+              const response = await fetch(this.apiUrl + '/FileManager/DownloadDragDropExeFile', {
+                method: 'GET'
+              });            
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);            
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'EscrowDragSetup.exe';
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            }
+          }
+        );
+      });
+    } catch (error) {
+      console.error('Error in onDragStart:', error);
+    }
   }
 
   getMimeType(fileName: string): string {

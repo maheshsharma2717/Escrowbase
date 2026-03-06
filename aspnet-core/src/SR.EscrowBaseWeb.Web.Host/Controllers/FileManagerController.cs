@@ -292,6 +292,18 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             }
         }
 
+        [HttpGet]
+        public IActionResult DownloadDragDropExeFile()
+        {
+            var filePath = Path.Combine( _hostingEnvironment.WebRootPath,"Common", "Downloads", "EscrowDragSetup.exe" );
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound();
+            }
+            var bytes = System.IO.File.ReadAllBytes(filePath);
+            return File(bytes, "application/octet-stream", "EscrowDragSetup.exe");
+        }
+
         public class DownloadZipInput
         {
             public string ParentPath { get; set; }

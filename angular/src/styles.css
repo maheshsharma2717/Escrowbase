@@ -319,3 +319,6 @@ ul.nav.nav-tabs {
 div#kt_header{
    position: static !important; 
 }
+.swal2-icon.swal2-warning.swal2-icon-show {
+    margin: auto;
+}
