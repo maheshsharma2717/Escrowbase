@@ -81,7 +81,8 @@ export class FileMainComponent extends AppComponentBase {
   }
 
   getAllFiles(): void {
-
+    this.selectedFiles.clear();
+    this.isAllSelected = false; 
     var queryParams = this.inputPerson;
     let Name = this.appSession.user.name + " " + this.appSession.user.surname;
     let subCompanyName = this.validFileName(atob(queryParams['sc']))
@@ -565,15 +566,9 @@ export class FileMainComponent extends AppComponentBase {
     }
 
     try {
-      // Provide visual feedback for the drag without actually putting native file URLs that break Chrome
       if (event.dataTransfer) {
-        // A minimal string so Chrome knows a drag is happening
         event.dataTransfer.effectAllowed = 'copy';
 
-        // Optional: Custom drag image if you have a specific icon, otherwise browser uses the clicked row.
-        // It's important NOT to preventDefault() immediately if we want Chrome's native ghost image to appear.
-        // But removing preventDefault() means Chrome might try to handle it.
-        // Let's create a custom ghost element manually or let Chrome handle the visual aspect.
         const dragIcon = document.createElement('div');
         dragIcon.textContent = `📄 ${file.name}`;
         dragIcon.style.position = 'absolute';
@@ -588,18 +583,23 @@ export class FileMainComponent extends AppComponentBase {
 
         event.dataTransfer.setDragImage(dragIcon, 10, 10);
 
-        // Clean up the temporary element shortly after drag starts
         setTimeout(() => {
           if (document.body.contains(dragIcon)) {
             document.body.removeChild(dragIcon);
           }
         }, 100);
       }
+    } catch (error) {
+      console.error('Error in onDragStart:', error);
+    }
+  }
 
-      // event.preventDefault() stops the HTML5 drag from finishing natively in Chrome, but we need the native drag to start to get the ghost image.
-      // So we do NOT preventDefault() here since we WANT the drag visual to follow the mouse, but we override it via C# `ESC` immediately anyway!
-      // event.preventDefault();
+  onDragEnd(event: DragEvent, file: any) {
+    if (!file || !file.key) {
+      return;
+    }
 
+    try {
       let path = this.folderPath;
       let key = file.key;
       let encodedPath = path.replace(/#/g, "%23");
@@ -614,6 +614,7 @@ export class FileMainComponent extends AppComponentBase {
         "&srAssignedFileId=" + srId +
         "&userId=" + userId +
         "&enc_auth_token=" + encodeURIComponent(token);
+
       fetch('https://localhost:5123/prepare-drag', {
         method: 'POST',
         headers: {
@@ -631,7 +632,6 @@ export class FileMainComponent extends AppComponentBase {
         }
       }).catch(err => {
         console.error('Drag service error:', err);
-        // abp.notify.warn('Local drag service not running.');
         abp.message.confirm(
           'To drag file you need the Escrow Drag Tool installed and running.',
           'Escrow Drag Tool Required',
@@ -649,7 +649,7 @@ export class FileMainComponent extends AppComponentBase {
         );
       });
     } catch (error) {
-      console.error('Error in onDragStart:', error);
+      console.error('Error in onDragEnd:', error);
     }
   }
 

@@ -84,6 +84,8 @@ export class FileOtherComponent extends AppComponentBase {
   }
 
   getAllFiles(person?: any): void {
+    this.selectedFiles.clear();
+    this.isAllSelected = false;
     var queryParams = person || this.inputPerson;
     if (!queryParams) {
       console.error("getAllFiles: inputPerson is null or undefined");
@@ -601,14 +603,9 @@ export class FileOtherComponent extends AppComponentBase {
     }
 
     try {
-      // Provide visual feedback for the drag without actually putting native file URLs that break Chrome
       if (event.dataTransfer) {
         event.dataTransfer.effectAllowed = 'copy';
 
-        // Optional: Custom drag image if you have a specific icon, otherwise browser uses the clicked row.
-        // It's important NOT to preventDefault() immediately if we want Chrome's native ghost image to appear.
-        // But removing preventDefault() means Chrome might try to handle it.
-        // Let's create a custom ghost element manually or let Chrome handle the visual aspect.
         const dragIcon = document.createElement('div');
         dragIcon.textContent = `📄 ${file.name}`;
         dragIcon.style.position = 'absolute';
@@ -623,28 +620,33 @@ export class FileOtherComponent extends AppComponentBase {
 
         event.dataTransfer.setDragImage(dragIcon, 10, 10);
 
-        // Clean up the temporary element shortly after drag starts
         setTimeout(() => {
           if (document.body.contains(dragIcon)) {
             document.body.removeChild(dragIcon);
           }
         }, 100);
       }
+    } catch (error) {
+      console.error('Error in onDragStart:', error);
+    }
+  }
 
-      // event.preventDefault() stops the HTML5 drag from finishing natively in Chrome, but we need the native drag to start to get the ghost image.
-      // So we do NOT preventDefault() here since we WANT the drag visual to follow the mouse, but we override it via C# `ESC` immediately anyway!
-      // event.preventDefault();
+  onDragEnd(event: DragEvent, file: any) {
+    if (!file || !file.key) {
+      return;
+    }
 
-      let path = file.path; // FileOther uses file.path usually, or this.completeEnterprisePathOther
+    try {
+      let path = file.path;
       let key = file.key;
       let encodedPath = (path || this.completeEnterprisePathOther).replace(/#/g, "%23");
       let encodedKey = key.replace(/#/g, "%23");
-      let srId = file.srAssignedFileId || ''; // Alignment with user's restore and FileMain fallback concept
+      let srId = file.srAssignedFileId || '';
       let userId = this.appSession.userId;
       const token = abp.auth.getToken();
 
       const downloadUrl = this.apiUrl + "/FileManager/DownloadFile" +
-        "?path=" + encodeURIComponent(encodedPath + file.name) + // For other files, path might handle filename diferently, verify Download implementation
+        "?path=" + encodeURIComponent(encodedPath + file.name) +
         "&key=" + encodeURIComponent(encodedKey) +
         "&srAssignedFileId=" + srId +
         "&userId=" + userId +
@@ -667,7 +669,6 @@ export class FileOtherComponent extends AppComponentBase {
         }
       }).catch(err => {
         console.error('Drag service error:', err);
-        // abp.notify.warn('Local drag service not running.');
         abp.message.confirm(
           'To drag file you need the Escrow Drag Tool installed and running.',
           'Escrow Drag Tool Required',
@@ -685,7 +686,7 @@ export class FileOtherComponent extends AppComponentBase {
         );
       });
     } catch (error) {
-      console.error('Error in onDragStart:', error);
+      console.error('Error in onDragEnd:', error);
     }
   }
 
@@ -805,10 +806,6 @@ export class FileOtherComponent extends AppComponentBase {
   }
 
   DownloadFile(file: any) {
-    this.onDragStart({
-      dataTransfer: new DataTransfer()
-    } as any, file);
-
     // Trigger the download manually since onDragStart prepares it but might not execute it directly without a drag event context fully utilizing it for click
     // Actually, looking at onDragStart, it constructs the URL but doesn't trigger a window.open or link click for the user to download immediately apart from drag data.
     // We need to implement actual download logic here similar to what standard download does.

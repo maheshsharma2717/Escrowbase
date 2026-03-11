@@ -102,7 +102,7 @@
                 </tr>
 
                 <tr *ngFor="let file of files; let i = index" class="hover-row" draggable="true"
-                    (dragstart)="onDragStart($event, file)">
+                    (dragstart)="onDragStart($event, file)" (dragend)="onDragEnd($event, file)">
                     <td (contextmenu)="onRightClick($event, i, file, 'All')"
                         style="position: relative; padding-left: 10px;">
                         <input type="checkbox" [checked]="selectedFiles.has(file.srAssignedFileId || file.key)"

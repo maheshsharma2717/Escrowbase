@@ -81,13 +81,13 @@
                     <td colspan="8" style="text-align: center; padding:5px">No data available</td>
                 </tr>
                 <tr *ngFor="let file of tableData; let i = index" (contextmenu)="onRightClick($event, i, file, 'All')"
-                    class="hover-row" draggable="true" (dragstart)="onDragStart($event, file)">
+                    class="hover-row" draggable="true" (dragstart)="onDragStart($event, file)" (dragend)="onDragEnd($event, file)">
 
 
                     <!-- First TD: Includes context menu -->
                     <td style="position: relative; padding-left: 10px;">
                         <input type="checkbox" [checked]="selectedFiles.has(file.srAssignedFileId || file.key)"
-                            (change)="toggleSelection(file)"
+                            (change)="toggleSelection(file)" (dragstart)="$event.stopPropagation()" draggable="false"
                             [style.display]="selectedFiles.size > 0 ? 'inline-block' : null"
                             style="margin-right: 5px;" />
                         <span [innerHTML]="getFileIcon(file)" style="margin-right: 5px;"></span>
