@@ -637,13 +637,9 @@ export class FileMainComponent extends AppComponentBase {
           'Escrow Drag Tool Required',
           async (isConfirmed) => {
             if (isConfirmed) {
-              const response = await fetch(this.apiUrl + '/FileManager/DownloadDragDropExeFile', {
-                method: 'GET'
-              });            
-              const blob = await response.blob();
-              const url = window.URL.createObjectURL(blob);            
+              const downloadUrl = this.apiUrl + '/FileManager/DownloadDragDropExeFile';
               const a = document.createElement('a');
-              a.href = url;
+              a.href = downloadUrl;
               a.download = 'EscrowDragSetup.exe';
               document.body.appendChild(a);
               a.click();

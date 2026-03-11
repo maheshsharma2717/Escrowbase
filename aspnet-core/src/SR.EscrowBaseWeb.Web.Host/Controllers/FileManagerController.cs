@@ -300,8 +300,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             {
                 return NotFound();
             }
-            var bytes = System.IO.File.ReadAllBytes(filePath);
-            return File(bytes, "application/octet-stream", "EscrowDragSetup.exe");
+            // Use PhysicalFile for efficient streaming directly from disk
+            return PhysicalFile(filePath, "application/octet-stream", "EscrowDragSetup.exe");
         }
 
         public class DownloadZipInput
@@ -2368,6 +2368,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                         {
                                             res.escrowFileTags = findTag;
                                         }
+                                        res.srAssignedFileId = temp1.SrEscrowFileMasterId.Value;
+                                        //res.srAssignedFileId = 
                                         newFile.Add(res);
                                     }
 

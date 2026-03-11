@@ -6,7 +6,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AppConsts } from '@shared/AppConsts';
 import { EscrowUsertagsComponent } from '@app/main/escrow-usertags/escrow-usertags.component';
-import { SafeHtml } from '@node_modules/@angular/platform-browser/platform-browser';
+import { SafeHtml } from '@angular/platform-browser';
 import { FileMainComponent } from '../file-main/file-main.component';
 
 @Component({
@@ -639,7 +639,7 @@ export class FileOtherComponent extends AppComponentBase {
       let key = file.key;
       let encodedPath = (path || this.completeEnterprisePathOther).replace(/#/g, "%23");
       let encodedKey = key.replace(/#/g, "%23");
-      let srId = file.srAssignedFileId || this.files[0]?.dataItem?.srAssignedFileId || ''; // Try to get srId
+      let srId = file.srAssignedFileId || ''; // Alignment with user's restore and FileMain fallback concept
       let userId = this.appSession.userId;
       const token = abp.auth.getToken();
 
@@ -673,13 +673,9 @@ export class FileOtherComponent extends AppComponentBase {
           'Escrow Drag Tool Required',
           async (isConfirmed) => {
             if (isConfirmed) {
-              const response = await fetch(this.apiUrl + '/FileManager/DownloadDragDropExeFile', {
-                method: 'GET'
-              });            
-              const blob = await response.blob();
-              const url = window.URL.createObjectURL(blob);            
+              const downloadUrl = this.apiUrl + '/FileManager/DownloadDragDropExeFile';
               const a = document.createElement('a');
-              a.href = url;
+              a.href = downloadUrl;
               a.download = 'EscrowDragSetup.exe';
               document.body.appendChild(a);
               a.click();
