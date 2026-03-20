@@ -589,6 +589,11 @@ export class FileMainComponent extends AppComponentBase {
             document.body.removeChild(dragIcon);
           }
         }, 100);
+
+        // To start a drag, we must add some valid data format or the drag will abort in Chromium.
+        // We use a custom MIME type and the file name so the browser knows we are dragging something.
+        // We do NOT use 'text/plain' or 'text/uri-list' to prevent Gmail from pasting a huge URL string.
+        event.dataTransfer.setData('application/x-escrow-file', file.name);
       }
     } catch (error) {
       console.error('Error in onDragStart:', error);
@@ -627,13 +632,6 @@ export class FileMainComponent extends AppComponentBase {
       const base64Data = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
       const protocolUrl = `escrow-drag://prepare-drag?data=${encodeURIComponent(base64Data)}`;
 
-      // Direct Protocol Trigger: The Registry handles auto-starting the app.
-      // const iframe = document.createElement('iframe');
-      // iframe.style.display = 'none';
-      // iframe.src = protocolUrl;
-      // document.body.appendChild(iframe);
-      // setTimeout(() => document.body.removeChild(iframe), 3000);
-
       let appOpened = false;
 
       const handler = () => {
@@ -648,7 +646,7 @@ export class FileMainComponent extends AppComponentBase {
       iframe.src = protocolUrl;
       document.body.appendChild(iframe);
       setTimeout(() => {
-         document.body.removeChild(iframe);      
+        document.body.removeChild(iframe);
       }, 2000);
 
     } catch (error) {
