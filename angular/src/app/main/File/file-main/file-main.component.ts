@@ -5,6 +5,7 @@ import { AppComponentBase } from '@shared/common/app-component-base';
 import { EscrowFileTagsesServiceProxy, SREscrowFileMastersServiceProxy, API_BASE_URL } from '@shared/service-proxies/service-proxies';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AppConsts } from '@shared/AppConsts';
+declare var Swal: any;
 @Component({
   selector: 'app-file-main',
   templateUrl: './file-main.component.html',
@@ -82,7 +83,7 @@ export class FileMainComponent extends AppComponentBase {
 
   getAllFiles(): void {
     this.selectedFiles.clear();
-    this.isAllSelected = false; 
+    this.isAllSelected = false;
     var queryParams = this.inputPerson;
     let Name = this.appSession.user.name + " " + this.appSession.user.surname;
     let subCompanyName = this.validFileName(atob(queryParams['sc']))
@@ -615,39 +616,41 @@ export class FileMainComponent extends AppComponentBase {
         "&userId=" + userId +
         "&enc_auth_token=" + encodeURIComponent(token);
 
-      fetch('https://localhost:5123/prepare-drag', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          downloadUrl: downloadUrl,
-          fileName: file.key,
-          token: token ? `Bearer ${token}` : undefined
-        })
-      }).then(response => {
-        if (!response.ok) {
-          abp.notify.error('Failed to prepare file for drag. The local drag service returned an error.');
-          console.error('Drag service HTTP error:', response);
-        }
-      }).catch(err => {
-        console.error('Drag service error:', err);
-        abp.message.confirm(
-          'To drag file you need the Escrow Drag Tool installed and running.',
-          'Escrow Drag Tool Required',
-          async (isConfirmed) => {
-            if (isConfirmed) {
-              const downloadUrl = this.apiUrl + '/FileManager/DownloadDragDropExeFile';
-              const a = document.createElement('a');
-              a.href = downloadUrl;
-              a.download = 'EscrowDragSetup.exe';
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-            }
-          }
-        );
-      });
+      const payload = {
+        downloadUrl: downloadUrl,
+        fileName: file.key,
+        token: token ? `Bearer ${token}` : undefined,
+        screenX: (event as MouseEvent).screenX,
+        screenY: (event as MouseEvent).screenY
+      };
+
+      const base64Data = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+      const protocolUrl = `escrow-drag://prepare-drag?data=${encodeURIComponent(base64Data)}`;
+
+      // Direct Protocol Trigger: The Registry handles auto-starting the app.
+      // const iframe = document.createElement('iframe');
+      // iframe.style.display = 'none';
+      // iframe.src = protocolUrl;
+      // document.body.appendChild(iframe);
+      // setTimeout(() => document.body.removeChild(iframe), 3000);
+
+      let appOpened = false;
+
+      const handler = () => {
+        appOpened = true;
+        document.removeEventListener("visibilitychange", handler);
+      };
+
+      document.addEventListener("visibilitychange", handler);
+
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = protocolUrl;
+      document.body.appendChild(iframe);
+      setTimeout(() => {
+         document.body.removeChild(iframe);      
+      }, 2000);
+
     } catch (error) {
       console.error('Error in onDragEnd:', error);
     }
