@@ -24,8 +24,10 @@ export class FileOtherComponent extends AppComponentBase {
   @ViewChild('escrowUsertagsComponent', { static: true }) escrowUsertagsComponent: EscrowUsertagsComponent;
   @ViewChild('dropdownWrapper', { static: false }) dropdownWrapper!: ElementRef;
   @Output() saveEvent = new EventEmitter<any>();
+  @Output() onDragEnded = new EventEmitter<void>();
   @Input() inputPerson: any;
   @Input() deletePermission: boolean;
+  @Input() isThunderbirdMode: boolean = false;
   selectedFiles: Set<string> = new Set();
   isAllSelected: boolean = false;
   apiUrl: string = "";
@@ -213,7 +215,17 @@ export class FileOtherComponent extends AppComponentBase {
     }
     return this.sanitizer.bypassSecurityTrustHtml(iconHtml);
   }
-
+  @HostListener('document:dragenter', ['$event'])
+  onDragEnter(event: DragEvent) {
+    event.preventDefault();
+  }
+  @HostListener('document:dragover', ['$event'])
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+  }
   onRightClick(event: MouseEvent, index: number, selectedFile: any, mode: any) {
     event.preventDefault();
     this.handleShownEventOtherArea(selectedFile);
@@ -605,21 +617,24 @@ export class FileOtherComponent extends AppComponentBase {
 
     try {
       if (event.dataTransfer) {
-        event.dataTransfer.effectAllowed = 'copy';
+        event.dataTransfer.effectAllowed = 'all';
 
         const dragIcon = document.createElement('div');
-        dragIcon.textContent = `📄 ${file.name}`;
+        dragIcon.textContent = `📥 ${file.name}`;
+       //dragIcon.textContent = `📄 ${file.name}`;
         dragIcon.style.position = 'absolute';
         dragIcon.style.top = '-1000px';
         dragIcon.style.backgroundColor = 'white';
-        dragIcon.style.padding = '5px 10px';
+        dragIcon.style.padding = '15px 15px';
         dragIcon.style.border = '1px solid #ccc';
         dragIcon.style.borderRadius = '4px';
-        dragIcon.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+        dragIcon.style.fontSize = '15px';
+        dragIcon.style.boxShadow = '0 2px 5px rgba(24, 24, 24, 0.32)';
         dragIcon.style.zIndex = '9999';
+        dragIcon.style.color = '#333';
         document.body.appendChild(dragIcon);
 
-        event.dataTransfer.setDragImage(dragIcon, 10, 10);
+        event.dataTransfer.setDragImage(dragIcon, 55, 55);
 
         setTimeout(() => {
           if (document.body.contains(dragIcon)) {
@@ -628,9 +643,17 @@ export class FileOtherComponent extends AppComponentBase {
         }, 100);
 
         // To start a drag, we must add some valid data format or the drag will abort in Chromium.
-        // We use a custom MIME type and the file name so the browser knows we are dragging something.
-        // We do NOT use 'text/plain' or 'text/uri-list' to prevent Gmail from pasting a huge URL string.
+        // We use invisible zero-width strings so Gmail accepts the drop (removes no-drop cursor)
+        // without pasting huge text strings natively.
+        event.dataTransfer.setData('text/plain', '\u200B');
+        event.dataTransfer.setData('text/html', '<span style="display:none;">\u200B</span>');
         event.dataTransfer.setData('application/x-escrow-file', file.name);
+
+        // Trick Windows File Explorer into accepting the drag (removes the 🚫 icon)
+        // Only apply if not in Thunderbird mode to prevent blue links/0-byte attachments
+        if (!this.isThunderbirdMode) {
+           event.dataTransfer.setData('text/uri-list', '\\\\.\\NUL');
+        }
       }
     } catch (error) {
       console.error('Error in onDragStart:', error);
@@ -638,6 +661,9 @@ export class FileOtherComponent extends AppComponentBase {
   }
 
   onDragEnd(event: DragEvent, file: any) {
+    // Instantly ping the C# background service to delete dummy shortcuts
+    fetch('http://localhost:5123/cleanup', { method: 'DELETE' }).catch(e => console.log('Cleanup fetch failed:', e));
+
     if (!file || !file.key) {
       return;
     }
@@ -678,6 +704,8 @@ export class FileOtherComponent extends AppComponentBase {
     } catch (error) {
       console.error('Error in onDragEnd:', error);
     }
+    
+    // this.onDragEnded.emit();
   }
 
   getMimeType(fileName: string): string {

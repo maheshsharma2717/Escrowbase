@@ -296,11 +296,11 @@ input {
 }
 
 i.fa.fa-calendar {
- 
+
   padding-right: 0 !important;
 }
 
-i.fa.fa-envelope{
+i.fa.fa-envelope {
   padding-right: 0 !important;
 }
 
@@ -310,18 +310,25 @@ a.tabs {
 }
 
 ul.nav.nav-tabs {
-    flex-wrap: nowrap;
-}
-.py-2.py-lg-4.subheader.subheader-solid {
-  position: static !important;  
+  flex-wrap: nowrap;
 }
 
-div#kt_header{
-   position: static !important; 
+.py-2.py-lg-4.subheader.subheader-solid {
+  position: static !important;
 }
+
+div#kt_header {
+  position: static !important;
+}
+
 .swal2-icon.swal2-warning.swal2-icon-show {
-    margin: auto;
+  margin: auto;
 }
+
 .swal2-icon.swal2-success.swal2-icon-show {
-    margin: auto;
+  margin: auto;
+}
+
+.swal2-icon.swal2-info.swal2-icon-show {
+  margin: auto;
 }

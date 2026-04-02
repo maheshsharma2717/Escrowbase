@@ -20,9 +20,12 @@ export class AccountRouteGuard implements CanActivate {
         ) { }
 
     canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-        
         if (route.queryParams['ss'] && route.queryParams['ss'] === 'true') {
             return true;
+        }
+
+        if (route.queryParams['logout'] && route.queryParams['logout'] === 'true') {
+             this._authService.logout(true, "/account/login");
         }
 
         //EscrowBase Window app Logout & reduct

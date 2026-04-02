@@ -53,6 +53,17 @@
             <i style="color: black; font-weight: 600; font-size: 11px;">Access Level Type(s)</i>
           </div>
         </div>
+
+        <!-- Thunderbird Mode Toggle -->
+        <div style="text-align: center; margin-left: 10px; border: 1px solid #ddd; padding: 4px 8px; border-radius: 4px; background: #f8f9fa;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="thunderbirdToggle" [(ngModel)]="isThunderbirdMode" (change)="onThunderbirdModeChange()" style="cursor: pointer; width: 18px; height: 18px;">
+            <label for="thunderbirdToggle" style="margin-bottom: 0; cursor: pointer; font-size: 12px; font-weight: bold; color: #007bff;">
+              🕊️ Thunderbird Mode
+            </label>
+          </div>
+          <div style="font-size: 9px; color: #666; margin-top: 2px;">Clean drops for Emails</div>
+        </div>
       </div>
     </div>
 
@@ -219,12 +230,14 @@
           [editPermission]="editPermission" [readPermission]="readPermission"
           [viewHistoryPermission]="viewHistoryPermission" [downloadPermission]="downloadPermission"
           [viewFullNamePermission]="viewFullNamePermission" [renamePermission]="renamePermission"
-          [esignPermission]="esignPermission" (fullScreenToggled)="onMainFullScreen($event)"> </app-file-main>
+          [esignPermission]="esignPermission" (fullScreenToggled)="onMainFullScreen($event)"
+          (onDragEnded)="resetThunderbirdMode()" [isThunderbirdMode]="isThunderbirdMode"> </app-file-main>
       </div>
 
       <app-file-other [hidden]="isMainFullScreen" #fileOtherComponent [inputPerson]="inputPerson"
         [deletePermission]="deletePermission" (saveEvent)="handleSave($event)"
-        (fullScreenToggled)="onOtherFullScreen($event)"></app-file-other>
+        (fullScreenToggled)="onOtherFullScreen($event)"
+        (onDragEnded)="resetThunderbirdMode()" [isThunderbirdMode]="isThunderbirdMode"></app-file-other>
       <div style="display: none;">
         <dx-file-manager id="fileManager1" #targetDataGrid [fileSystemProvider]="remoteProvider1" height="300"
           (onContextMenuItemClick)="onItemClick1($event)" rootFolderName="Companies" selectionMode="single"

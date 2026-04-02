@@ -243,6 +243,12 @@ export class FileViewComponent extends AppComponentBase {
   isOtherFullScreen = false;
   userName: string = '';
   userType: string = '';
+  isThunderbirdMode: boolean = false;
+
+  onThunderbirdModeChange() {
+    // State is already updated via ngModel. 
+    // No storage persistence required.
+  }
 
   onMainFullScreen(isFullScreen: boolean) {
     this.isMainFullScreen = isFullScreen;
@@ -258,6 +264,10 @@ export class FileViewComponent extends AppComponentBase {
 
   onOtherFullScreen(isFullScreen: boolean) {
     this.isOtherFullScreen = isFullScreen;
+  }
+
+  resetThunderbirdMode() {
+    this.isThunderbirdMode = false;
   }
 
   public constructor(
@@ -497,6 +507,9 @@ export class FileViewComponent extends AppComponentBase {
     // Set username and userType for display in header
     this.userName = this.appSession.user.name + " " + this.appSession.user.surname;
     this.getUserType();
+
+    // Initialize Thunderbird Mode from localStorage
+    this.isThunderbirdMode = !!localStorage.getItem('thunderbirdMode');
   }
   filess: any = [];
 
