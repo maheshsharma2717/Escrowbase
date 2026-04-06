@@ -237,7 +237,8 @@
       <app-file-other [hidden]="isMainFullScreen" #fileOtherComponent [inputPerson]="inputPerson"
         [deletePermission]="deletePermission" (saveEvent)="handleSave($event)"
         (fullScreenToggled)="onOtherFullScreen($event)"
-        (onDragEnded)="resetThunderbirdMode()" [isThunderbirdMode]="isThunderbirdMode"></app-file-other>
+        (onDragEnded)="resetThunderbirdMode()" [isThunderbirdMode]="isThunderbirdMode"
+        (onFileDropped)="uploadFile($event)"></app-file-other>
       <div style="display: none;">
         <dx-file-manager id="fileManager1" #targetDataGrid [fileSystemProvider]="remoteProvider1" height="300"
           (onContextMenuItemClick)="onItemClick1($event)" rootFolderName="Companies" selectionMode="single"

@@ -1,5 +1,14 @@
 <!-- Fullscreen Container -->
-<div #fullscreenElement [ngClass]="{'fullscreen-container': isFullScreen}" style="overflow-x: hidden;">
+<div #fullscreenElement [ngClass]="{'fullscreen-container': isFullScreen}"
+    style="overflow-x: hidden; position: relative;">
+
+    <!-- Drag & Drop Overlay -->
+    <div *ngIf="isDragOver" (drop)="onOverlayDrop($event)" (dragover)="onOverlayDragOver($event)"
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(228, 240, 255, 0.55); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 3px dashed #3699FF; box-sizing: border-box; backdrop-filter: blur(1px);">
+        <i class="fas fa-cloud-upload-alt" style="font-size: 5rem; color: #000000a0; margin-bottom: 20px;"></i>
+        <h2 style="color: #3699FF; font-weight: bold; font-size: 2rem;">Drop Files Here to Upload</h2>
+        <p style="color: #7E8299; font-size: 1.1rem;">Release your mouse to upload the files</p>
+    </div>
 
     <!-- Header -->
     <div style="font-size: small; line-height: 1.4; padding: 2 0 2 0">

@@ -3942,7 +3942,7 @@ export class FileViewComponent extends AppComponentBase {
       };
       f.readAsText(bb);
     }
-    function getMsgDate(rawHeaders) {
+    function getMsgDate(rawHeaders) { 
       var headers = parseHeaders(rawHeaders);
       if (!headers['Date']) {
         return '-';

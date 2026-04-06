@@ -215,16 +215,88 @@ export class FileOtherComponent extends AppComponentBase {
     }
     return this.sanitizer.bypassSecurityTrustHtml(iconHtml);
   }
-  @HostListener('document:dragenter', ['$event'])
+
+  @Output() onFileDropped = new EventEmitter<any>();
+  isDragOver = false;
+  dragCounter = 0;
+
+  @HostListener('dragenter', ['$event'])
   onDragEnter(event: DragEvent) {
-    event.preventDefault();
-  }
-  @HostListener('document:dragover', ['$event'])
-  onDragOver(event: DragEvent) {
-    event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'copy';
+    if (!this.isThunderbirdMode) {
+      if (this.isValidDragEvent(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.dragCounter++;
+        this.isDragOver = true;
+      }
     }
+  }
+
+  @HostListener('dragleave', ['$event'])
+  onDragLeave(event: DragEvent) {
+    if (!this.isThunderbirdMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.dragCounter--;
+      if (this.dragCounter === 0) {
+        this.isDragOver = false;
+      }
+    }
+  }
+
+  @HostListener('dragover', ['$event'])
+  onDragOver(event: DragEvent) {
+    if (!this.isThunderbirdMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = 'copy';
+      }
+    }
+  }
+
+  @HostListener('drop', ['$event'])
+  onDrop(event: DragEvent) {
+    if (!this.isThunderbirdMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.dragCounter = 0;
+      this.isDragOver = false;
+    }
+  }
+
+  onOverlayDragOver(event: DragEvent) {
+    if (!this.isThunderbirdMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = 'copy';
+      }
+    }
+  }
+
+  onOverlayDrop(event: DragEvent) {
+    if (!this.isThunderbirdMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.dragCounter = 0;
+      this.isDragOver = false;
+
+      if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+        this.onFileDropped.emit(event.dataTransfer.files);
+      }
+    }
+  }
+
+  isValidDragEvent(event: DragEvent): boolean {
+    if (event.dataTransfer && event.dataTransfer.types) {
+      for (let i = 0; i < event.dataTransfer.types.length; i++) {
+        if (event.dataTransfer.types[i] === 'Files') {
+          return true;
+        }
+      }
+    }
+    return false;
   }
   onRightClick(event: MouseEvent, index: number, selectedFile: any, mode: any) {
     event.preventDefault();
@@ -621,7 +693,7 @@ export class FileOtherComponent extends AppComponentBase {
 
         const dragIcon = document.createElement('div');
         dragIcon.textContent = `📥 ${file.name}`;
-       //dragIcon.textContent = `📄 ${file.name}`;
+        //dragIcon.textContent = `📄 ${file.name}`;
         dragIcon.style.position = 'absolute';
         dragIcon.style.top = '-1000px';
         dragIcon.style.backgroundColor = 'white';
@@ -652,7 +724,7 @@ export class FileOtherComponent extends AppComponentBase {
         // Trick Windows File Explorer into accepting the drag (removes the 🚫 icon)
         // Only apply if not in Thunderbird mode to prevent blue links/0-byte attachments
         if (!this.isThunderbirdMode) {
-           event.dataTransfer.setData('text/uri-list', '\\\\.\\NUL');
+          event.dataTransfer.setData('text/uri-list', '\\\\.\\NUL');
         }
       }
     } catch (error) {
@@ -704,7 +776,7 @@ export class FileOtherComponent extends AppComponentBase {
     } catch (error) {
       console.error('Error in onDragEnd:', error);
     }
-    
+
     // this.onDragEnded.emit();
   }
 
