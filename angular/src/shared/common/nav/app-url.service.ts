@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 import { AppConsts } from '@shared/AppConsts';
 import { AppSessionService } from '@shared/common/session/app-session.service';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class AppUrlService {
 
     static tenancyNamePlaceHolder = '{TENANCY_NAME}';

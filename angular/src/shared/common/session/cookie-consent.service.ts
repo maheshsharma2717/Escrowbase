@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { AppLocalizationService } from '@app/shared/common/localization/app-localization.service';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class CookieConsentService {
 
     constructor(private _appLocalizationService: AppLocalizationService) {

@@ -71,6 +71,21 @@ export function appInitializerFactory(
                         initializeCookieConsent(injector);
                         registerLocales(resolve, reject, spinnerService);
                     }, (err) => {
+                        if (isAccountBootstrapRoute()) {
+                            console.warn('App session bootstrap failed for account route. Continuing with fallback theme.', err);
+                            doConfigurationForInstallPage(injector);
+                            initializeCookieConsent(injector);
+                            registerLocales(
+                                resolve,
+                                () => {
+                                    spinnerService.hide();
+                                    resolve(true);
+                                },
+                                spinnerService
+                            );
+                            return;
+                        }
+
                         spinnerService.hide();
                         reject(err);
                     });
@@ -182,6 +197,11 @@ function getDocumentOrigin() {
     }
 
     return document.location.origin;
+}
+
+function isAccountBootstrapRoute(): boolean {
+    const path = (window.location.pathname || '').toLowerCase();
+    return path.startsWith('/account');
 }
 
 function registerLocales(resolve: (value?: boolean | Promise<boolean>) => void, reject: any, spinnerService: NgxSpinnerService) {

@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 import { AppLocalizationService } from '@app/shared/common/localization/app-localization.service';
 import * as moment from 'moment';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class DateTimeService  {
 
     constructor(private _appLocalizationService: AppLocalizationService) {

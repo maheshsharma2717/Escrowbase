@@ -3,7 +3,9 @@ import { AppConsts } from '@shared/AppConsts';
 import { XmlHttpRequestHelper } from '@shared/helpers/XmlHttpRequestHelper';
 import { LocalStorageService } from '@shared/utils/local-storage.service';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class AppAuthService {
     fileid: string;
 

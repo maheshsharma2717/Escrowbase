@@ -1,137 +1,126 @@
-import { Component, ElementRef, OnDestroy, AfterViewInit, ViewChild, Input, Optional, Inject } from '@angular/core';
-import { create, RichEdit, DocumentFormat } from 'devexpress-richedit';
-import { HttpClient } from '@angular/common/http';
-import { Subject } from 'rxjs';
+import { Component, ElementRef, OnDestroy, AfterViewInit, ViewChild, Input } from '@angular/core';
+import { Subject, Subscription } from 'rxjs';
 import { GlobalService } from '@app/main/File/filelist.component';
-import { API_BASE_URL } from '@shared/service-proxies/service-proxies';
 @Component({
   selector: 'app-richedit',
   templateUrl: './richedit.component.html',
   styleUrls: ['./richedit.component.css']
 })
 export class RicheditComponent implements OnDestroy, AfterViewInit {
-  private rich: RichEdit | null = null;
-  apiUrl: any = ""
-
-  options: any = {
-    readOnly: false,
-    height: '90vh'
-  };
-
+  @ViewChild('docxContainer', { static: true }) docxContainer: ElementRef<HTMLDivElement> | undefined;
   @Input() changing: Subject<boolean>;
+  private changingSubscription: Subscription | undefined;
+  errorMessage = '';
+  fallbackText = '';
+  fallbackHtml = '';
+  isHtmlFallback = false;
+  isDocx = false;
+  isLoading = false;
 
-  constructor(private element: ElementRef, private http: HttpClient, private globalService: GlobalService,
-    @Optional() @Inject(API_BASE_URL) baseUrl?: string
-
-
-  ) {
-    this.apiUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
-  }
+  constructor(private globalService: GlobalService) {}
 
   ngOnInit() {
-    this.changing.subscribe(v => {
-      this.saveChanges();
-    });
+    this.changingSubscription = this.changing?.subscribe(() => this.loadDocument());
   }
 
-  ngAfterViewInit(): void {
-    debugger
-    // Initialize the RichEdit component
-    this.rich = create(this.element.nativeElement.firstElementChild, this.options);
-    this.loadDocument();
+  async ngAfterViewInit(): Promise<void> {
+    await this.loadDocument();
   }
 
-  loadDocument() {
-    debugger
-    // Load the document based on its format
+  async loadDocument(): Promise<void> {
+    this.errorMessage = '';
+    this.fallbackText = '';
+    this.fallbackHtml = '';
+    this.isHtmlFallback = false;
+
     if (!this.globalService.docFile) {
-      console.error('No document file provided.');
+      this.errorMessage = 'No document file provided.';
       return;
     }
-    this.rich.readOnly = false;
-    let base64string = this.globalService.docFile;
-    let extension = this.getDocumentExtension(this.globalService.oldPathSelectedFile);
-    let documentFormat: DocumentFormat | undefined;
-    switch (extension) {
-      case 'docx':
-        documentFormat = DocumentFormat.OpenXml;
-        break;
-      case 'doc':
-        documentFormat = DocumentFormat.PlainText;
-        break;
-      case 'pdf':
-        //  documentFormat = DocumentFormat.pdf;
-        break;
-      case 'txt':
-        this.rich.readOnly = true;
-        documentFormat = DocumentFormat.PlainText;
-        break;
-      case 'rtf':
-        this.rich.readOnly = true;
-        documentFormat = DocumentFormat.Rtf;
-        break;
-      case 'eml':
-        this.rich.readOnly = true;
-        //documentFormat = DocumentFormat.Rtf; // Or use a custom format if needed
-        break;
-      default:
-        console.error('Unsupported document format:', extension);
-        return;
+
+    const extension = this.getDocumentExtension(this.globalService.oldPathSelectedFile || '');
+    this.isDocx = extension === 'docx';
+    if (!this.isDocx) {
+      const decoded = this.decodeText(this.globalService.docFile);
+      if (this.looksLikeHtml(decoded)) {
+        this.isHtmlFallback = true;
+        this.fallbackHtml = decoded;
+      } else {
+        this.fallbackText = decoded;
+      }
+      return;
     }
 
-    // Open the document in RichEdit
-    if (documentFormat) {
+    if (this.docxContainer?.nativeElement) {
+      this.docxContainer.nativeElement.innerHTML = '';
+    }
 
+    this.isLoading = true;
+    try {
+      const moduleLoader = new Function('m', 'return import(m);') as (modulePath: string) => Promise<any>;
+      const docxPreviewModule = await moduleLoader('https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/+esm');
+      const renderAsync = docxPreviewModule?.renderAsync;
+      if (!renderAsync) {
+        throw new Error('docx-preview renderAsync is unavailable');
+      }
 
-      this.rich?.openDocument(base64string, this.globalService.oldPathSelectedFile, documentFormat);
+      const documentBuffer = this.base64ToArrayBuffer(this.globalService.docFile);
+      await renderAsync(documentBuffer, this.docxContainer.nativeElement, undefined, {
+        className: 'docx',
+        inWrapper: true,
+        breakPages: true,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        ignoreFonts: false,
+        renderHeaders: true,
+        renderFooters: true,
+        renderFootnotes: true,
+        renderEndnotes: true,
+        renderComments: true
+      });
+    } catch (error) {
+      this.errorMessage = 'DOCX preview could not be loaded.';
+    } finally {
+      this.isLoading = false;
     }
   }
 
   getDocumentExtension(fileName: string): string {
-    return fileName.split('.').pop().toLowerCase();
+    const parts = fileName.split('.');
+    return parts.length > 1 ? (parts.pop() || '').toLowerCase() : '';
   }
 
-  saveChanges() {
-    console.log('this.rich:', this.rich); // Debugging statement
-    debugger;
-    // Save the changes made in the RichEdit component
-    if (this.rich) {
-      this.rich.exportToBase64((base64String: string) => {
-        const payload = {
-          fileName:  this.globalService.oldPathSelectedFile || 'document.docx',
-          base64Content: base64String,
-          filePath: this.globalService.oldPathSelectedFile
-        };
+  private base64ToArrayBuffer(base64: string): ArrayBuffer {
+    const binaryString = atob(base64 || '');
+    const length = binaryString.length;
+    const bytes = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
 
-        const path = `${this.apiUrl}/FileManager/`;
-
-        this.http.post(path + 'SaveDocument', payload).subscribe(
-          response => {
-            console.log('Document saved successfully.');
-          },
-          error => {
-            console.error('Error saving document:', error);
-          }
-        );
-      }, DocumentFormat.OpenXml); // Save as .docx format by default
+  private decodeText(base64OrText: string): string {
+    if (!base64OrText) {
+      return '';
+    }
+    try {
+      return decodeURIComponent(escape(atob(base64OrText)));
+    } catch {
+      return base64OrText;
     }
   }
 
-  arrayBufferToBase64(buffer: ArrayBuffer): string {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
+  private looksLikeHtml(content: string): boolean {
+    if (!content) {
+      return false;
     }
-    return window.btoa(binary);
+
+    const trimmed = content.trim().toLowerCase();
+    return trimmed.startsWith('<!doctype html') || trimmed.startsWith('<html') || trimmed.includes('<body');
   }
 
   ngOnDestroy() {
-    // Dispose of the RichEdit instance when the component is destroyed
-    if (this.rich) {
-      this.rich.dispose();
-      this.rich = null;
-    }
+    this.changingSubscription?.unsubscribe();
   }
 }

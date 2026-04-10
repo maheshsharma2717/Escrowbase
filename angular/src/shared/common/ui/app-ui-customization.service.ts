@@ -3,7 +3,9 @@ import { UiCustomizationSettingsDto } from '@shared/service-proxies/service-prox
 import * as rtlDetect from 'rtl-detect';
 import { ThemeAssetContributorFactory } from '@shared/helpers/ThemeAssetContributorFactory';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class AppUiCustomizationService {
     private _theme: UiCustomizationSettingsDto;
 

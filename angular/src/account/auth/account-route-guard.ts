@@ -6,7 +6,9 @@ import { AppAuthService } from '@app/shared/common/auth/app-auth.service';
 import { UrlHelper } from '@shared/helpers/UrlHelper';
 
 import { LocalStorageService } from '@shared/utils/local-storage.service';
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class AccountRouteGuard implements CanActivate {
     escrow: any;
 

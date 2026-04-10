@@ -17,7 +17,9 @@ import { DateTime, Duration } from "luxon";
 
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class AccountServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -685,7 +687,9 @@ export class AccountServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class AuditLogServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -1288,7 +1292,9 @@ export class AuditLogServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class CachingServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -1450,7 +1456,9 @@ export class CachingServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class ChatServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -1631,7 +1639,9 @@ export class ChatServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class CommonLookupServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -1806,7 +1816,9 @@ export class CommonLookupServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class CurrentEscrowsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -2130,7 +2142,9 @@ export class CurrentEscrowsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class DashboardCustomizationServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -2667,7 +2681,9 @@ export class DashboardCustomizationServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class DemoUiComponentsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -3034,7 +3050,9 @@ export class DemoUiComponentsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class DocuSignServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -3103,7 +3121,9 @@ export class DocuSignServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class DynamicEntityPropertyServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -3485,7 +3505,9 @@ export class DynamicEntityPropertyServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class DynamicEntityPropertyDefinitionServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -3613,7 +3635,9 @@ export class DynamicEntityPropertyDefinitionServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class DynamicEntityPropertyValueServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -4061,7 +4085,9 @@ export class DynamicEntityPropertyValueServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class DynamicPropertyServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -4392,7 +4418,9 @@ export class DynamicPropertyServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class DynamicPropertyValueServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -4672,7 +4700,9 @@ export class DynamicPropertyValueServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class E_SignRecordsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -5243,7 +5273,9 @@ export class E_SignRecordsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EditionServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -5700,7 +5732,9 @@ export class EditionServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EnterprisesServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -6085,7 +6119,9 @@ export class EnterprisesServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EscrowAccessHistoriesServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -6656,7 +6692,9 @@ export class EscrowAccessHistoriesServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EscrowClientsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -6975,7 +7013,9 @@ export class EscrowClientsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EscrowDetailsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -7666,7 +7706,9 @@ export class EscrowDetailsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EscrowDirectMessageDetailsesServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -8046,7 +8088,9 @@ export class EscrowDirectMessageDetailsesServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EscrowFileHistoriesServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -8478,7 +8522,9 @@ export class EscrowFileHistoriesServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EscrowFileTagsesServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -8781,7 +8827,9 @@ export class EscrowFileTagsesServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EscrowUserMappingsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -9176,7 +9224,9 @@ export class EscrowUserMappingsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EscrowUserNotesesServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -9614,7 +9664,9 @@ export class EscrowUserNotesesServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EsignCompanyMappingsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -9923,7 +9975,9 @@ export class EsignCompanyMappingsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class EsignRoleMappingsesServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -10166,7 +10220,9 @@ export class EsignRoleMappingsesServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class FriendshipServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -10446,7 +10502,9 @@ export class FriendshipServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class ServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -10775,7 +10833,9 @@ export class ServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class HomeServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -10897,7 +10957,9 @@ export class HomeServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class HostDashboardServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -11198,7 +11260,9 @@ export class HostDashboardServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class HostSettingsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -11416,7 +11480,9 @@ export class HostSettingsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class InstallServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -11582,7 +11648,9 @@ export class InstallServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class InvoiceServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -11702,7 +11770,9 @@ export class InvoiceServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class LanguageServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -12118,7 +12188,9 @@ export class LanguageServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class NotificationServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -12522,7 +12594,9 @@ export class NotificationServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class OrganizationUnitServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -13277,7 +13351,9 @@ export class OrganizationUnitServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class PaymentServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -14106,7 +14182,9 @@ export class PaymentServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class PayPalPaymentServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -14226,7 +14304,9 @@ export class PayPalPaymentServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class PermissionServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -14289,7 +14369,9 @@ export class PermissionServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class ProfileServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -15206,7 +15288,9 @@ export class ProfileServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class RoleServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -15434,7 +15518,9 @@ export class RoleServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SecurityQuestionsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -15733,7 +15819,9 @@ export class SecurityQuestionsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SessionServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -15847,7 +15935,9 @@ export class SessionServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SrAssignedFilesDetailsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -16253,7 +16343,9 @@ export class SrAssignedFilesDetailsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SREscrowFileMastersServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -16625,7 +16717,9 @@ export class SREscrowFileMastersServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SrEscrowFileRemindersServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -17092,7 +17186,9 @@ export class SrEscrowFileRemindersServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SrEscrowsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -17451,7 +17547,9 @@ export class SrEscrowsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SrFileMappingsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -17848,7 +17946,9 @@ export class SrFileMappingsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SrInvitationRecordsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -18207,7 +18307,9 @@ export class SrInvitationRecordsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SRInviteesServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -18602,7 +18704,9 @@ export class SRInviteesServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class StripePaymentServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -18834,7 +18938,9 @@ export class StripePaymentServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SubscriptionServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -18940,7 +19046,9 @@ export class SubscriptionServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class TagsAndFileMappingsesServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -19244,7 +19352,9 @@ export class TagsAndFileMappingsesServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class TenantServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -19781,7 +19891,9 @@ export class TenantServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class TenantDashboardServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -20209,7 +20321,9 @@ export class TenantDashboardServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class TenantRegistrationServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -20384,7 +20498,9 @@ export class TenantRegistrationServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class TenantSettingsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -20696,7 +20812,9 @@ export class TenantSettingsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class ApiServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -20924,7 +21042,9 @@ export class ApiServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class TimingServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -21054,7 +21174,9 @@ export class TimingServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class TokenAuthServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -21682,7 +21804,9 @@ export class TokenAuthServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class TwitterServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -21806,7 +21930,9 @@ export class TwitterServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class UiCustomizationSettingsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -22079,7 +22205,9 @@ export class UiCustomizationSettingsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class UserServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -22812,7 +22940,9 @@ export class UserServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class UserAnswersServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -23243,7 +23373,9 @@ export class UserAnswersServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class UserDelegationServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -23483,7 +23615,9 @@ export class UserDelegationServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class UserFileLogsServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -23837,7 +23971,9 @@ export class UserFileLogsServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class UserLinkServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -24070,7 +24206,9 @@ export class UserLinkServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class UserLoginServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -24133,7 +24271,9 @@ export class UserLoginServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class UserTypesServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -24381,7 +24521,9 @@ export class UserTypesServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class WebhookEventServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -24449,7 +24591,9 @@ export class WebhookEventServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class WebhookSendAttemptServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -24635,7 +24779,9 @@ export class WebhookSendAttemptServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class WebhookSubscriptionServiceProxy {
     private http: HttpClient;
     private baseUrl: string;
@@ -25126,7 +25272,9 @@ export class WebhookSubscriptionServiceProxy {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class WebLogServiceProxy {
     private http: HttpClient;
     private baseUrl: string;

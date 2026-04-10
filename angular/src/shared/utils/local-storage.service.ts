@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import * as localForage from 'localforage';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class LocalStorageService {
 
     getItem(key: string, callback: any): void {

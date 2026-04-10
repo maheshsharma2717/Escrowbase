@@ -2,7 +2,9 @@ import { LocalizationService } from 'abp-ng2-module';
 import { Injectable } from '@angular/core';
 import { AppConsts } from '@shared/AppConsts';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class AppLocalizationService extends LocalizationService {
 
     l(key: string, ...args: any[]): string {

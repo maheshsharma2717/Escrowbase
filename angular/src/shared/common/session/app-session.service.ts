@@ -3,8 +3,11 @@ import { Injectable } from '@angular/core';
 import { ApplicationInfoDto, GetCurrentLoginInformationsOutput, SessionServiceProxy, TenantLoginInfoDto, UserLoginInfoDto, UiCustomizationSettingsDto } from '@shared/service-proxies/service-proxies';
 import { timeout } from 'rxjs/operators';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class AppSessionService {
+    private static readonly SESSION_INIT_TIMEOUT_MS = 7000;
 
     private _user: UserLoginInfoDto;
     private _impersonatorUser: UserLoginInfoDto;
@@ -69,7 +72,7 @@ export class AppSessionService {
             this._sessionService
                 .getCurrentLoginInformations()
                 // Prevent multi-minute hangs on cold starts / network issues.
-                .pipe(timeout(60000))
+                .pipe(timeout(AppSessionService.SESSION_INIT_TIMEOUT_MS))
                 .toPromise()
                 .then((result: GetCurrentLoginInformationsOutput) => {
                 console.timeEnd('bootstrap:GetCurrentLoginInformations');

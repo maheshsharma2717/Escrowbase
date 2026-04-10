@@ -1210,7 +1210,6 @@ export class FileViewComponent extends AppComponentBase {
   wvDocumentLoadedHandler(): void {
 
     if (!this.wvInstance) {
-      console.error('wvInstance is not initialized');
       return;
     }
 
@@ -1430,15 +1429,6 @@ export class FileViewComponent extends AppComponentBase {
             document.getElementById('headerH').remove();
           }
 
-          // Wait for the document to be fully loaded before executing the handler
-          this.wvDocumentLoadedHandler = this.wvDocumentLoadedHandler.bind(this);
-
-          // Optional: Use a setTimeout to delay and ensure document is loaded
-          setTimeout(() => {
-            console.log("wvDocumentLoadedHandler called");
-            this.wvDocumentLoadedHandler();
-          }, 1000); // Adjust delay as necessary
-
         }
 
       }
@@ -1498,14 +1488,6 @@ export class FileViewComponent extends AppComponentBase {
           document.getElementById('headerH').remove();
         }
 
-        // Wait for the document to be fully loaded before executing the handler
-        this.wvDocumentLoadedHandler = this.wvDocumentLoadedHandler.bind(this);
-
-        // Optional: Use a setTimeout to delay and ensure document is loaded
-        setTimeout(() => {
-          console.log("wvDocumentLoadedHandler called");
-          this.wvDocumentLoadedHandler();
-        }, 1000); // Adjust delay as necessary
       }
     }
 
@@ -3857,16 +3839,16 @@ export class FileViewComponent extends AppComponentBase {
       let url = AppConsts.appBaseUrl;
 
     }
-    var temp = document.getElementById('viewer');
-
-    WebViewer({
-      path: '/lib',
-      initialDoc: '/path/to/document.pdf',
-    }, document.getElementById('viewer'))
-      .then((instance) => {
-        this.wvInstance = instance;
-        instance.docViewer.on('documentLoaded', this.wvDocumentLoadedHandler.bind(this));
-      });
+    const viewerElement = document.getElementById('viewer');
+    if (viewerElement) {
+      WebViewer({
+        path: '/lib',
+      }, viewerElement)
+        .then((instance) => {
+          this.wvInstance = instance;
+          instance.docViewer.on('documentLoaded', this.wvDocumentLoadedHandler.bind(this));
+        });
+    }
 
     this._chatSignalrService.componentMethodCalled$.subscribe(() => {
       //this.ngOnInit();

@@ -1,7 +1,6 @@
 ﻿using Abp;
 using Abp.Domain.Repositories;
 using Abp.Notifications;
-using DevExtreme.AspNet.Mvc.FileManagement;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -341,13 +340,24 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         }
                         Document document = new Document();
                         document.LoadFromFile(file);
-                        string textContent = document.GetText();
-                        string evaluationWarning = "Evaluation Warning: The document was created with Spire.Doc for .NET.";
-                        textContent = textContent.Replace(evaluationWarning, string.Empty).Trim();
-                        //  Convert the text content to Base64
-                        byte[] textBytes = System.Text.Encoding.UTF8.GetBytes(textContent);
-                        string base64String = Convert.ToBase64String(textBytes);
-                        return Ok(new { Base64 = base64String, fileType = "doc" });
+                        var tempHtmlPath = Path.ChangeExtension(Path.GetTempFileName(), ".html");
+                        try
+                        {
+                            document.SaveToFile(tempHtmlPath, FileFormat.Html);
+                            string htmlContent = await System.IO.File.ReadAllTextAsync(tempHtmlPath, System.Text.Encoding.UTF8);
+                            string evaluationWarning = "Evaluation Warning: The document was created with Spire.Doc for .NET.";
+                            htmlContent = htmlContent.Replace(evaluationWarning, string.Empty);
+                            byte[] textBytes = System.Text.Encoding.UTF8.GetBytes(htmlContent);
+                            string base64String = Convert.ToBase64String(textBytes);
+                            return Ok(new { Base64 = base64String, fileType = "doc" });
+                        }
+                        finally
+                        {
+                            if (System.IO.File.Exists(tempHtmlPath))
+                            {
+                                System.IO.File.Delete(tempHtmlPath);
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -1717,7 +1727,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///<Summary>
         /// Files and directories shown for escrow documents
         ///</Summary>
-        public object FileSystem(string company, string subCompany, string escrow, string userId, FileSystemCommand command, string arguments, string usertype, string usersname)
+        public object FileSystem(string company, string subCompany, string escrow, string userId, string usertype, string usersname)
         {
             string test = approve;
 
@@ -1745,40 +1755,44 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
             };
 
-
-            var currentUserId = userId;
             GetAllSrFileMappingsInput obj = new GetAllSrFileMappingsInput();
             obj.Filter = userId;
-            var checkpath = Path.Combine(_hostingEnvironment.WebRootPath, SampleImagesRelativePath);
-            var config = new FileSystemConfiguration
+            var rootPath = Path.Combine(_hostingEnvironment.WebRootPath, SampleImagesRelativePath);
+            var targetPath = Path.Combine(rootPath, company, subCompany, escrow);
+
+            Root temp = new Root { success = true, result = new List<Result>() };
+            if (Directory.Exists(targetPath))
             {
-                Request = Request,
-                FileSystemProvider = new PhysicalFileSystemProvider(
-                    Path.Combine(_hostingEnvironment.WebRootPath, SampleImagesRelativePath),
-                (fileSystemItem, clientItem) =>
+                var directoryInfo = new DirectoryInfo(targetPath);
+                foreach (var dir in directoryInfo.GetDirectories())
                 {
-                    if (!clientItem.IsDirectory)
-                        clientItem.CustomFields["url"] = GetFileItemUrl(fileSystemItem);
+                    temp.result.Add(new Result
+                    {
+                        key = Path.Combine(company, subCompany, escrow, dir.Name),
+                        name = dir.Name,
+                        isDirectory = true,
+                        hasSubDirectories = dir.GetDirectories().Any()
+                    });
                 }
-                ),
-                AllowCopy = false,
-                AllowMove = false,
-                AllowDelete = false,
-                AllowRename = true,
-                AllowUpload = false,
-                AllowDownload = true,
-                AllowedFileExtensions = new string[] { ".pdf", ".txt" }
-            };
-            var processor = new FileSystemCommandProcessor(config);
-            var result = processor.Execute(command, arguments);
 
+                foreach (var file in directoryInfo.GetFiles())
+                {
+                    temp.result.Add(new Result
+                    {
+                        key = Path.Combine(company, subCompany, escrow, file.Name),
+                        name = file.Name,
+                        isDirectory = false,
+                        size = (int)file.Length,
+                        CustomFields = new Dictionary<string, object>
+                        {
+                            { "url", GetFileItemUrl(file) }
+                        }
+                    });
+                }
+            }
 
-            //var checkPermission = _ISrFileMappingsAppService.GetAll(obj);
-            //int stor = Convert.ToInt32(userId);
             var checkPermission = _srfilemapRepository.GetAll();
             var usrdetail = _userRepository.GetAll().Where(x => x.Id == Convert.ToInt64(userId)).FirstOrDefault();
-            var jsonConvert = JsonConvert.SerializeObject(result.GetClientCommandResult());
-            Root temp = JsonConvert.DeserializeObject<Root>(jsonConvert);
 
             if (usersname == "admin")
             {
@@ -2236,192 +2250,71 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///<Summary>
         /// files and directories shown  for other documents
         ///</Summary>
-        public object FileSystem1(string company, string subCompany, string escrow, string userId, string arguments, FileSystemCommand command)
+        public object FileSystem1(string company, string subCompany, string escrow, string userId)
         {
-            var currentUserId = userId;
-            GetAllSrFileMappingsInput obj = new GetAllSrFileMappingsInput();
-            obj.Filter = userId;
+            string rootPath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless");
+            string targetPath = Path.Combine(rootPath, company, subCompany, escrow, "Other");
+            if (!Directory.Exists(targetPath))
+                return new List<Result>();
 
-            var config = new FileSystemConfiguration
-            {
-                Request = Request,
-                FileSystemProvider = new PhysicalFileSystemProvider(
-                    Path.Combine(_hostingEnvironment.WebRootPath, SampleImagesRelativePath),
-                (fileSystemItem, clientItem) =>
-                {
-                    if (!clientItem.IsDirectory)
-                        clientItem.CustomFields["url"] = GetFileItemUrl(fileSystemItem);
-                }
-                ),
-                AllowDownload = true
-            };
-
-            var processor = new FileSystemCommandProcessor(config);
-            var result = processor.Execute(command, arguments);
+            var files = Directory.GetFiles(targetPath);
             var checkPermission = _srfilemapRepository.GetAll();
 
-            if (config.Request.Method == "POST")
+            List<Result> newFile = new List<Result>();
+
+            foreach (var file in files)
             {
-                return result.GetClientCommandResult();
-            }
-            else
-            {
-                var jsonConvert = JsonConvert.SerializeObject(result.GetClientCommandResult());
-                Root temp = JsonConvert.DeserializeObject<Root>(jsonConvert);
+                string fileName = Path.GetFileName(file);
 
-                if (userId == "8")
+                var permission = checkPermission.FirstOrDefault(x =>
+                    x.FileName.Contains(company) &&
+                    x.FileName.Contains(fileName) &&
+                    x.FileName.Contains("Other") &&
+                    x.Action == "READ"
+                );
+
+                if (permission == null)
+                    continue;
+
+                Result res = new Result();
+                res.name = fileName.Contains("~")
+                    ? fileName.Substring(0, fileName.IndexOf("~"))
+                    : fileName;
+
+                res.key = fileName;
+                res.access = "READ";
+
+                string ext = Path.GetExtension(file).ToLowerInvariant();
+                res.fileType = ext switch
                 {
-                    return temp.result;
-                }
-                else
-                {
-                    temp.result = temp.result.Where(x => x.key == company || x.key.Contains("\\")).ToList();
-                    if (checkPermission != null)
-                    {
-                        List<Result> newFile = new List<Result>();
-                        Root filterFile = new Root();
+                    ".pdf" => "/Images/pdf-file.png",
+                    ".docx" => "/Images/docx-file.png",
+                    ".doc" => "/Images/doc-file.png",
+                    ".rtf" => "/Images/rtf-file.png",
+                    ".txt" => "/Images/txt-file.png",
+                    ".eml" => "/Images/eml-file.png",
+                    ".msg" => "/Images/msg-file.png",
+                    _ => ""
+                };
 
-                        foreach (var lst in temp.result)
-                        {
-                            string strBunch = company + "\\" + subCompany + "\\" + escrow + "\\" + "Other";
+                var mappingTags = _tagsAndFileMappingsRepository
+                    .GetAll()
+                    .Where(x => x.FileName == res.name)
+                    .ToList();
+                var tagIds = mappingTags.Select(x => x.TagId).ToList();
+                var tags = _escrowFileTagsRepository
+                    .GetAll()
+                    .Where(x => tagIds.Contains(x.Id))
+                    .ToList();
 
-                            var temp1 = checkPermission.Where(x => x.FileName.Contains(strBunch)
-                            && x.FileName.Contains(lst.name)
-                            && x.FileName.Contains("Other")
+                if (tags.Any())
+                    res.escrowFileTags = tags;
 
-                            && x.Action == "READ").FirstOrDefault();
-                            //     && x.UserId == Convert.ToInt32(userId)).FirstOrDefault();
-                            Result res = new Result();
-
-                            if (temp1 != null)
-                            {
-                                if (!string.IsNullOrWhiteSpace(temp1.FileName))
-                                {
-                                    var newString = temp1.FileName.Substring(temp1.FileName.IndexOf("\\Paperless") + 11);
-                                    if (newString.Contains(strBunch) && newString.Contains(lst.name))
-                                    {
-                                        res = lst;
-                                        res.key = lst.name;
-                                        var fileExtension = Path.GetExtension(newString).ToLowerInvariant();
-
-                                        if (fileExtension == ".pdf")
-                                        {
-                                            res.fileType = "/Images/pdf-file.png";
-                                        }
-                                        else if (fileExtension == ".docx")
-                                        {
-                                            res.fileType = "/Images/docx-file.png";
-                                        }
-                                        else if (fileExtension == ".doc")
-                                        {
-                                            res.fileType = "/Images/doc-file.png";
-                                        }
-                                        else if (fileExtension == ".rtf")
-                                        {
-                                            res.fileType = "/Images/rtf-file.png";
-                                        }
-                                        else if (fileExtension == ".txt")
-                                        {
-                                            res.fileType = "/Images/txt-file.png";
-                                        }
-                                        else if (fileExtension == ".eml")
-                                        {
-                                            res.fileType = "/Images/eml-file.png";
-                                        }
-                                        else if (fileExtension == ".msg")
-                                        {
-                                            res.fileType = "/Images/msg-file.png";
-                                        }
-
-                                        res = lst;
-                                        res.key = lst.name;
-                                        res.access = "READ";
-
-                                        int index = lst.name.IndexOf("~");
-                                        if (index != -1)
-                                        {
-                                            res.name = lst.name.Substring(0, index);
-                                        }
-                                        else
-                                        {
-                                            res.name = lst.name;
-                                        }
-
-                                        var findMappingTag = _tagsAndFileMappingsRepository
-                                            .GetAll()
-                                            .Where(x => x.FileName == res.name)
-                                            .ToList();
-
-                                        var tagIds = findMappingTag.Select(x => x.TagId).ToList();
-
-                                        //var findTag = _escrowFileTagsRepository
-                                        //    .GetAll()
-                                        //    .Where(x => tagIds.Contains(x.Id) 
-                                        //    && x.CreatedBy == long.Parse(currentUserId)).ToList();
-
-                                        var findTag = _escrowFileTagsRepository
-       .GetAll()
-       .Where(x => tagIds.Contains(x.Id))
-       .ToList();
-
-                                        if (findTag.Count() > 0)
-                                        {
-                                            res.escrowFileTags = findTag;
-                                        }
-                                        res.srAssignedFileId = temp1.SrEscrowFileMasterId.Value;
-                                        //res.srAssignedFileId = 
-                                        newFile.Add(res);
-                                    }
-
-                                }
-                            }
-                            else
-                            {
-                                temp1 = checkPermission.Where(x => x.FileName.Contains(company)
-                       //&& x.FileName.Contains(lst.name)
-                       && x.FileName.Contains("Other")
-
-                       && x.Action == "READ").FirstOrDefault();
-                                //     && x.UserId == Convert.ToInt32(userId)).FirstOrDefault();
-
-
-                                if (temp1 != null)
-                                {
-                                    if (!string.IsNullOrWhiteSpace(temp1.FileName))
-                                    {
-                                        var newString = temp1.FileName.Substring(temp1.FileName.IndexOf("\\Paperless") + 11);
-                                        if (newString.Contains(strBunch) && newString.Contains(lst.name) || newString.Contains(company))
-                                        {
-                                            res = lst;
-                                            res.key = lst.name;
-                                            res.access = "READ";
-
-                                            int index = lst.name.IndexOf("~");
-                                            if (index != -1)
-                                            {
-                                                res.name = lst.name.Substring(0, index);
-
-                                            }
-                                            else
-                                            {
-                                                res.name = lst.name;
-                                                res.fileType = $"";
-                                            }
-                                            newFile.Add(res);
-                                            //  res.signing = $"✓  {(Signin_percentage == "100" ? "Signed" : "Partially Signed")} - {Signin_percentage} %";
-                                        }
-
-                                    }
-                                }
-
-                            }
-                        }
-                        filterFile.result = newFile;
-                        return filterFile.result;
-                    }
-                }
+                res.srAssignedFileId = permission.SrEscrowFileMasterId ?? 0;
+                newFile.Add(res);
             }
-            return null;
+
+            return newFile;
         }
 
         ///<Summary>
@@ -2806,6 +2699,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         public bool? OtherAction { get; set; }
 
         public string OtherActionNote { get; set; }
+
+        public Dictionary<string, object> CustomFields { get; set; }
 
     }
 

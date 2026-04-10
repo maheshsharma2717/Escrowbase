@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 import { AppLocalizationService } from '@app/shared/common/localization/app-localization.service';
 import { DateTime } from 'luxon';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class DateTimeService {
 
     constructor(private _appLocalizationService: AppLocalizationService) {

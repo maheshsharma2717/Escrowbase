@@ -13,6 +13,8 @@ import { LocaleMappingService } from '@shared/locale-mapping.service';
 import { LocalStorageService } from '@shared/utils/local-storage.service';
 
 export class AppPreBootstrap {
+    private static readonly APP_CONFIG_TIMEOUT_MS = 4000;
+    private static readonly USER_CONFIG_TIMEOUT_MS = 7000;
 
     static run(appRootUrl: string, callback: () => void, resolve: any, reject: any): void {
         AppPreBootstrap.getApplicationConfig(appRootUrl, () => {
@@ -50,11 +52,9 @@ export class AppPreBootstrap {
     private static getApplicationConfig(appRootUrl: string, callback: () => void, onError?: (err: any) => void) {
         let type = 'GET';
         let url = appRootUrl + 'assets/' + environment.appConfig;
-        let customHeaders = [
-            {
-                name: abp.multiTenancy.tenantIdCookieName,
-                value: abp.multiTenancy.getTenantIdCookie() + ''
-            }];
+        let customHeaders = {
+            [abp.multiTenancy.tenantIdCookieName]: abp.multiTenancy.getTenantIdCookie() + ''
+        };
 
         XmlHttpRequestHelper.ajax(type, url, customHeaders, null, (result) => {
             const subdomainTenancyNameFinder = new SubdomainTenancyNameFinder();
@@ -78,13 +78,18 @@ export class AppPreBootstrap {
 
             callback();
         }, (err) => {
-            // Fail fast during bootstrap instead of hanging indefinitely.
+            if (AppPreBootstrap.shouldUseAnonymousFallback()) {
+                console.warn('App config request failed, using login fallback config.', err);
+                AppPreBootstrap.applyFallbackAppConfig(appRootUrl);
+                callback();
+                return;
+            }
+
             console.error('Failed to load app config:', err);
-            alert('Unable to load application configuration. Please refresh the page.');
             if (onError) {
                 onError(err);
             }
-        }, 30000);
+        }, AppPreBootstrap.APP_CONFIG_TIMEOUT_MS);
     }
 
     private static getCurrentClockProvider(currentProviderName: string): abp.timing.IClockProvider {
@@ -200,12 +205,72 @@ export class AppPreBootstrap {
             DynamicResourcesHelper.loadResources(callback);
         }, (err) => {
             console.timeEnd('bootstrap:AbpUserConfiguration');
+            if (AppPreBootstrap.shouldUseAnonymousFallback()) {
+                console.warn('User configuration request failed, continuing with login fallback.', err);
+                AppPreBootstrap.applyFallbackUserConfiguration();
+                DynamicResourcesHelper.loadResources(callback);
+                return;
+            }
+
             console.error('Failed to load user configuration:', err);
-            alert('Unable to reach the server to load configuration. Please check your network/VPN/firewall and refresh.');
             if (onError) {
                 onError(err);
             }
-        }, 60000);
+        }, AppPreBootstrap.USER_CONFIG_TIMEOUT_MS);
+    }
+
+    private static shouldUseAnonymousFallback(): boolean {
+        const path = (window.location.pathname || '').toLowerCase();
+        return path.startsWith('/account');
+    }
+
+    private static applyFallbackAppConfig(appRootUrl: string): void {
+        const normalizedAppRootUrl = (appRootUrl || '').replace(/\/+$/, '');
+        AppConsts.appBaseUrlFormat = normalizedAppRootUrl;
+        AppConsts.remoteServiceBaseUrlFormat = normalizedAppRootUrl;
+        AppConsts.appBaseUrl = normalizedAppRootUrl;
+        AppConsts.remoteServiceBaseUrl = normalizedAppRootUrl;
+    }
+
+    private static applyFallbackUserConfiguration(): void {
+        if (!abp.localization) {
+            abp.localization = {} as any;
+        }
+
+        if (!abp.localization.currentLanguage) {
+            abp.localization.currentLanguage = {
+                name: 'en-US',
+                displayName: 'English',
+                icon: 'famfamfam-flags us',
+                isDisabled: false
+            } as any;
+        }
+
+        if (!abp.setting) {
+            abp.setting = {} as any;
+        }
+
+        if (!abp.setting.values) {
+            abp.setting.values = {};
+        }
+
+        abp.setting.values['App.UiManagement.Theme'] = abp.setting.values['App.UiManagement.Theme'] || 'default';
+        abp.setting.values['default.App.UiManagement.ThemeColor'] = abp.setting.values['default.App.UiManagement.ThemeColor'] || 'default';
+        abp.setting.values['App.UserManagement.UseCaptchaOnLogin'] = abp.setting.values['App.UserManagement.UseCaptchaOnLogin'] || 'false';
+        abp.setting.values['App.TenantManagement.AllowSelfRegistration'] = abp.setting.values['App.TenantManagement.AllowSelfRegistration'] || 'false';
+        abp.setting.values['App.UserManagement.AllowSelfRegistration'] = abp.setting.values['App.UserManagement.AllowSelfRegistration'] || 'false';
+        abp.setting.values['App.TenantManagement.SubscriptionExpireNotifyDayCount'] = abp.setting.values['App.TenantManagement.SubscriptionExpireNotifyDayCount'] || '0';
+
+        if (!abp.clock) {
+            abp.clock = {} as any;
+        }
+
+        abp.clock.provider = this.getCurrentClockProvider('localClockProvider');
+        AppPreBootstrap.configureMoment();
+        abp.event.trigger('abp.dynamicScriptsInitialized');
+
+        AppConsts.recaptchaSiteKey = '';
+        AppConsts.subscriptionExpireNootifyDayCount = 0;
     }
 
     private static configureMoment() {
