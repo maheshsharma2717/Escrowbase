@@ -136,84 +136,6 @@
           style="margin: 15px 0px 0px 0px;float: inherit;z-index: 1;font-size: larger;font-weight: bold;background-color: #adcde9;">
           &nbsp;&nbsp; Total Items -: {{itemCount}}</div>
 
-        <dx-file-manager #data id="fileManager" [fileSystemProvider]="remoteProvider" height="600"
-          rootFolderName="Companies" selectionMode="multiple" (onContextMenuItemClick)="onItemClick($event)"
-          (onSelectionChanged)="handleShownEvent($event)" (onSelectedFileOpened)="displayImagePopupFromMain($event)"
-          [currentPath]="currentpath">
-
-          <dxo-item-view [showParentFolder]="false">
-            <dxo-details>
-
-              <dxi-column dataField="name" width="600">
-              </dxi-column>
-              <dxi-column dataField="access" caption="Access Level" width="120">
-                <ng-template cellTemplate="let data of 'cellTemplate'">
-
-                </ng-template>
-              </dxi-column>
-              <dxi-column dataField="action" caption="Action Required" style="font-weight: 800 !important;"
-                width="150"></dxi-column>
-              <dxi-column dataField="signStatus" caption="signStatus" width="150"></dxi-column>
-              <dxi-column dataField="signing" caption="Signing Status" width="150"> </dxi-column>
-              <dxi-column dataField="updateOn" caption="Update On"> </dxi-column>
-            </dxo-details>
-          </dxo-item-view>
-
-          <dxo-toolbar>
-            <dxi-item name="showNavPane" visible="true"></dxi-item>
-            <dxi-item name="separator"></dxi-item>
-            <dxi-item name="create"></dxi-item>
-
-            <dxi-item widget="dxButton" location="after" [options]="{
-              text: 'Download All',
-              icon: 'download',
-              onClick: DownloadAll
-            }">
-            </dxi-item>
-            <dxi-item widget="dxButton" location="after" [options]="{
-                          text: 'Delete All',
-                          icon: 'trash',
-                          onClick: DeleteAll
-                        }" [visible]="deletePermission">
-            </dxi-item>
-
-            <dxi-item name="refresh"></dxi-item>
-            <dxi-item name="separator" location="after"></dxi-item>
-            <dxi-item name="switchView"></dxi-item>
-          </dxo-toolbar>
-          <dxo-context-menu (onClick)="handleShowingEvent($event)">
-            <dxi-item *ngIf=" editPermission == false" name="View/Edit" text="View" [visible]="readPermission"
-              [options]="{view: popupesign}"></dxi-item>
-            <dxi-item *ngIf=" editPermission == true" name="View/Edit" text="View/Edit" [visible]="readPermission"
-              [options]="{view: popupesign}"></dxi-item>
-            <dxi-item name="E-Sign" text="E-Sign" [visible]="esignPermission" [options]="{esign: popupesign}">
-            </dxi-item>
-            <dxi-item *ngIf=" editPermission == false" name="View/Edit" text="View" [visible]="readPermission"
-              [options]="{view: popupDocuSign}"></dxi-item>
-            <dxi-item *ngIf=" editPermission == true" name="View/Edit" text="View/Edit" [visible]="readPermission"
-              [options]="{view: popupDocuSign}"></dxi-item>
-            <dxi-item name="E-Sign" text="E-Sign" [visible]="esignPermission" [options]="{esign: popupDocuSign}">
-            </dxi-item>
-            <dxi-item name="E-SignDetalis" text="E-Sign Details" [visible]="esignPermission"
-              [options]="{esignDetails: displayImagePopupFromMain}"> </dxi-item>
-            <dxi-item name="History" text="View/History" [visible]="viewHistoryPermission"
-              [options]="{history: Historyunique}"> </dxi-item>
-            <dxi-item name="Reminder" text="Send Reminder/Message" [visible]="reminderPermission"
-              [options]="{reminder: reminderModel}"> </dxi-item>
-            <dxi-item name="Rename" text="Rename" [visible]="renamePermission" [options]="{RenameMain: RenameMain}">
-            </dxi-item>
-            <dxi-item name="RenameFileName" text="Rename" [visible]="renameFileName"
-              [options]="{renameFileName: renameFileNameModel}"> </dxi-item>
-            <dxi-item name="Delete" text="Delete" [visible]="deletePermission" [options]="{delete: 'a'}"> </dxi-item>
-            <dxi-item name="Download" [visible]="downloadPermission" text="Download File"
-              [options]="{download: 'a'}"></dxi-item>
-            <dxi-item name="View FullName" text="View FullName" [visible]="viewFullNamePermission"
-              [options]="{full: FullNameMain}"></dxi-item>
-            <dxi-item name="refresh" beginGroup="true"></dxi-item>
-          </dxo-context-menu>
-        </dx-file-manager>
-
-
         <div class="col-md-12 " *ngIf="ErrorMessage">
           <div class="errorMessage">{{ErrorMessage}}</div>
 
@@ -239,44 +161,7 @@
         (fullScreenToggled)="onOtherFullScreen($event)"
         (onDragEnded)="resetThunderbirdMode()" [isThunderbirdMode]="isThunderbirdMode"
         (onFileDropped)="uploadFile($event)"></app-file-other>
-      <div style="display: none;">
-        <dx-file-manager id="fileManager1" #targetDataGrid [fileSystemProvider]="remoteProvider1" height="300"
-          (onContextMenuItemClick)="onItemClick1($event)" rootFolderName="Companies" selectionMode="single"
-          [currentPath]="currentpath1" restoreDirectory="True" (onSelectionChanged)="handleShownEventOtherArea($event)">
-
-          <dxo-item-view [showParentFolder]="false" placeholder="Hello">
-
-            <dxo-details>
-              <!-- <div> <dxi-column dataField="name" [cellTemplate]="nameTemplate"></dxi-column></div> -->
-              <dxi-column dataField="name"></dxi-column>
-              <dxi-column value="#f05b41" dataField="tags" caption="Tags" width="95"></dxi-column>
-              <dxi-column dataField="fileType" caption="Type" width="95"></dxi-column>
-            </dxo-details>
-          </dxo-item-view>
-
-          <dxo-context-menu>
-            <dxi-item text="Total Items -:"></dxi-item>
-          </dxo-context-menu>
-
-          <dxo-context-menu>
-            <dxi-item name="View" text="View" [visible]="readPermissionOtherArea"
-              [options]="{view: otherAreaFileAction}"></dxi-item>
-            <dxi-item name="View/Edit" text="View/Edit" [visible]="editPermissionOtherArea"
-              [options]="{view: otherAreaFileAction}"></dxi-item>
-            <dxi-item name="Rename" text="Rename" [visible]="true" [options]="{Rename1: Rename1}"> </dxi-item>
-            <dxi-item name="Delete" text="Delete" visible="true" [options]="{delete: 'a'}"> </dxi-item>
-            <dxi-item name="Download" visible="true" text="Download File" [options]="{download: 'a'}"> </dxi-item>
-            <dxi-item name="View FullName" text="View FullName" visible="true" [options]="{full: FullName1}">
-            </dxi-item>
-            <dxi-item name="Move" text="Move to Main" [visible]="editPermissionOtherArea"
-              [options]="{Move: Move}"></dxi-item>
-            <dxi-item name="Tags" text="Tags" visible="true" [options]="{Tags: Opentags}"></dxi-item>
-            <!-- <dxi-item tags="Tags" text="Tags"  visible="true" [options]="{tags: Opentags}"></dxi-item> -->
-            <dxi-item name="refresh" beginGroup="true"></dxi-item>
-          </dxo-context-menu>
-
-        </dx-file-manager>
-      </div>
+     
     </div>
 
     <!-- <div id="hideDiv1" style="font-size: large;" *ngIf="fullnamepopup1">{{fileFullName1}}</div> -->
@@ -1190,13 +1075,13 @@
   margin: 0px 0px 0px -18px;
 " src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideOtherAreaFileAction()" />
 
-    <button *ngIf="editPermissionOtherArea && !editPermissionDocOtherArea" style="
+    <button *ngIf="editPermissionOtherArea || editPermissionDocOtherArea" style="
     height: 35px;
     width: 20vh;
     right: 0px;
     position: absolute;
     margin: 0px 5px 0px 170px;
-  " type="button" class="btn btn-info" (click)="SaveChangesOtherArea()">Save Changes</button>
+  " type="button" class="btn btn-success" (click)="SaveChangesOtherArea()">Save Changes</button>
   </div>
   <div id="modal-content" style="height:100vh;" class="modal-content">
 
@@ -1319,11 +1204,6 @@
     /* font-family: "Lucida Grande", Helvetica, Arial, Verdana, sans-serif; */
     font-family: roboto;
     font-size: 14px;
-  }
-
-  .dx-datagrid-content,
-  .dx-scrollable-container {
-    background-color: white;
   }
 
   .drag-signfield {

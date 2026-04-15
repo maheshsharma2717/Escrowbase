@@ -1,4 +1,4 @@
-import { CommonModule,DOCUMENT } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule, HttpClientJsonpModule } from '@angular/common/http';
@@ -31,18 +31,11 @@ import { InputMaskModule } from 'primeng/inputmask';
 import { ManageLinkedAccountsModalComponent } from './ManageAccount/manageaccount.component';
 import { FileUploadModule } from 'primeng/fileupload';
 import { TableModule } from 'primeng/table';
-import {FileViewComponent} from '../main/File/filelist.component'
 import {SrFileMappingsServiceProxy,CreateOrEditUserFileLogDto} from '@shared/service-proxies/service-proxies'
-import { map } from 'rxjs/operators';
 import { DxFileManagerModule, DxPopupModule } from 'devextreme-angular';
-import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
-import RemoteFileSystemProvider from 'devextreme/file_management/remote_provider';
-import { from } from 'rxjs';
  
 import { SharedService } from '../main/File/UserTypeChangeService';
 import { StickyNotesComponent } from './sticky-notes/sticky-notes.component'
-import { TabsComponent } from '@app/tabs/tabs.component';
-import { TabComponent } from '@app/tabs/tab.component';
 //import { FileMainComponent } from './File/file-main/file-main.component';
 //import { FileOtherComponent } from './File/file-other/file-other.component';
 
@@ -74,8 +67,7 @@ NgxBootstrapDatePickerConfigService.registerNgxBootstrapDatePickerLocales();
         //CheckBoxModule, ButtonModule, ContextMenuModule,FileManagerModule, ToolbarModule,
         HttpClientModule,HttpClientJsonpModule,
         DxFileManagerModule,
-        DxPopupModule,
-        NgxExtendedPdfViewerModule
+        DxPopupModule
     ],
     declarations: [
 		EscrowClientsComponent,

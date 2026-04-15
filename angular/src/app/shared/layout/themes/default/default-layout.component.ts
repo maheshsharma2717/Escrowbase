@@ -10,7 +10,6 @@ import { EscrowDetailsServiceProxy, SrEscrowsServiceProxy } from '@shared/servic
 import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { TabsComponent } from '@app/tabs/tabs.component';
-import { FileViewComponent } from '../../../../main/File/filelist.component'
 import { PermissionCheckerService } from 'abp-ng2-module';
 import { AppNavigationService } from '../../nav/app-navigation.service';
 @Component({

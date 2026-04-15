@@ -1,7 +1,6 @@
-<div class="docx-preview-shell">
-  <div *ngIf="isLoading" class="docx-preview-message">Loading DOCX preview...</div>
+<div class="richedit-shell">
+  <div #quillEditorContainer class="richedit-container"></div>
   <div *ngIf="errorMessage" class="docx-preview-error">{{ errorMessage }}</div>
-  <div *ngIf="!isDocx && !errorMessage && isHtmlFallback" class="docx-fallback-html" [innerHTML]="fallbackHtml"></div>
-  <div *ngIf="!isDocx && !errorMessage && !isHtmlFallback" class="docx-fallback-text">{{ fallbackText }}</div>
-  <div #docxContainer class="docx-preview-container" [style.display]="isDocx && !errorMessage ? 'block' : 'none'"></div>
+  <div *ngIf="!isSupported && !errorMessage && isHtmlFallback" class="docx-fallback-html" [innerHTML]="fallbackHtml"></div>
+  <div *ngIf="!isSupported && !errorMessage && !isHtmlFallback" class="docx-fallback-text">{{ fallbackText }}</div>
 </div>

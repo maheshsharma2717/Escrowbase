@@ -24,8 +24,6 @@ import { timeStamp } from 'console';
 import { LoginRoutingModule } from '@account/login/login-routing.module';
 import { WindowUtils } from 'msal';
 declare var window: Window & typeof globalThis;
-import { FileViewComponent } from '../File/filelist.component';
-import { TabsComponent } from '../../tabs/tabs.component';
 import { DefaultLayoutComponent } from '../../shared/layout/themes/default/default-layout.component'
 import { CookieConsentService } from '@shared/common/session/cookie-consent.service';
 import { SharedServices } from '../../shared/common/Shared/SharedService';
@@ -47,7 +45,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
 
     @ViewChild('dataTable', { static: true }) dataTable: Table;
     @ViewChild('paginator', { static: true }) paginator: Paginator;
-    @ViewChild('fileManager', { static: true }) fileManagerTemplate: FileViewComponent;
+    @ViewChild('fileManager', { static: true }) fileManagerTemplate: any;
 
     //  @ViewChild('TabsComponent' ,{ static: true }) tabsComponent : TabsComponent;
 

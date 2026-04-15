@@ -1,4 +1,4 @@
-﻿using Abp;
+using Abp;
 using Abp.Domain.Repositories;
 using Abp.Notifications;
 using HtmlAgilityPack;
@@ -316,21 +316,19 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             public string Name { get; set; }
         }
 
+        [HttpGet]
         public async Task<IActionResult> ConvertFileToBase64(string path, string key)
         {
             try
             {
                 path = path.Replace("%23", "#");
                 key = key.Replace("%23", "#");
-                var folderName = Path.Combine(@"Common/Paperless/" + path);
-                folderName = folderName.Substring(0, folderName.LastIndexOf('/'));
-                folderName = Path.Combine(folderName + "/" + key);
-                var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
-                WebClient webClient = new WebClient();
-                string newpath = folderName.Replace("/", "\\");
-                string file = Path.Combine(_hostingEnvironment.WebRootPath + "\\" + newpath);
+                string cleanPath = path.Replace("/", Path.DirectorySeparatorChar.ToString()).TrimEnd(Path.DirectorySeparatorChar);
+                string cleanKey = key.Replace("/", Path.DirectorySeparatorChar.ToString());
+                string relativePath = Path.Combine("Common", "Paperless", cleanPath, cleanKey);
+                string file = Path.Combine(_hostingEnvironment.WebRootPath, relativePath);
 
-                if (Path.GetExtension(file).ToLower() == ".doc")
+                if (Path.GetExtension(file).ToLower() == ".doc" || Path.GetExtension(file).ToLower() == ".docx" || Path.GetExtension(file).ToLower() == ".rtf")
                 {
                     try
                     {
@@ -340,39 +338,35 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         }
                         Document document = new Document();
                         document.LoadFromFile(file);
-                        var tempHtmlPath = Path.ChangeExtension(Path.GetTempFileName(), ".html");
-                        try
+                        document.HtmlExportOptions.ImageEmbedded = true;
+                        document.HtmlExportOptions.CssStyleSheetType = CssStyleSheetType.Internal;
+
+                        string tempHtml = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".html");
+                        try 
                         {
-                            document.SaveToFile(tempHtmlPath, FileFormat.Html);
-                            string htmlContent = await System.IO.File.ReadAllTextAsync(tempHtmlPath, System.Text.Encoding.UTF8);
+                            document.SaveToFile(tempHtml, FileFormat.Html);
+                            string htmlContent = await System.IO.File.ReadAllTextAsync(tempHtml);
+                            
                             string evaluationWarning = "Evaluation Warning: The document was created with Spire.Doc for .NET.";
                             htmlContent = htmlContent.Replace(evaluationWarning, string.Empty);
+
                             byte[] textBytes = System.Text.Encoding.UTF8.GetBytes(htmlContent);
                             string base64String = Convert.ToBase64String(textBytes);
-                            return Ok(new { Base64 = base64String, fileType = "doc" });
+                            return Ok(new { Base64 = base64String, fileType = "html_edit" });
                         }
-                        finally
+                        finally 
                         {
-                            if (System.IO.File.Exists(tempHtmlPath))
-                            {
-                                System.IO.File.Delete(tempHtmlPath);
-                            }
+                            if (System.IO.File.Exists(tempHtml)) System.IO.File.Delete(tempHtml);
                         }
                     }
                     catch (Exception ex)
                     {
-                        // Log the error (or return it for debugging purposes)
-                        //Console.WriteLine($"Error: {ex.Message}");
-                        //return StatusCode(500, new { error = ex.Message });
                         string logs = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\Logs.txt");
-                        if (!System.IO.File.Exists(logs))
-                        {
-                            FileStream fs1 = new FileStream(logs, FileMode.OpenOrCreate, FileAccess.Write);
-                        }
-                        StreamWriter writer = new StreamWriter(logs, true);
-                        writer.WriteLine("Error in ConvertFileToBase64 method for -: error=" + ex.ToString() + " " + DateTime.Now.ToString());
-                        writer.Close();
-                        return NotFound();
+                        try {
+                            if (!Directory.Exists(Path.GetDirectoryName(logs))) Directory.CreateDirectory(Path.GetDirectoryName(logs));
+                            System.IO.File.AppendAllText(logs, "\nError in ConvertFileToBase64 (.doc): " + ex.ToString());
+                        } catch {}
+                        return StatusCode(500, new { error = ex.Message, detail = ex.ToString() });
                     }
                 }
 
@@ -380,87 +374,53 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     using var stream = new FileStream(file, FileMode.Open, FileAccess.Read);
                     var message = await MimeMessage.LoadAsync(stream);
-
-                    // Get the HTML or plain text body
                     string emailContent = message.HtmlBody ?? message.TextBody;
-
-                    // Return the content
                     return Ok(new { Base64 = emailContent, fileType = "eml" });
-                }
-
-                else if (Path.GetExtension(file).ToLower() == ".rtf")
-                {
-                    // Handle .rtf files (you can use Aspose.Words or other libraries)
-                    // Assuming you have an existing method for this
-                    var rtfContent = await System.IO.File.ReadAllTextAsync(file);
-                    byte[] rtfBytes = System.Text.Encoding.UTF8.GetBytes(rtfContent);
-                    string base64String = Convert.ToBase64String(rtfBytes);
-                    return Ok(new { Base64 = base64String, fileType = "rtf" });
                 }
 
                 if (Path.GetExtension(file).ToLower() == ".pdf")
                 {
-                    // Handle .pdf files (assuming they are already working)
                     using var pdfStream = new FileStream(file, FileMode.Open, FileAccess.Read);
                     using var memory = new MemoryStream();
                     await pdfStream.CopyToAsync(memory);
                     string base64String = Convert.ToBase64String(memory.ToArray());
                     return Ok(new { Base64 = base64String, fileType = "pdf" });
                 }
-                if (Path.GetExtension(file).ToLower() == ".docx")
-                {
-                    // Handle .docx files (already working)
-                    using var docxStream = new FileStream(file, FileMode.Open, FileAccess.Read);
-                    using var memory = new MemoryStream();
-                    await docxStream.CopyToAsync(memory);
-                    string base64String = Convert.ToBase64String(memory.ToArray());
-                    return Ok(new { Base64 = base64String, fileType = "docx" });
-                }
 
-                else if (Path.GetExtension(file).ToLower() == ".txt")
+                if (Path.GetExtension(file).ToLower() == ".txt")
                 {
-                    // Handle .txt files
                     var textContent = await System.IO.File.ReadAllTextAsync(file);
                     byte[] textBytes = System.Text.Encoding.UTF8.GetBytes(textContent);
                     string base64String = Convert.ToBase64String(textBytes);
                     return Ok(new { Base64 = base64String, fileType = "docx" });
                 }
 
-
-                else if (Path.GetExtension(file).ToLower() == ".msg")
+                if (Path.GetExtension(file).ToLower() == ".msg")
                 {
                     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                     using var fileStream = System.IO.File.OpenRead(file);
                     var reader = new MsgReader.Outlook.Storage.Message(fileStream);
-
-                    // Prefer HTML body for links and images
                     string emailContent = reader.BodyHtml ?? reader.BodyText ?? "No content available";
                     byte[] textBytes = System.Text.Encoding.UTF8.GetBytes(emailContent);
                     string base64String = Convert.ToBase64String(textBytes);
                     return Ok(new { Base64 = base64String, fileType = "msg" });
                 }
-                else if (Path.GetExtension(file).ToLower() == ".xlsx" || Path.GetExtension(file).ToLower() == ".xls")
+
+                if (Path.GetExtension(file).ToLower() == ".xlsx" || Path.GetExtension(file).ToLower() == ".xls")
                 {
                     try
                     {
                         IWorkbook workbook;
                         using (var fileStream = new FileStream(file, FileMode.Open, FileAccess.Read))
                         {
-                            if (Path.GetExtension(file).ToLower() == ".xlsx")
-                            {
-                                workbook = new XSSFWorkbook(fileStream);
-                            }
-                            else
-                            {
-                                workbook = new HSSFWorkbook(fileStream);
-                            }
+                            if (Path.GetExtension(file).ToLower() == ".xlsx") workbook = new XSSFWorkbook(fileStream);
+                            else workbook = new HSSFWorkbook(fileStream);
                         }
 
                         ISheet sheet = workbook.GetSheetAt(0);
                         StringBuilder htmlBuilder = new StringBuilder();
                         htmlBuilder.Append("<table border='1' style='border-collapse: collapse; width: 100%;'>");
 
-                        // Iterate through rows
                         for (int i = 0; i <= sheet.LastRowNum; i++)
                         {
                             IRow row = sheet.GetRow(i);
@@ -480,37 +440,25 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                         byte[] textBytes = System.Text.Encoding.UTF8.GetBytes(htmlBuilder.ToString());
                         string base64String = Convert.ToBase64String(textBytes);
-                        // Using 'msg' fileType to leverage the existing notification/email viewer which renders HTML
                         return Ok(new { Base64 = base64String, fileType = "msg" });
                     }
                     catch (Exception ex)
                     {
-                         string logs = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\Logs.txt");
-                        if (!System.IO.File.Exists(logs))
-                        {
-                             FileStream fs1 = new FileStream(logs, FileMode.OpenOrCreate, FileAccess.Write);
-                        }
-                        StreamWriter writer = new StreamWriter(logs, true);
-                        writer.WriteLine("Error in ConvertFileToBase64 method for Excel -: error=" + ex.ToString() + " " + DateTime.Now.ToString());
-                        writer.Close();
-                         return NotFound();
+                        return StatusCode(500, new { error = ex.Message });
                     }
                 }
+                
+                return NotFound();
             }
-
             catch (Exception ex)
             {
                 string logs = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\Logs.txt");
-                if (!System.IO.File.Exists(logs))
-                {
-                    FileStream fs1 = new FileStream(logs, FileMode.OpenOrCreate, FileAccess.Write);
-                }
-                StreamWriter writer = new StreamWriter(logs, true);
-                writer.WriteLine("Error in ConvertFileToBase64 method for -: error=" + ex.ToString() + " " + DateTime.Now.ToString());
-                writer.Close();
+                try {
+                if (!Directory.Exists(Path.GetDirectoryName(logs))) Directory.CreateDirectory(Path.GetDirectoryName(logs));
+                System.IO.File.AppendAllText(logs, "\nFatal Error in ConvertFileToBase64: " + ex.ToString());
+                } catch {}
                 return NotFound();
             }
-            return NotFound();
         }
         private string ConvertHtmlToRtf(string html)
         {
@@ -541,43 +489,62 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         }
 
 
-        public async Task<IActionResult> SaveDocument([FromBody] SaveDocumentRequest request)
+        [HttpPost]
+        [Abp.Web.Models.DontWrapResult]
+        public async Task<IActionResult> SaveDocument([FromBody] SaveDocRequestDto input)
         {
-            if (string.IsNullOrEmpty(request.Base64Content))
-                return BadRequest("File content is empty");
-
-            // Get the file name from the path
-            string fileName = Path.GetFileName(request.FilePath);
-
-            // Build the directory path from the file path
-            var folderName = Path.Combine("wwwroot", "Common", "Paperless", Path.GetDirectoryName(request.FilePath));
-            var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
-
-            // Ensure the directory exists
-            if (!Directory.Exists(pathToSave))
-                Directory.CreateDirectory(pathToSave);
-
-            // Full path for the new file
-            var filePath = Path.Combine(pathToSave, fileName);
-
-            // Remove the old file if it exists
-            if (System.IO.File.Exists(filePath))
+            try
             {
-                System.IO.File.Delete(filePath);
+                if (input == null || string.IsNullOrEmpty(input.filePath) || string.IsNullOrEmpty(input.base64Content))
+                {
+                    return BadRequest("Invalid save request.");
+                }
+
+                string relativePath = input.filePath.Replace("/", "\\");
+                string fullPath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless", relativePath);
+
+                if (!System.IO.File.Exists(fullPath))
+                {
+                    return NotFound("File not found on server.");
+                }
+
+                // If content is HTML (from Quill), convert back to original format
+                string ext = Path.GetExtension(fullPath).ToLower();
+                if (ext == ".doc" || ext == ".docx" || ext == ".rtf")
+                {
+                    Document document = new Document();
+                    
+                    // The base64Content from Quill is just the HTML string encoded in base64
+                    byte[] htmlBytes = Convert.FromBase64String(input.base64Content);
+                    string htmlContent = Encoding.UTF8.GetString(htmlBytes);
+
+                    using (var ms = new MemoryStream(htmlBytes))
+                    {
+                        document.LoadFromStream(ms, FileFormat.Html);
+                        FileFormat targetFormat = ext == ".doc" ? FileFormat.Doc : (ext == ".rtf" ? FileFormat.Rtf : FileFormat.Docx);
+                        document.SaveToFile(fullPath, targetFormat);
+                    }
+                }
+                else
+                {
+                    // For other formats (like txt), just save the raw bytes
+                    byte[] fileBytes = Convert.FromBase64String(input.base64Content);
+                    await System.IO.File.WriteAllBytesAsync(fullPath, fileBytes);
+                }
+
+                return Ok(new { success = true });
             }
-
-            byte[] fileBytes = Convert.FromBase64String(request.Base64Content);
-
-            await System.IO.File.WriteAllBytesAsync(filePath, fileBytes);
-
-            return Ok(new { filePath });
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Error saving document: " + ex.Message);
+            }
         }
 
-        public class SaveDocumentRequest
+        public class SaveDocRequestDto
         {
-            public string FileName { get; set; }
-            public string Base64Content { get; set; }
-            public string FilePath { get; set; }
+            public string fileName { get; set; }
+            public string base64Content { get; set; }
+            public string filePath { get; set; }
         }
 
         ///<Summary>

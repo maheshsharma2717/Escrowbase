@@ -330,7 +330,7 @@ export class FileOtherComponent extends AppComponentBase {
       const maxX = container.scrollWidth - menuWidth - 10;
       const maxY = container.scrollHeight - menuHeight - 10;
 
-      adjustedX = Math.min(adjustedX, maxX);
+      adjustedX = Math.min(adjustedX, maxX); 
       adjustedY = Math.min(adjustedY, maxY);
 
       // Avoid negative values

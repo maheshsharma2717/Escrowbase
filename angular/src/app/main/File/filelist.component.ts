@@ -20,8 +20,6 @@ import { Location } from '@angular/common'
 import { DomSanitizer } from '@angular/platform-browser';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgxExtendedPdfViewerService, IPDFViewerApplication, NgxExtendedPdfViewerComponent } from 'ngx-extended-pdf-viewer';
-import WebViewer from '@pdftron/webviewer';
-import { MSGReader } from 'wl-msg-reader';
 import { ChatSignalrService } from '../../shared/layout/chat/chat-signalr.service';
 import { Subscription, Subject } from 'rxjs';
 declare var jQuery: any;
@@ -30,11 +28,11 @@ import { SharedService } from './UserTypeChangeService';
 import Swal from 'sweetalert2/dist/sweetalert2.js';
 import { ClipboardService } from '../../../shared/utils/clipboard.service'
 import { MessageEscrowOfficerComponent } from '../messageToEscrowOfficer/message-escrow-officer.component';
-import { DateTime } from '@node_modules/@types/luxon';
 import { StickyNotesComponent } from '../sticky-notes/sticky-notes.component';
 import { EscrowUsertagsComponent } from '../escrow-usertags/escrow-usertags.component';
 import { FileMainComponent } from './file-main/file-main.component';
 import { FileOtherComponent } from './file-other/file-other.component';
+import { RicheditComponent } from '../../richedit/richedit.component';
 
 @Component({
   selector: 'app-upload-file',
@@ -50,6 +48,7 @@ export class FileViewComponent extends AppComponentBase {
   @ViewChild(DxFileManagerComponent, { static: false }) fileManager: DxFileManagerComponent;
   @ViewChild("targetDataGrid", { static: false }) fileManager1: DxFileManagerComponent;
   @ViewChild("data", { static: false }) data: DxFileManagerComponent;
+  @ViewChild(RicheditComponent) richeditComponent: RicheditComponent;
   @ViewChild('fileOtherComponent') fileOtherComponent!: FileOtherComponent;
   @ViewChild('scrollContainer') scrollContainer!: ElementRef;
 
@@ -92,6 +91,8 @@ export class FileViewComponent extends AppComponentBase {
   folderPath: any;
   path1: any;
   wvInstance: any;
+  private webViewerFactory: any = null;
+  private msgReaderCtor: any = null;
   spinnerUpl: boolean = false;
   fullname: any;
   file: any;
@@ -883,13 +884,20 @@ export class FileViewComponent extends AppComponentBase {
 
   HideOtherAreaFileAction() {
     this.check();
-    this.modalReff.hide();
     if (this.editPermissionOtherArea) {
-      if (confirm("Do you want to Exit Viewer Without Saving?")) {
-        this.modalReff.hide();
-      }
-      else {
-      }
+      Swal.fire({
+        title: 'Are you sure?',
+        text: "Do you want to Exit Viewer Without Saving?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, exit!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.modalReff.hide();
+        }
+      });
     }
     else {
       this.modalReff.hide();
@@ -1205,6 +1213,42 @@ export class FileViewComponent extends AppComponentBase {
           }
         });
     }
+  }
+
+  private async ensureWebViewerFactory(): Promise<any> {
+    if (this.webViewerFactory) {
+      return this.webViewerFactory;
+    }
+
+    const module = await import('@pdftron/webviewer');
+    this.webViewerFactory = module?.default || module;
+    return this.webViewerFactory;
+  }
+
+  private async initializeWebViewer(): Promise<void> {
+    const viewerElement = document.getElementById('viewer');
+    if (!viewerElement || this.wvInstance) {
+      return;
+    }
+
+    try {
+      const webViewerFactory = await this.ensureWebViewerFactory();
+      const instance = await webViewerFactory({ path: '/lib' }, viewerElement);
+      this.wvInstance = instance;
+      instance.docViewer.on('documentLoaded', this.wvDocumentLoadedHandler.bind(this));
+    } catch (error) {
+      console.error('WebViewer initialization failed.', error);
+    }
+  }
+
+  private async ensureMsgReaderCtor(): Promise<any> {
+    if (this.msgReaderCtor) {
+      return this.msgReaderCtor;
+    }
+
+    const module = await import('wl-msg-reader');
+    this.msgReaderCtor = (module as any).MSGReader || (module as any).default;
+    return this.msgReaderCtor;
   }
 
   wvDocumentLoadedHandler(): void {
@@ -3212,19 +3256,23 @@ export class FileViewComponent extends AppComponentBase {
   // }
 
   Hide() {
-
     this.check();
-    // this.modalReff.hide();
-
     if (this.docx && this.editPermission) {
-      if (confirm("Do you want to Exit Document Viewer Without Saving?")) {
-        this.modalReff.hide();
-      }
-      else {
-      }
+      Swal.fire({
+        title: 'Are you sure?',
+        text: "Do you want to Exit Document Viewer Without Saving?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, exit!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.modalReff.hide();
+        }
+      });
     }
     else {
-      // this.modalReff.hide();
       this.modalService.hide();
       this.renderer.removeClass(document.body, 'modal-open');
     }
@@ -3351,24 +3399,41 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   SaveChanges() {
-
     this.check();
-    this.getCurrentDocumentAsBlob().then(res => {
+    if (this.docx) {
+      // DOCX / DOC / RTF mode
+      this.globalService.editor.saveDocument().then(base64 => {
+        let name = this.globalService.oldPathSelectedFile.substring(this.globalService.oldPathSelectedFile.lastIndexOf('/') + 1);
+        
+        const request = {
+          fileName: name,
+          base64Content: base64,
+          filePath: this.globalService.oldPathSelectedFile
+        };
 
-      var fd = new FormData();
-      let name = this.fullpath.substring(this.fullpath.lastIndexOf('/') + 1)
-      fd.append('file', res, name);
-      let path = this.fullpath.substring(0, this.fullpath.lastIndexOf('/'))
-      let dir = this.mainFileSelected;
-      let fileId = dir.srAssignedFileId;
-      this.http.post(this.folderPath + "Edit?path=" + path + '&srAssignedFileId=' + fileId, fd, { reportProgress: true, observe: 'events' })
-        .subscribe(res => {
-          let fileRes: any = res;
-          this.modalReff.hide();
-        });
-      this.http.get(this.folderPath + "DocUpdate?message=Input&filename=" + this.fileNamestrng + "&userId=" + this.appSession.userId).subscribe((response: any) => {
+        this.http.post(this.folderPath + "SaveDocument", request)
+          .subscribe(res => {
+            this.modalReff.hide();
+            abp.notify.success("Document saved successfully", "Success");
+          });
       });
-    });
+    } else {
+      // PDF mode
+      this.getCurrentDocumentAsBlob().then(res => {
+        var fd = new FormData();
+        let name = this.fullpath.substring(this.fullpath.lastIndexOf('/') + 1)
+        fd.append('file', res, name);
+        let path = this.fullpath.substring(0, this.fullpath.lastIndexOf('/'))
+        let dir = this.mainFileSelected;
+        let fileId = dir.srAssignedFileId;
+        this.http.post(this.folderPath + "Edit?path=" + path + '&srAssignedFileId=' + fileId, fd, { reportProgress: true, observe: 'events' })
+          .subscribe(res => {
+            this.modalReff.hide();
+          });
+        this.http.get(this.folderPath + "DocUpdate?message=Input&filename=" + this.fileNamestrng + "&userId=" + this.appSession.userId).subscribe((response: any) => {
+        });
+      });
+    }
   }
 
   public async getCurrentDocumentAsBlob(): Promise<Blob> {
@@ -3839,16 +3904,7 @@ export class FileViewComponent extends AppComponentBase {
       let url = AppConsts.appBaseUrl;
 
     }
-    const viewerElement = document.getElementById('viewer');
-    if (viewerElement) {
-      WebViewer({
-        path: '/lib',
-      }, viewerElement)
-        .then((instance) => {
-          this.wvInstance = instance;
-          instance.docViewer.on('documentLoaded', this.wvDocumentLoadedHandler.bind(this));
-        });
-    }
+    void this.initializeWebViewer();
 
     this._chatSignalrService.componentMethodCalled$.subscribe(() => {
       //this.ngOnInit();
@@ -3896,7 +3952,13 @@ export class FileViewComponent extends AppComponentBase {
 
   }
 
-  msgFunction() {
+  async msgFunction() {
+    const MsgReaderCtor = await this.ensureMsgReaderCtor();
+    if (!MsgReaderCtor) {
+      console.error('MSG reader module failed to load.');
+      return;
+    }
+
     function isSupportedFileAPI() {
       return window.File && window.FileReader && window.FileList && window.Blob;
     }
@@ -3962,7 +4024,7 @@ export class FileViewComponent extends AppComponentBase {
             fileReader.onload = function (evt) {
 
               var buffer: any = evt.target.result;
-              var msgReader = new MSGReader(buffer);
+              var msgReader = new MsgReaderCtor(buffer);
               var fileData: any = msgReader.getFileData();
               if (fileData) {
                 $('.msg-from').html(formatEmail({ name: fileData.senderName, email: fileData.senderEmail }));
@@ -4383,26 +4445,43 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   SaveChangesOtherArea() {
-
     this.check();
-    this.getCurrentDocumentAsBlob().then(res => {
+    if (this.docx) {
+      // DOCX / DOC / RTF mode
+      this.globalService.editor.saveDocument().then(base64 => {
+        let name = this.globalService.oldPathSelectedFile.substring(this.globalService.oldPathSelectedFile.lastIndexOf('/') + 1);
 
-      var fd = new FormData();
-      let name = this.fullpath.substring(this.fullpath.lastIndexOf('/') + 1)
-      fd.append('file', res, name);
-      let path = this.fullpath.substring(0, this.fullpath.lastIndexOf('/'))
-      let dir = this.otherFileSelected;
-      let fileId = dir.srAssignedFileId;
-      this.http.post(this.folderPath + "Edit?path=" + path + '&srAssignedFileId=' + fileId, fd, { reportProgress: true, observe: 'events' })
-        .subscribe(res => {
+        const request = {
+          fileName: name,
+          base64Content: base64,
+          filePath: this.globalService.oldPathSelectedFile
+        };
 
-          let fileRes: any = res;
-          this.modalReff.hide();
-        });
-      this.http.get(this.folderPath + "DocUpdate?message=Input&filename=" + this.fileNamestrng + "&userId=" + this.appSession.userId).subscribe((response: any) => {
-
+        this.http.post(this.folderPath + "SaveDocument", request)
+          .subscribe(res => {
+            this.modalReff.hide();
+            abp.notify.success("Document saved successfully", "Success");
+          });
       });
-    });
+    } else {
+      // PDF mode
+      this.getCurrentDocumentAsBlob().then(res => {
+        var fd = new FormData();
+        let name = this.fullpath.substring(this.fullpath.lastIndexOf('/') + 1)
+        fd.append('file', res, name);
+        let path = this.fullpath.substring(0, this.fullpath.lastIndexOf('/'))
+        let dir = this.otherFileSelected;
+        let fileId = dir.srAssignedFileId;
+        this.http.post(this.folderPath + "Edit?path=" + path + '&srAssignedFileId=' + fileId, fd, { reportProgress: true, observe: 'events' })
+          .subscribe(res => {
+            let fileRes: any = res;
+            this.modalReff.hide();
+          });
+        this.http.get(this.folderPath + "DocUpdate?message=Input&filename=" + this.fileNamestrng + "&userId=" + this.appSession.userId).subscribe((response: any) => {
+
+        });
+      });
+    }
   }
 
   isEscrowOfficerUserExist: boolean = false;
@@ -4466,6 +4545,7 @@ export class GlobalService {
   docFile: any = {}
   folderPath: string = "";
   oldPathSelectedFile = ""
+  editor: any;
 }
 
 

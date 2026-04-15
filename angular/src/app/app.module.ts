@@ -97,12 +97,11 @@ import { SchedulerModalComponent } from './main/File/Scheduler.component';
 import {FileViewComponent} from '../app/main/File/filelist.component';
 import { DragDropDirective } from './main/File/Directive';
 import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
-import { DxFileManagerModule, DxPopupModule, DxContextMenuModule  } from 'devextreme-angular';
+// import { DxFileManagerModule, DxPopupModule, DxContextMenuModule  } from 'devextreme-angular';
 import { TabsComponent } from './tabs/tabs.component';
 import { TabComponent } from './tabs/tab.component';
 import { DynamicTabsDirective } from './tabs/dynamic-tabs.directive';
 import { RicheditComponent } from './richedit/richedit.component';
- import { DocumentEditorModule } from '@txtextcontrol/tx-ng-document-editor';
 import { MessageEscrowOfficerComponent } from './main/messageToEscrowOfficer/message-escrow-officer.component';
 import { StickyNotesComponent } from './main/sticky-notes/sticky-notes.component';
 import { EscrowUsertagsComponent } from './main/escrow-usertags/escrow-usertags.component';
@@ -168,7 +167,6 @@ import { FileMainComponent } from './main/File/file-main/file-main.component';
         SessionTimeoutComponent,
         MenuSearchBarComponent,
         ActiveDelegatedUsersComboComponent,
-        AppComponent,
         ManageLinkedAccountsModalComponent,
         SchedulerModalComponent,
         FileViewComponent,
@@ -213,10 +211,6 @@ import { FileMainComponent } from './main/File/file-main/file-main.component';
         NgxSpinnerModule,
         AppBsModalModule,
         NgxExtendedPdfViewerModule,
-        DxFileManagerModule,
-        DxContextMenuModule,
-        DxPopupModule,
-        DocumentEditorModule,
           
     ],
     providers: [
@@ -227,7 +221,6 @@ import { FileMainComponent } from './main/File/file-main/file-main.component';
         UserNotificationHelper,
         SrFileMappingsServiceProxy,
         ChatSignalrService,
-        FileUploadModule,
         {
             provide: PERFECT_SCROLLBAR_CONFIG,
             useValue: DEFAULT_PERFECT_SCROLLBAR_CONFIG

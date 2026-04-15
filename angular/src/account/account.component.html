@@ -1,4 +1,4 @@
-<div class="main ">
+<div class="main">
     <div class="row  row-with-margin ">
     <div class="col-md-7 login-main" style="display: inline-flex; overflow-y: auto;">
     
@@ -35,7 +35,11 @@
         background:url('/assets/metronic/common/images/bg/EscrowBase.jpg') no-repeat !important ;
         background-size: cover !important;
         background-repeat:no-repeat;
-    /* height: 100vh; */
+        align-items: center;
+        display: flex;
+        justify-content: center;
+        height: 100vh;
+        padding:2%;
     /* width: 100%; */
         
     }
@@ -52,13 +56,33 @@
         left:10%; */
          
     }
-    .row-with-margin {
+   
+ .row-with-margin {
     margin-top: 5%;
     margin-right: 20%;
     margin-bottom: 5%;
     margin-left: 20%;
+    width: 100%;
     box-shadow: 4px 8px 5px #b9a8a8;
-    border-radius: 20px 20px 20px 20px;
+    border-radius: 20px;
+}
+
+@media (max-width: 768px) {
+    .row-with-margin {
+        margin-right: 3%;
+        margin-left: 3%;
+        box-shadow: 2px 4px 4px #b9a8a8;
+        border-radius: 15px; 
+    }
+}
+
+@media (max-width: 480px) {
+    .row-with-margin {
+        margin-right: 2%;
+        margin-left: 2%;
+        box-shadow: 1px 2px 3px #b9a8a8;
+        border-radius: 10px;
+    }
 }
     .login-image
     {
@@ -81,4 +105,5 @@
       
         padding: 0px !important;
         }
+        
     </style>
