@@ -511,6 +511,11 @@ export class FileViewComponent extends AppComponentBase {
 
     // Initialize Thunderbird Mode from localStorage
     this.isThunderbirdMode = !!localStorage.getItem('thunderbirdMode');
+
+    // Subscribe to SignalR notifications for automatic UI refresh
+    this._chatSignalrService.componentMethodCalled$.subscribe(() => {
+      this.refreshFileListsAfterMutation();
+    });
   }
   filess: any = [];
 
@@ -1000,7 +1005,7 @@ export class FileViewComponent extends AppComponentBase {
 
     // Only refresh main area immediately, Other area is handled separately for uploads
     this.fileMainComponent?.getAllFiles();
-    
+
     // Retry refresh to handle eventual consistency from file APIs.
     if (!skipOtherArea) {
       [400, 1200, 2500, 5000, 8000].forEach((delay) => setTimeout(() => refresh(), delay));
@@ -1082,10 +1087,10 @@ export class FileViewComponent extends AppComponentBase {
 
                   // Check if uploading to Other area
                   const isOtherAreaUpload = uploadPath && (uploadPath.includes('/Other') || uploadPath.includes('\\Other'));
-                  
+
                   if (isOtherAreaUpload && this.fileOtherComponent) {
                     const person = this.inputPerson || this.person;
-                    
+
                     // Add file optimistically for immediate visibility
                     if (Array.isArray(this.fileOtherComponent.files)) {
                       const exists = this.fileOtherComponent.files.some((f: any) => f?.name === fileName);
@@ -1097,23 +1102,23 @@ export class FileViewComponent extends AppComponentBase {
                           escrowFileTags: []
                         };
                         this.fileOtherComponent.files = [optimisticFile, ...this.fileOtherComponent.files];
-                        
+
                         // Force change detection
                         if (this.fileOtherComponent.cdr) {
                           this.fileOtherComponent.cdr.detectChanges();
                         }
                       }
                     }
-                    
+
                     // Refresh from server immediately (like move operation) and with delays for eventual consistency
                     this.fileOtherComponent.getAllFiles(person);
-                    
+
                     setTimeout(() => {
                       if (this.fileOtherComponent) {
                         this.fileOtherComponent.getAllFiles(person);
                       }
                     }, 800);
-                    
+
                     setTimeout(() => {
                       if (this.fileOtherComponent) {
                         this.fileOtherComponent.getAllFiles(person);
@@ -2420,7 +2425,7 @@ export class FileViewComponent extends AppComponentBase {
 
             this.http.get(this.folderPath + "DeleteFile" + "?path=" + strng + "&key=" + strng1, {
               headers,
-              responseType: 'blob' as 'json'
+              observe: 'response'
             }).subscribe((response: any) => {
               let path = this.folderPath + "DeleteFile" + "?path=" + strng + "&key=" + strng1;
 
@@ -2488,12 +2493,12 @@ export class FileViewComponent extends AppComponentBase {
         let key = event.selectedFile.key;
         let strng = path.replace(/#/g, "%23");
         let strng1 = key.replace(/#/g, "%23");
-        let path1 = strng + "/" + event.selectedFile.name;
+        let path1 = strng + "/" + event.selectedFile.name.replace(/#/g, "%23");
         const token = 'my JWT';
         const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
         this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
           headers,
-          responseType: 'blob' as 'json'
+          observe: 'response'
         }).subscribe((response: any) => {
           this.fileMainComponent.getAllFiles();
           this.fileOtherComponent.getAllFiles();
@@ -2568,7 +2573,7 @@ export class FileViewComponent extends AppComponentBase {
 
           let strng = path.replace(/#/g, "%23");
           let strng1 = key.replace(/#/g, "%23");
-          let path1 = strng + "/" + name;
+          let path1 = strng + "/" + name.replace(/#/g, "%23");
           const token = 'my JWT';
           const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
 
@@ -2665,14 +2670,14 @@ export class FileViewComponent extends AppComponentBase {
         let key = item.key;
         let strng = path.replace(/#/g, "%23");
         let strng1 = key.replace(/#/g, "%23");
-        let path1 = strng + "/" + item.name;
+        let path1 = strng + "/" + item.name.replace(/#/g, "%23");
 
         const token = 'my JWT';
         const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
 
         this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
           headers,
-          responseType: 'blob',
+          observe: 'response'
         }).subscribe((response: any) => {
 
           this.fileMainComponent.getAllFiles();
@@ -2692,7 +2697,7 @@ export class FileViewComponent extends AppComponentBase {
 
             if (newResult === 200) {
 
-              Swal.fire('Deleted!', 'File deleted successfully :)', 'success');
+              Swal.fire('Deleted!', 'File deleted successfully', 'success');
               this.spinnerUpl = false;
               this.file = null;
               this.isFile = false;
@@ -3404,7 +3409,7 @@ export class FileViewComponent extends AppComponentBase {
       // DOCX / DOC / RTF mode
       this.globalService.editor.saveDocument().then(base64 => {
         let name = this.globalService.oldPathSelectedFile.substring(this.globalService.oldPathSelectedFile.lastIndexOf('/') + 1);
-        
+
         const request = {
           fileName: name,
           base64Content: base64,
@@ -3643,49 +3648,6 @@ export class FileViewComponent extends AppComponentBase {
     );
   }
 
-
-  // openrenameModal1(popuprename: TemplateRef<any>) {
-  //     
-  //   this.check();
-  //   let dir = this.fileManager1.instance.getSelectedItems();
-  //   if (dir.length > 0) {
-  //     for (let i = 0; i < dir.length; i++) {
-  //       let item = dir[i];
-  //       this.filenames = item['key'];
-
-  //       // Extract filename and extension correctly
-  //       let dotPosition = this.filenames.lastIndexOf(".");
-  //       if (dotPosition !== -1) {
-  //         this.filenamenew = this.filenames.substring(0, dotPosition); // Name without extension
-  //         this.secondPart = this.filenames.substring(dotPosition + 1); // Extension
-  //       } else {
-  //         this.filenamenew = this.filenames; // If no extension
-  //         this.secondPart = ""; 
-  //       }
-
-  //       this.filenameold = item['key'];
-  //       this.fullnameold = item['key'];
-
-  //       // Ensure filename splitting is done correctly
-  //       let splitname = this.fullnameold.split(".");
-  //       this.change = splitname[0];
-  //       this.lst = splitname[0];
-
-  //       // Fix string operations on types
-  //       this.type = this.change.replace(/[{}]/g, ""); // Removes { and }
-
-  //       // Fix parent path replacements
-  //       this.parentpath = item['parentPath'].replaceAll('/', '\\');
-
-  //       // Show modal
-  //       this.modalRef = this.modalService.show(
-  //         popuprename,
-  //         Object.assign({}, { class: 'gray modal-lg' })
-  //       );
-  //     }
-  //   }
-  // }
-
   openrenameModal1(selectedFile: any, popuprename: TemplateRef<any>) {
     try {
 
@@ -3698,8 +3660,8 @@ export class FileViewComponent extends AppComponentBase {
 
       if (dotPosition !== -1) {
         // If the dot position exists, remove the last extension if it's duplicated
-        this.filenamenew = this.filenames.substring(0, dotPosition);  // Get the name without extension
-        this.secondPart = this.filenames.substring(dotPosition + 1);  // Get the extension
+        this.filenamenew = this.filenames.substring(0, dotPosition);
+        this.secondPart = this.filenames.substring(dotPosition + 1);
 
         // Check if the last two parts are the same extension (e.g., file.docx.docx)
         if (this.filenamenew.endsWith("." + this.secondPart)) {
@@ -3738,8 +3700,6 @@ export class FileViewComponent extends AppComponentBase {
     }
   }
 
-
-
   openTagsModal1(popuptags: TemplateRef<any>) {
     this.modalRef = this.modalService.show(
       popuptags,
@@ -3749,8 +3709,6 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   openMoveModal(selectedFile: any, popupMove: TemplateRef<any>) {
-
-
     this.check();
     this.typePDF = "false";
 
@@ -3917,34 +3875,9 @@ export class FileViewComponent extends AppComponentBase {
       else {
         this.fileMainComponent.getAllFiles();
         this.fileOtherComponent.getAllFiles();
-        // this.fileManager.instance.refresh().done((result) => {
-        //   this.check();
-        // })
-        //   .fail(function (error) {
-        //     // handle error
-        //   });
-        // this.fileManager1.instance.refresh().done((result) => {
-        //   this.check();
-        // })
-        //   .fail(function (error) {
-        //     // handle error
-        //   });
       }
     });
     setTimeout(() => {
-
-      // this.fileManager1.instance.refresh().done((result) => {
-      //   this.check();
-      // })
-      //   .fail(function (error) {
-      //     // handle error
-      //   });
-      // this.fileManager.instance.refresh().done((result) => {
-      //   this.check();
-      // })
-      //   .fail(function (error) {
-      //     // handle error
-      //   });
 
       this.fileMainComponent.getAllFiles();
       this.fileOtherComponent.getAllFiles();
@@ -3986,7 +3919,7 @@ export class FileViewComponent extends AppComponentBase {
       };
       f.readAsText(bb);
     }
-    function getMsgDate(rawHeaders) { 
+    function getMsgDate(rawHeaders) {
       var headers = parseHeaders(rawHeaders);
       if (!headers['Date']) {
         return '-';
@@ -4385,43 +4318,7 @@ export class FileViewComponent extends AppComponentBase {
   onRightClickPaste(event: MouseEvent) {
 
     event.preventDefault();
-    //this.readClipboard()
-
-    //     this.contextMenuX = event.clientX; // Get mouse position
-    //     this.contextMenuY = event.clientY;
-    //     this.showContextMenu = true;
-
-    //  $("#pasteButton").css({'display':'block'})
-    //  $("#pasteButton").css({'top': event.clientY  +'px'})
-    //  $("#pasteButton").css({'left':event.clientX +'px'})
-    //  $("#pasteButton").focus();
-
-    // //  const eventdata = new KeyboardEvent('keydown', {
-    // //   key: 'v',
-    // //   ctrlKey: true,
-    // //   bubbles: true,
-    // // });
-
-    // document.dispatchEvent(eventdata);
-    // document.execCommand('paste')
-    // const pasteEvent = new KeyboardEvent('keydown', {
-    //   key: 'v',
-    //   code: 'KeyV',
-    //   ctrlKey: true,
-    //   bubbles: true,
-    //   cancelable: true,
-    // });
-    // document.dispatchEvent(pasteEvent);
     this.readClipboard();
-
-    // // Dispatch the event to the contenteditable div
-    // const contentEditableDiv = document.getElementById('appDragDropAreaContent');
-    // if (contentEditableDiv) {
-    //   contentEditableDiv.focus();
-    //   document.execCommand('paste')
-    //   //contentEditableDiv.execCommand('paste')
-    // }
-
   }
   async readClipboard() {
     await this.clipboardService.readFromClipboard();
@@ -4435,8 +4332,6 @@ export class FileViewComponent extends AppComponentBase {
       if (item.types.includes('application/pdf')) {
         console.log("processClipboardItems Response for pdf file" + item);
         const file = await item.getType('application/pdf');
-        //this.pastedFile = new File([file], 'pasted.pdf', { type: 'application/pdf' });
-        // console.log('Pasted PDF file:', this.pastedFile);
         this.uploadFile(item.file);
         console.log("processClipboardItems completed for pdf file");
         break;

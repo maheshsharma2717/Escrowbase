@@ -555,41 +555,63 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             try
             {
                 responseBack res = new responseBack();
-                path = path.Replace("%23", "#");
-                key = key.Replace("%23", "#");
-                var folderName = Path.Combine(@"Common/Paperless/" + path);
-                folderName = folderName.Substring(0, folderName.LastIndexOf('/'));
-                folderName = Path.Combine(folderName + "/" + key);
-                var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
-                var httpConnectionFeatures = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}";
-                //var localAddress = httpConnectionFeatures?.LocalIpAddress;
-                WebClient webClient = new WebClient();
-                string newpath = folderName.Replace("/", "\\");
-                string file = Path.Combine(_hostingEnvironment.WebRootPath + "\\" + newpath);
-                if (System.IO.File.Exists(file))
+                if (!string.IsNullOrEmpty(path))
                 {
-                    var filed = _srfilemapRepository.GetAll().Where(x => x.FileName == file).ToList();
-                    if (filed != null)
+                    path = path.Replace("%23", "#");
+                }
+                if (!string.IsNullOrEmpty(key))
+                {
+                    key = key.Replace("%23", "#");
+                }
+                
+                string folderName = string.Empty;
+                if (!string.IsNullOrEmpty(path))
+                {
+                    folderName = Path.Combine(@"Common/Paperless/", path);
+                    folderName = folderName.Replace("\\", "/");
+                }
+
+                if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(folderName))
+                {
+                    int lastSlash = folderName.LastIndexOf('/');
+                    if (lastSlash >= 0)
                     {
-                        foreach (var id in filed)
-                        {
-                            _srfilemapRepository.Delete(id);
-                        }
-                        System.IO.File.Delete(file);
-
+                        folderName = folderName.Substring(0, lastSlash) + "/" + key;
                     }
-                    // Deleting from EsignMapping table files
-
-                    var esignFile = _esignRepository.GetAll().Where(x => file.Contains(x.FullFilePath)).ToList();
-                    if (esignFile.Count > 0)
+                    else
                     {
-                        foreach (var item in esignFile)
-                        {
-                            _esignRepository.Delete(item);
-                        }
+                        folderName = folderName + "/" + key;
                     }
+                }
 
-                    res.message = "File deleted successfully";
+                if (!string.IsNullOrEmpty(folderName))
+                {
+                    string newpath = folderName.Replace("/", "\\");
+                    string file = Path.Combine(_hostingEnvironment.WebRootPath, newpath);
+                    if (System.IO.File.Exists(file))
+                    {
+                        var filed = _srfilemapRepository.GetAll().Where(x => x.FileName == file).ToList();
+                        if (filed != null)
+                        {
+                            foreach (var id in filed)
+                            {
+                                _srfilemapRepository.Delete(id);
+                            }
+                            System.IO.File.Delete(file);
+                        }
+                        // Deleting from EsignMapping table files
+
+                        var esignFile = _esignRepository.GetAll().Where(x => file.Contains(x.FullFilePath)).ToList();
+                        if (esignFile.Count > 0)
+                        {
+                            foreach (var item in esignFile)
+                            {
+                                _esignRepository.Delete(item);
+                            }
+                        }
+
+                        res.message = "File deleted successfully";
+                    }
                 }
                 return res;
             }
@@ -599,6 +621,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 if (!System.IO.File.Exists(logs))
                 {
                     FileStream fs1 = new FileStream(logs, FileMode.OpenOrCreate, FileAccess.Write);
+                    fs1.Close();
                 }
                 StreamWriter writer = new StreamWriter(logs, true);
                 writer.WriteLine("Error in DeleteFile method for -: error=" + ex.ToString() + DateTime.Now.ToString());

@@ -1,0 +1,4 @@
+Email, User Name, Company, Invitee, Esc#, Access Types
+"narender1@yopmail.com","Narender","Hitachi","JEANNIE MILLER","Escrowforsecondhitachi","{EOX}"
+"puneet1@yopmail.com","Puneet","Hitachi","JEANNIE MILLER","Escrowforsecondhitachi","{SR1}"
+"manoj1@yopmail.com","Manoj","Hitachi","JEANNIE MILLER","Escrowforsecondhitachi","{BR1}"

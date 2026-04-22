@@ -95,11 +95,13 @@ export class FileMainComponent extends AppComponentBase {
     this.userTypeFromStorage = userType;
     this.folderPath = `${companyName}/${subCompanyName}/${EscrowTab}/`
     this.parentPath = `${companyName}/${subCompanyName}/${EscrowTab}`
+debugger;
+
     this
       .getAllFilesApi(companyName, subCompanyName, EscrowTab, this.appSession.user.id.toString(), userType)
       .subscribe(
         (response) => {
-
+debugger;
           this.tableData = response.result;
         },
         (error) => {

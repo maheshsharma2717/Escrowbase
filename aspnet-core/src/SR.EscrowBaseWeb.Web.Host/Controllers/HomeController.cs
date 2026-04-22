@@ -1,9 +1,12 @@
-﻿using Abp;
+using Abp;
 using Abp.Auditing;
 using Abp.Authorization.Users;
 using Abp.Domain.Repositories;
 using Abp.Domain.Uow;
 using Abp.Notifications;
+using Abp.Web.Models;
+using Abp.Authorization;
+using Microsoft.AspNetCore.Http;
 using CsvHelper;
 using foxit.addon.pageeditor;
 //using foxit.common;
@@ -124,7 +127,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///<Summary>
         /// Static string parameters
         ///</Summary>
-        protected static string escrownumber = String.Empty, fileslist = String.Empty, sttrescro = String.Empty, sttrenterprise = String.Empty, newname = String.Empty, fulldestfile = String.Empty, pdfname = String.Empty, finalstring = String.Empty, passw = "", username = "", typestore = "";
+        protected static string escrownumber = String.Empty, fileslist = String.Empty, sttrescro = String.Empty, sttrenterprise = String.Empty, newname = String.Empty, fulldestfile = String.Empty, typestore = "";
 
 
         //protected static string esignPath = string.Empty;
@@ -1020,6 +1023,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         {
             var folderName = "";
             string status = "";
+            string finalstring = string.Empty;
+            string pdfname = string.Empty;
             string newstr = String.Empty;
             string stresoff = String.Empty;
             string Filenamest = "";
@@ -1271,7 +1276,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     if (Path.GetFileName(textfile) == "InviteUser" + Timestamp + ".txt")
                     {
-                        var d = await ReadTextFile(textfile);
+                        var d = await ReadTextFile(textfile, finalstring, pdfname);
                         status += d;
                     }
                     else if (Path.GetFileName(textfile) != "InviteUser" + Timestamp + ".txt")
@@ -1673,7 +1678,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///<Summary>
         /// Read users details
         ///</Summary>
-        public async Task<string> ReadTextFile(string path)
+        public async Task<string> ReadTextFile(string path, string finalstring = "", string pdfname = "")
         {
             string status = "";
             int counter = 0;
@@ -1757,6 +1762,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                         userData.invitee = list[3];
                                         userData.escro = list[4].Trim();
                                         userData.type = list[5];
+                                        userData.finalstring = finalstring;
+                                        userData.pdfname = pdfname;
                                         var createuser = createUser(userData);
                                         if (createuser == 1)
                                         {
@@ -1797,6 +1804,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                             userData.invitee = list[3];
                                             userData.escro = list[4].Trim();
                                             userData.type = types.Trim();
+                                            userData.finalstring = finalstring;
+                                            userData.pdfname = pdfname;
                                             var necheck = _escrowDetailRepository.GetAll();//.Where(x => x.Email == list[0]&&x.Usertype.Contains(types.Trim()) && x.EscrowId.Trim() == list[4].Trim() && x.Company == list[2]).FirstOrDefault();
 
 
@@ -1850,6 +1859,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                         userData.invitee = list[3];
                                         userData.escro = list[4].Trim();
                                         userData.type = list[5];
+                                        userData.finalstring = finalstring;
+                                        userData.pdfname = pdfname;
                                         var createuser = createUser(userData);
                                         if (createuser == 1)
                                         {
@@ -1925,22 +1936,18 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                                               .Replace("^", "_")
                                                 .Replace("+", "_");
 
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            string extension = Path.GetExtension(sanitizedFileName);
+            string nameWithoutExt = Path.GetFileNameWithoutExtension(sanitizedFileName);
 
-
-            var now = DateTime.Now;
-            string dateTimeStamp = now.ToString("yyyy-MM-dd_HH-mm-ss");
-
-            int index = sanitizedFileName.IndexOf("~");
-            if (index != -1)
+            if (nameWithoutExt.Contains("~"))
             {
-                sanitizedFileName = sanitizedFileName.Insert(index, $"_{dateTimeStamp}");
+                int index = nameWithoutExt.IndexOf("~");
+                string part1 = nameWithoutExt.Substring(0, index);
+                string part2 = nameWithoutExt.Substring(index); // includes ~
+                return $"{part1}_{timestamp}{part2}{extension}";
             }
-            else
-            {
-                sanitizedFileName = $"{sanitizedFileName}_{dateTimeStamp}";
-            }
-
-            return sanitizedFileName;
+            return $"{nameWithoutExt}_{timestamp}{extension}";
         }
 
         ///<Summary>
@@ -2181,9 +2188,285 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
 
         ///<Summary>
-        /// Upload all files for single user(file transfer)
+        /// Fast Upload API - Saves file and returns database IDs immediately.
+        /// (Separate from legacy AutoUpdate as requested)
         ///</Summary>
         [HttpPost]
+        [DontWrapResult]
+        [IgnoreAntiforgeryToken]
+        [AbpAllowAnonymous]
+        public async Task<IActionResult> AutoUpdateUpload(string source, string Destination, string usname, string pname)
+        {
+            try
+            {
+                var us = ConfigurationManager.AppSettings["UserName"];
+                var ps = ConfigurationManager.AppSettings["Password"];
+                if (us.ToLower() == usname.ToLower() && ps == pname)
+                {
+                    if (Request.Form.Files.Count == 0)
+                        return Json(new { success = false, message = "No files found in request" });
+
+                    var file = Request.Form.Files[0];
+                    var result = await ProcessUploadInternalAsync(file, Destination);
+
+                    // Signal the UI to refresh the file list immediately
+                    await _hub.Clients.All.SendAsync("getFileUploadMessage", true);
+
+                    // Offload heavy processing (Tokens, Emails, SMS, E-Sign) to a background task
+                    // This allows the EXE to finish instantly while the server handles the rest
+                    var fileMasterId = result.fileMasterId;
+                    var escrowId = result.escrowId;
+                    Response.OnCompleted(async () => {
+                        try {
+                            await Task.Delay(1000); // Wait for main thread to commit record
+                            using (var unitOfWork = _unitOfWorkManager.Begin())
+                            {
+                                await ProcessFileLogicInternalAsync(fileMasterId, escrowId);
+                                await unitOfWork.CompleteAsync();
+                            }
+                        } catch (Exception ex) {
+                            LogAutoUpdateError("BackgroundProcess", ex);
+                        }
+                    });
+
+                    return Json(new { 
+                        success = true, 
+                        isUploaded = true, 
+                        fileMasterId = result.fileMasterId, 
+                        escrowId = result.escrowId, 
+                        message = "File uploaded successfully. Processing in background." 
+                    });
+                }
+                return Json(new { success = false, message = "Invalid user name and password" });
+            }
+            catch (Exception ex)
+            {
+                LogAutoUpdateError("UploadAPI", ex);
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        ///<Summary>
+        /// Heavy Process API - Handles mappings, emails, SMS, and E-Sign triggers.
+        /// (Separate from legacy AutoUpdate as requested)
+        ///</Summary>
+        [HttpPost]
+        [DontWrapResult]
+        [IgnoreAntiforgeryToken]
+        [AbpAllowAnonymous]
+        public async Task<IActionResult> AutoUpdateProcess(long fileMasterId, string escrowId)
+        {
+            try
+            {
+                await ProcessFileLogicInternalAsync(fileMasterId, escrowId);
+                return Json(new { success = true, message = "File processing completed successfully" });
+            }
+            catch (Exception ex)
+            {
+                LogAutoUpdateError("ProcessAPI", ex);
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        private async Task<(long fileMasterId, string escrowId)> ProcessUploadInternalAsync(IFormFile file, string Destination)
+        {
+            Destination = ValidFileName(Destination);
+            Destination = Destination.Replace("=", "\\").Replace(".\\", "\\");
+
+            string[] subs = Destination.Split('\\');
+            var escrowId = (subs.Length > 2) ? subs[2] : Destination.Substring(Destination.LastIndexOf('\\') + 1);
+
+            var rootPath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless");
+            var destDir = Path.Combine(rootPath, Destination);
+            if (!Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
+
+            var fileMasterId = await SaveFileAndCreateMasterInternalAsync(file, destDir, Destination, escrowId);
+            return (fileMasterId, escrowId);
+        }
+
+        private async Task<long> SaveFileAndCreateMasterInternalAsync(IFormFile file, string destDir, string destination, string escrowId)
+        {
+            string fileUpdateName = SanitizeFileName(file.FileName);
+            var fileNewName = fileUpdateName;
+
+            var usrid = _escrowDetailRepository.GetAll().Where(x => x.EscrowId == escrowId).ToList();
+            MatchCollection matchesData = regexx.Matches(fileUpdateName);
+            string BRXUserList = "", SRXUserList = "", BRXType = "", SRXType = "";
+
+            for (int i = 0; i < matchesData.Count; i++)
+            {
+                string rep = matchesData[i].Value.Replace("{", "").Replace("}", "");
+                var parts = rep.Split("-");
+                if (parts[0] == "BRX") {
+                    BRXType = matchesData[i].Value;
+                    foreach (var u in usrid) if (u.Usertype?.Contains("BR") ?? false) BRXUserList += "{" + u.Usertype + "-" + parts[1] + "}";
+                }
+                if (parts[0] == "SRX") {
+                    SRXType = matchesData[i].Value;
+                    foreach (var u in usrid) if (u.Usertype?.Contains("SR") ?? false) SRXUserList += "{" + u.Usertype + "-" + parts[1] + "}";
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(BRXUserList) && fileNewName.Contains(BRXType)) fileNewName = fileNewName.Replace(BRXType, BRXUserList);
+            if (!string.IsNullOrWhiteSpace(SRXUserList) && fileNewName.Contains(SRXType)) fileNewName = fileNewName.Replace(SRXType, SRXUserList);
+
+            var creds = await GetDocuSignCredentialsForEscrow(escrowId);
+            
+            string destPath = Path.Combine(destDir, fileNewName);
+            using (var stream = new FileStream(destPath, FileMode.Create)) { await file.CopyToAsync(stream); }
+
+            string masterPath = Path.Combine(destDir, fileUpdateName);
+            var dbMaster = _srEscrowFileMasterRepository.GetAll().FirstOrDefault(x => x.FileFullName == masterPath);
+            long masterId = 0;
+            if (dbMaster == null)
+            {
+                masterId = _srEscrowFileMasterRepository.InsertAndGetId(new SREscrowFileMaster { FileFullName = masterPath, FileShortName = fileNewName });
+                await _escrowFileHistoriesAppService.CreateOrEdit(new CreateOrEditEscrowFileHistoryDto { 
+                    SrEscrowFileMasterId = masterId, FileFullPath = fileNewName, UserId = 8, 
+                    Message = FileConstant.ADD_File, ActionType = FileConstantAction.ADD_File 
+                });
+            }
+            else masterId = dbMaster.Id;
+
+            foreach (var usr in usrid)
+            {
+                // Strict Assignment Policy: Match permissions from tokens in the filename
+                // supporting various formats like ~{TAGS} or _{TAGS}_ (UI standard)
+                string acces = "";
+                if (fileNewName.Contains("{") && fileNewName.Contains("}")) 
+                    acces = fileNewName.Substring(fileNewName.IndexOf("{"));
+                else if (fileNewName.Contains("~")) 
+                    acces = fileNewName.Substring(fileNewName.LastIndexOf("~") + 1);
+
+                if (!string.IsNullOrEmpty(acces))
+                {
+                    MatchCollection matches = regexx.Matches(acces);
+                    foreach (Match m in matches)
+                    {
+                        string rep = m.Value.Replace("{", "").Replace("}", "");
+                        string actionCode = rep.Contains('-') ? rep.Substring(rep.IndexOf('-') + 1).ToUpper() : "";
+
+                        // Check if this token belongs to the current user type (supporting BRX/SRX expansion)
+                        if (rep.Contains(usr.Usertype ?? "") || 
+                           (rep.Contains("BRX") && (usr.Usertype?.Contains("BR") ?? false)) || 
+                           (rep.Contains("SRX") && (usr.Usertype?.Contains("SR") ?? false)))
+                        {
+                            // Create specific mapping for the matched user
+                            _ISrFileMappingsAppService.CreateOrEdit(new CreateOrEditSrFileMappingDto {
+                                FileName = destPath, UserId = (int)usr.UserId, Action = m.Value, EscrowiId = escrowId, IsActive = true, SrEscrowFileMasterId = masterId
+                            });
+
+                            // Detect permission level precisely (Prioritize Read to avoid READS matching Sign)
+                            string docType = "Read";
+                            if (actionCode.Contains("SIGN") || actionCode == "S") docType = "Sign";
+                            else if (actionCode.Contains("INPUT") || actionCode == "E" || actionCode == "I") docType = "Input";
+                            else if (actionCode.Contains("READ")) docType = "Read"; // Explicitly READS/READ
+                            
+                            DocumentRecord(fileNewName, docType, (long)usr.UserId, masterId);
+                        }
+                    }
+                }
+                else
+                {
+                    // Fallback: If no tokens are present, give READ permission to all users
+                    CreateGenericReadMapping(usr, destPath, fileNewName, escrowId, masterId);
+                }
+            }
+
+            // Fire and forget handles the slow e-sign process in the background
+            // allowing the UI to render the file in milliseconds.
+            _ = HandleESignIntegrationInternalAsync(masterId, escrowId, creds);
+
+            return masterId;
+        }
+
+        private void CreateGenericReadMapping(EscrowDetail usr, string destPath, string fileShortName, string escrowId, long masterId)
+        {
+            _ISrFileMappingsAppService.CreateOrEdit(new CreateOrEditSrFileMappingDto {
+                FileName = destPath, UserId = (int)usr.UserId, Action = "READ", EscrowiId = escrowId, IsActive = true, SrEscrowFileMasterId = masterId
+            });
+            DocumentRecord(fileShortName, "Read", (long)usr.UserId, masterId);
+        }
+
+        private async Task ProcessFileLogicInternalAsync(long fileMasterId, string escrowId)
+        {
+            var master = await _srEscrowFileMasterRepository.GetAsync(fileMasterId);
+            var usrid = _escrowDetailRepository.GetAll().Where(x => x.EscrowId == escrowId).ToList();
+            var creds = await GetDocuSignCredentialsForEscrow(escrowId);
+            
+            foreach (var usr in usrid)
+            {
+                string fileName = master.FileShortName;
+                if (fileName.Contains("~") || fileName.Contains("-'-") || fileName.Contains("_'_"))
+                {
+                    string acces = "";
+                    if (fileName.Contains("~")) acces = fileName.Substring(fileName.LastIndexOf("~") + 1);
+                    else if (fileName.Contains("-'-")) acces = fileName.Substring(fileName.LastIndexOf("-'-") + 3);
+                    else if (fileName.Contains("_'_")) acces = fileName.Substring(fileName.LastIndexOf("_'_") + 3);
+
+                    MatchCollection matches = regexx.Matches(acces);
+                    foreach (Match match in matches)
+                    {
+                        string rep = match.Value.Replace("{", "").Replace("}", "");
+                        string actionCode = rep.Contains('-') ? rep.Substring(rep.IndexOf('-') + 1).ToUpper() : "";
+
+                        if (rep.Contains(usr.Usertype ?? "") || 
+                           (rep.Contains("BRX") && (usr.Usertype?.Contains("BR") ?? false)) || 
+                           (rep.Contains("SRX") && (usr.Usertype?.Contains("SR") ?? false)))
+                        {
+                            if (actionCode.Contains("E") || actionCode == "I") DocumentRecord(fileName, "Input", (long)usr.UserId, fileMasterId);
+                            if (actionCode.Contains("S")) DocumentRecord(fileName, "Sign", (long)usr.UserId, fileMasterId);
+                            if (actionCode.Contains("READ") || actionCode == "R") DocumentRecord(fileName, "Read", (long)usr.UserId, fileMasterId);
+                            
+                            await SendFileNotificationAsync(usr, fileName, escrowId);
+                        }
+                    }
+                }
+            }
+            await HandleESignIntegrationInternalAsync(fileMasterId, escrowId, creds);
+        }
+
+        private async Task SendFileNotificationAsync(EscrowDetail user, string fileName, string escrowId)
+        {
+            try
+            {
+                var dbUser = _userRepository.GetAll().FirstOrDefault(x => x.EmailAddress == user.Email);
+                if (dbUser != null && dbUser.IsEmailConfirmed)
+                {
+                    MailMessage mail = new MailMessage("Noreply@EscrowBasePortal.com", user.Email) { Subject = "New File Uploaded", IsBodyHtml = true, Body = $"A new document delivered regarding escrow {escrowId}: '{fileName}'" };
+                    using var smtp = new SmtpClient("smtp.gmail.com", 587) { Credentials = new NetworkCredential("office@mandavconsultancy.com", "aouownmhogfobzbc"), EnableSsl = true };
+                    smtp.Send(mail);
+                }
+            } catch (Exception ex) { LogAutoUpdateError("Notification", ex); }
+        }
+
+        private async Task HandleESignIntegrationInternalAsync(long fileMasterId, string escrowId, ESignResolvedCreds creds)
+        {
+            try
+            {
+                var master = await _srEscrowFileMasterRepository.GetAsync(fileMasterId);
+                var destPath = master.FileFullName;
+                var fileName = Path.GetFileName(destPath);
+                var esignPath = destPath.Substring(destPath.LastIndexOf("Paperless\\") + 10).Replace(fileName, "");
+                switch (creds.SystemCode) {
+                    case 2001: await ZohoESignCreateDocument(esignPath, fileName, escrowId, creds); break;
+                    case 3001: await DocuSiginESignCreateDocument(esignPath, fileName, escrowId, creds); break;
+                    case 4001: await SendSutiSignRequest(esignPath, fileName, escrowId, creds); break;
+                }
+                await _hub.Clients.All.SendAsync("getFileUploadMessage", true);
+            } catch (Exception ex) { LogAutoUpdateError("ESign", ex); }
+        }
+
+        private void LogAutoUpdateError(string step, Exception ex)
+        {
+            try {
+                string logs = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\Logs.txt");
+                if (!Directory.Exists(Path.GetDirectoryName(logs))) Directory.CreateDirectory(Path.GetDirectoryName(logs));
+                using StreamWriter writer = new StreamWriter(logs, true);
+                writer.WriteLine($"[{DateTime.Now}] ERROR in {step}: {ex}");
+            } catch {}
+        }
+
         public async Task<IActionResult> AutoUpdate(string source, string Destination, string usname, string pname)
         {
 
@@ -3835,7 +4118,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///<Summary>
         /// Assign signing in a doc for users
         ///</Summary>
-        public responseBack E_Sign(string path, string key, string user)
+        public responseBack E_Sign(string path, string key, string user, string currentUserName = "")
         {
             try
             {
@@ -4042,7 +4325,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         foreach (var mail in id)
                         {
                             var typmail = mail.Split(":");
-                            if (typmail[0].Trim() != username)
+                            if (typmail[0].Trim() != currentUserName)
                             {
                                 CreateOrEditSrFileMappingDto coesfmdto = new CreateOrEditSrFileMappingDto();
                                 var usr = _userRepository.GetAll().Where(x => x.UserName == typmail[0].Trim()).FirstOrDefault();
@@ -4283,8 +4566,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 user.Name = User.Name;
                 user.Surname = User.Surname;
                 user.EmailAddress = User.EmailAddress;
-                user.NormalizedEmailAddress = User.EmailAddress;
-                user.NormalizedUserName = User.Name;
+                user.NormalizedEmailAddress = User.EmailAddress.ToUpper();
+                user.NormalizedUserName = User.UserName.ToUpper();
                 user.ShouldChangePasswordOnNextLogin = true;
                 int length = 5;
                 const string valid = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
@@ -4298,12 +4581,11 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 string randpass = _passwordHasher.HashPassword(user, res.ToString());
                 user.Password = randpass;
                 #region
-                passw = res.ToString();
-                username = User.UserName;
+                userData.password = res.ToString();
                 #endregion
                 var xxx = _userRepository.InsertAndGetId(user);
                 var enterprises = _enterpriseRepository.GetAll().Where(x => x.EnterpriseName == userData.company || x.Subcompany == userData.company).FirstOrDefault();
-                var escrowdata = _ISrEscrowRepository.GetAll().Where(x => x.EscrowNo == userData.escro && x.EnterpriseId == enterprises.Id).FirstOrDefault();
+                var escrowdata = enterprises != null ? _ISrEscrowRepository.GetAll().Where(x => x.EscrowNo == userData.escro && x.EnterpriseId == enterprises.Id).FirstOrDefault() : null;
                 string esmail = "", esaddress = "", esphone = "", escellphone = "";
                 if (escrowdata != null)
                 {
@@ -4354,13 +4636,13 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 List<String> files = new List<String>();
                 try
                 {
-                    if (finalstring != "" && finalstring != null)
+                    if (userData.finalstring != "" && userData.finalstring != null)
                     {
                         string[] spearator = { "%$%" };
                         string accesslevel = "", temp1 = "", temp2 = "", temp3 = "";
                         int no = 1;
-                        string[] strlist = finalstring.Split(spearator, StringSplitOptions.None);
-                        string[] strlist1 = pdfname.Split(spearator, StringSplitOptions.None);
+                        string[] strlist = userData.finalstring.Split(spearator, StringSplitOptions.None);
+                        string[] strlist1 = userData.pdfname.Split(spearator, StringSplitOptions.None);
                         if (temp == "")
                         {
                             foreach (string itempdf in strlist)
@@ -4469,7 +4751,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                                         var path = trim.Substring(0, trim.LastIndexOf("\\"));
                                                         path = path.Substring(trim.IndexOf("Paperless\\") + 10);
                                                         //DocumentRecord(splitstr, "Sign", user.Id);
-                                                        var sign = E_Sign(path.Trim(), splitstr, user.Id.ToString());
+                                                        var sign = E_Sign(path.Trim(), splitstr, user.Id.ToString(), user.UserName);
                                                     }
                                                     string strwithoutexten = System.IO.Path.GetFileNameWithoutExtension(splitstr);
                                                     fileslist += no + ". " + strwithoutexten + "\n\n";
@@ -4539,8 +4821,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 string referer = conf["App:ClientRootAddress"].ToString();
                 var enterprises = _enterpriseRepository.GetAll().Where(x => x.EnterpriseName == userData.company || x.Subcompany == userData.company).FirstOrDefault();
                 var escrowdata = _ISrEscrowRepository.GetAll().Where(x => x.EscrowNo == userData.escro && x.SubCompanyName == userData.company).FirstOrDefault();
-                var token = await _tokenAuthControler.AuthenticateByEmail(username, passw);
-                string resetcode = token.resetpasswordtoken;
+                var token = await _tokenAuthControler.AuthenticateByEmail(userData.fromEmail, userData.password);
+                string resetcode = token != null ? token.resetpasswordtoken : "";
                 string esmail = "", esaddress = "", esphone = "", escellphone = "", esname = "", ext = "", companyh = "", link = "", Fulltype = "";
                 if (escrowdata != null)
                 {
@@ -4882,13 +5164,13 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             #region
             try
             {
-                if (finalstring != "" && finalstring != null)
+                if (userData.finalstring != "" && userData.finalstring != null)
                 {
                     string[] separator = { "%$%" };
                     string accesslevel = "";
                     int no = 1;
-                    string[] strlist = finalstring.Split(separator, StringSplitOptions.None);
-                    string[] strlist1 = pdfname.Split(separator, StringSplitOptions.None);
+                    string[] strlist = userData.finalstring.Split(separator, StringSplitOptions.None);
+                    string[] strlist1 = userData.pdfname.Split(separator, StringSplitOptions.None);
                     if (temp == "")
                     {
                         foreach (string itempdf in strlist)
@@ -5763,43 +6045,50 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 foreach (var signer in signerList)
                 {
                     string code = extractedCodes[signerCounter - 1];
-                    string sigPlaceholder = $"@{{{code}:S:1}}";
-                    string titlePlaceholder = $"@{{{code}:I:1}}";
+                    string[] sigPlaceholders = { $"@{{{code}:S:1}}", $"@{{{code}:s:1}}" };
+                    string[] titlePlaceholders = { $"@{{{code}:I:1}}", $"@{{{code}:i:1}}" };
 
+                    signer.SignatureAnchors.Clear();
                     // SIGNATURES
-                    var sigFindResults = await findPdfTextMultiple(sigPlaceholder, "", fileUrl, uploadedFileName);
-                    if (sigFindResults?.Any() == true)
+                    foreach (var sigPlaceholder in sigPlaceholders)
                     {
-                        signer.SignatureAnchors.Clear();
-                        foreach (var result in sigFindResults)
+                        var sigFindResults = await findPdfTextMultiple(sigPlaceholder, "", fileUrl, uploadedFileName);
+                        if (sigFindResults?.Any() == true)
                         {
-                            string anchorText = $"/signature{signer.recipientId}/";
-                            var replaceResp = await TextFindAndReplaceDocusign(fileUrl, new[] { sigPlaceholder }, new[] { anchorText }, uploadedFileName);
-                            if (!string.IsNullOrWhiteSpace(replaceResp?.Url))
+                            foreach (var result in sigFindResults)
                             {
-                                fileUrl = replaceResp.Url;
-                                signer.SignatureAnchors.Add(anchorText);
-                                signer.totalSignatureCount++;
-                                signer.totalMandatorySignatureCount++;
+                                string anchorText = $"/signature{signer.recipientId}/";
+                                var replaceResp = await TextFindAndReplaceDocusign(fileUrl, new[] { sigPlaceholder }, new[] { anchorText }, uploadedFileName);
+                                if (!string.IsNullOrWhiteSpace(replaceResp?.Url))
+                                {
+                                    fileUrl = replaceResp.Url;
+                                    signer.SignatureAnchors.Add(anchorText);
+                                    signer.totalSignatureCount++;
+                                    signer.totalMandatorySignatureCount++;
+                                }
                             }
                         }
                     }
 
-                    // TITLES
-                    var titleFindResults = await findPdfTextMultiple(titlePlaceholder, "", fileUrl, uploadedFileName);
-                    if (titleFindResults?.Any() == true)
+                    // TITLES / INITIALS
+                    signer.TitleAnchors.Clear();
+                    foreach (var titlePlaceholder in titlePlaceholders)
                     {
-                        signer.TitleAnchors.Clear();
-                        foreach (var result in titleFindResults)
+                        var titleFindResults = await findPdfTextMultiple(titlePlaceholder, "", fileUrl, uploadedFileName);
+                        if (titleFindResults?.Any() == true)
                         {
-                            signer.TitleAnchors.Add(titlePlaceholder);
-                            signer.totalTitleCount++;
-                            signer.totalInitialsCount++;
-                            signer.totalMandatoryInitialsCount++;
+                            foreach (var result in titleFindResults)
+                            {
+                                signer.TitleAnchors.Add(titlePlaceholder);
+                                signer.totalTitleCount++;
+                                signer.totalInitialsCount++;
+                                signer.totalMandatoryInitialsCount++;
+                                // For now, we use the last found placeholder as the main anchor
+                                signer.TitleAnchor = titlePlaceholder;
+                            }
                         }
                     }
 
-                    signer.TitleAnchor = titlePlaceholder;
                     signerCounter++;
                 }
 
@@ -5829,21 +6118,14 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                             clientUserId = x.recipientId.ToString(),
                             tabs = new
                             {
-                                //signHereTabs = Enumerable.Range(1, x.totalSignatureCount).Select(index => new {
-                                //    anchorString = $"/signature{x.recipientId}/",
-                                //    anchorUnits = "pixels",
-                                //    anchorYOffset = "0",
-                                //    anchorXOffset = "0"
-                                //}).ToArray(),
-                                //signHereTabs = new[] {
-                                //    new {
-                                //        anchorString = $"/signature{x.recipientId}/",
-                                //        anchorUnits = "pixels",
-                                //        anchorYOffset = "0",
-                                //        anchorXOffset = "0"
-                                //    }
-                                //},
-                                //textTabs = Enumerable.Range(1, x.totalTitleCount).Select(index => new
+                                signHereTabs = new[] {
+                                    new {
+                                        anchorString = $"/signature{x.recipientId}/",
+                                        anchorUnits = "pixels",
+                                        anchorYOffset = "0",
+                                        anchorXOffset = "0"
+                                    }
+                                },
                                 textTabs = new[] {new
                                     {
                                         anchorString = x.TitleAnchor,
@@ -9633,6 +9915,9 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         /// Parameter type
         ///</Summary>
         public string type { get; set; }
+        public string password { get; set; }
+        public string finalstring { get; set; }
+        public string pdfname { get; set; }
     }
 
     ///<Summary>
