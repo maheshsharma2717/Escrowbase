@@ -74,6 +74,7 @@ using System.Net.Http.Headers;
 using System.Net.Mail;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
@@ -139,6 +140,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         public static int Idno, getid = 0;
         Regex regexx = new Regex(@"\{.*?\}");
         static IConfiguration conf = (new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json").Build());
+        static readonly SemaphoreSlim _eSignSemaphore = new SemaphoreSlim(10, 10);
 
 
         ///<Summary>
@@ -218,20 +220,48 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 var parentPath = Request.Headers["parentpath"];
                 var shortFileName = Request.Headers["shortfilename"];
 
-                // Resolve file path and user info (if needed)
-                var filePath = Path.Combine(_env.WebRootPath, parentPath, shortFileName);
+                // Resolve file path
+                var filePath = Path.Combine(_hostingEnvironment.WebRootPath, parentPath, shortFileName);
+                if (!System.IO.File.Exists(filePath))
+                {
+                    return Json(new { success = false, message = "File not found: " + shortFileName });
+                }
 
                 // 1. Read file
                 var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
 
-                // 2. Call service to send DocuSign envelope
+                // 2. Find EOX user for this escrow to assign as recipient
+                // We check for "EOX" case-insensitively and handle potential brackets, plus a general match for 'EO'
+                var eoxUser = await _escrowDetailRepository.FirstOrDefaultAsync(x => 
+                    x.EscrowId == escrowId && 
+                    (x.Usertype.ToUpper().Contains("EOX") || x.Usertype.ToUpper().Contains("EO"))
+                );
+
+                if (eoxUser == null)
+                {
+                    // Fallback: try to find ANY user for this escrow if EOX is missing, but prioritize EOX
+                    eoxUser = await _escrowDetailRepository.FirstOrDefaultAsync(x => x.EscrowId == escrowId);
+                }
+
+                if (eoxUser == null)
+                {
+                    Logger.Warn($"DocuSign: Absolutely no user found in EscrowDetail for EscrowId: {escrowId}");
+                    return Json(new { success = false, message = $"No user found for escrow {escrowId} to assign as recipient." });
+                }
+
+                Logger.Info($"DocuSign: Assigning recipient {eoxUser.Email} (Type: {eoxUser.Usertype}) to envelope for escrow {escrowId}");
+
+                // 3. Call service to send DocuSign envelope with real user details
+                // We set both Email/Name and SignerEmail/SignerName to ensure compatibility with the service implementation
                 var result = await _docuSignService.SendEnvelopeAsync(new CreateOrEditDocuSignDto
                 {
                     EscrowId = escrowId,
                     FileName = shortFileName,
                     FileContent = fileBytes,
-                    SignerEmail = "signer@example.com", // get from db/user
-                    SignerName = "John Doe" // get from db/user
+                    Email = eoxUser.Email,
+                    Name = eoxUser.Name,
+                    SignerEmail = eoxUser.Email,
+                    SignerName = eoxUser.Name
                 });
 
                 return Json(new { success = true, envelopeId = result.EnvelopeId });
@@ -239,7 +269,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             catch (Exception ex)
             {
                 Logger.Error("DocuSignStart failed", ex);
-                return Json(new { success = false, message = ex.Message });
+                return Json(new { success = false, message = "DocuSign failed: " + ex.Message });
             }
         }
 
@@ -629,7 +659,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///
         private CreateOrEditSrFileMappingDto CreateNewEsrowmapping(Enterprise enterprises, CreateOrEditSrEscrowDto escrow)
         {
-            var userAction = new string[] { "SRX","BRX","BR1","BR2","BR3","BR4","BR5","BR6","BR7","BR8","BR9","BR10",
+            var userAction = new string[] { "SRX","BRX","RAX","RBX","BR1","BR2","BR3","BR4","BR5","BR6","BR7","BR8","BR9","BR10",
 "SR1","SR2","SR3","SR14","SR5","SR6","SR7","SR8","SR9","SR10",
 "RAL","RBL","RAS","RBS","RAO","RBO","LR1","LR2","LR3","LP1","LP2",
 "LP3","TCX","TCA","LBX","LBP","EO1","EA1","EOX","EAX","TC1","TC2",
@@ -1702,11 +1732,11 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         {
                             var myemail = list[0];
 
-                            var userAction = new string[] { "SRX","BRX","BR1","BR2","BR3","BR4","BR5","BR6","BR7","BR8","BR9","BR10",
-"SR1","SR2","SR3","SR4","SR5","SR6","SR7","SR8","SR9","SR10",
-"RAL","RBL","RAS","RBS","RAO","RBO","LR1","LR2","LR3","LP1","LP2",
-"LP3","TCX","TCA","LBX","LBP","EO1","EA1","EOX","EAX","TC1","TC2",
-"TC3","TC4","TC5","TC6","TC7","TC8","TC9","TC10", "LTC","STC","OTC" };
+                            var userAction = new string[] { "SRX","BRX","RAX","RBX","BR1","BR2","BR3","BR4","BR5","BR6","BR7","BR8","BR9","BR10",
+                            "SR1","SR2","SR3","SR14","SR5","SR6","SR7","SR8","SR9","SR10",
+                            "RAL","RBL","RAS","RBS","RAO","RBO","LR1","LR2","LR3","LP1","LP2",
+                            "LP3","TCX","TCA","LBX","LBP","EO1","EA1","EOX","EAX","TC1","TC2",
+                            "TC3","TC4","TC5","TC6","TC7","TC8","TC9","TC10","LTC","STC","OTC" };
 
 
                             var isValidUserTpye = userAction.Where(x => x == list[5].Replace("{", "").Replace("}", "")).FirstOrDefault();
@@ -2068,125 +2098,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             return response;
         }
 
-        ///<Summary>
-        /// Upload Current Escrow files from a folder (no HTTP form dependency)
-        ///</Summary>
-        //[HttpPost]
-        //public async Task<responseBack> CurrentUser(string Destination, string UserName)
-        //{
-        //    var response = new responseBack();
-        //    bool isUploaded = false;
-
-        //    try
-        //    {
-        //        // Sanitize and normalize destination path
-        //        Destination = ValidFileName(Destination);
-        //        Destination = Destination.Replace("=", "\\").Replace(".\\", "\\");
-
-        //        // Extract Company and SubCompany from path
-        //        var subs = Destination.Split('\\', StringSplitOptions.RemoveEmptyEntries);
-        //        if (subs.Length < 2)
-        //        {
-        //            response.Success = false;
-        //            response.message = "Invalid destination format. Company and SubCompany missing.";
-        //            return response;
-        //        }
-
-        //        string companyName = subs[0];
-        //        string subCompanyName = subs[1];
-
-        //        // Prepare root folder for files
-        //        var rootPath = System.IO.Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless");
-        //        var destDir = System.IO.Path.Combine(rootPath, Destination);
-
-        //        // Ensure folder exists
-        //        System.IO.Directory.CreateDirectory(destDir);
-
-        //        // Get all files in the folder
-        //        var files = System.IO.Directory.GetFiles(destDir);
-        //        if (files.Length == 0)
-        //        {
-        //            response.Success = false;
-        //            response.message = "No files found in the destination folder.";
-        //            return response;
-        //        }
-
-        //        // Process each file
-        //        foreach (var filePath in files)
-        //        {
-        //            try
-        //            {
-        //                string fileName = System.IO.Path.GetFileName(filePath);
-
-        //                // Read file content safely
-        //                string fileText = await System.IO.File.ReadAllTextAsync(filePath);
-        //                var lines = fileText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-        //                string escrowNo = lines.Length > 1 ? lines[1].Trim() : "";
-
-        //                // Get last CurrentEscrow Id (if exists)
-        //                int? idCEscrow = null;
-        //                try
-        //                {
-        //                    var result = await _currentEscrowRepository.GetAll(new GetAllCurrentEscrowsInput
-        //                    {
-        //                        MaxResultCount = int.MaxValue,
-        //                        SkipCount = 0,
-        //                        Sorting = "id asc"
-        //                    });
-        //                    idCEscrow = result.Items.LastOrDefault()?.CurrentEscrow.Id;
-        //                }
-        //                catch (Exception repoReadEx)
-        //                {
-        //                    response.message += $" Repository read failed for file {fileName}: {repoReadEx.Message}. ";
-        //                }
-
-        //                // Prepare DTO
-        //                var coesfm = new CreateOrEditCurrentEscrowDto
-        //                {
-        //                    Id = idCEscrow,
-        //                    EscrowNo = escrowNo,
-        //                    CompanyName = companyName,
-        //                    SubCompanyName = subCompanyName,
-        //                    FileName = fileName,
-        //                    CreatedOn = DateTime.Now,
-        //                    UserName = UserName,
-        //                    IsActive = !string.IsNullOrEmpty(escrowNo)
-        //                };
-
-        //                // Save to repository
-        //                try
-        //                {
-        //                    await _currentEscrowRepository.CreateOrEdit(coesfm);
-
-        //                    // Notify via SignalR
-        //                    await _hub.Clients.All.SendAsync("CurrentEscrow", coesfm);
-
-        //                    isUploaded = true;
-        //                }
-        //                catch (Exception repoCreateEx)
-        //                {
-        //                    response.message += $" Repository create failed for file {fileName}: {repoCreateEx.Message}. ";
-        //                }
-        //            }
-        //            catch (Exception fileEx)
-        //            {
-        //                response.message += $" File processing error for {filePath}: {fileEx.Message}. ";
-        //            }
-        //        }
-
-        //        response.Success = isUploaded;
-        //        response.message = isUploaded ? "Current Escrow Sent Successfully." : "Current Escrow Not Sent.";
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        response.Success = false;
-        //        response.message = $"Unexpected error: {ex.Message}";
-        //    }
-
-        //    return response;
-        //}
-
-
+        
         ///<Summary>
         /// Fast Upload API - Saves file and returns database IDs immediately.
         /// (Separate from legacy AutoUpdate as requested)
@@ -2207,23 +2119,38 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         return Json(new { success = false, message = "No files found in request" });
 
                     var file = Request.Form.Files[0];
-                    var result = await ProcessUploadInternalAsync(file, Destination);
+                    
+                    // Wrap upload in its own UnitOfWork so the DB transaction commits 
+                    // BEFORE the background task tries to read the master record.
+                    long fileMasterId;
+                    string escrowId;
+                    using (var uploadUow = _unitOfWorkManager.Begin(new Abp.Domain.Uow.UnitOfWorkOptions { IsTransactional = true }))
+                    {
+                        var result = await ProcessUploadInternalAsync(file, Destination);
+                        fileMasterId = result.fileMasterId;
+                        escrowId = result.escrowId;
+                        await _unitOfWorkManager.Current.SaveChangesAsync(); // Flush to DB immediately
+                        await uploadUow.CompleteAsync(); // Commit transaction
+                    }
 
                     // Signal the UI to refresh the file list immediately
-                    await _hub.Clients.All.SendAsync("getFileUploadMessage", true);
+                    await _hub.Clients.All.SendAsync("getFileUploadMessage", "File upload detected. Processing...");
 
-                    // Offload heavy processing (Tokens, Emails, SMS, E-Sign) to a background task
-                    // This allows the EXE to finish instantly while the server handles the rest
-                    var fileMasterId = result.fileMasterId;
-                    var escrowId = result.escrowId;
-                    Response.OnCompleted(async () => {
+                    // Offload heavy processing to a fully detached background task.
+                    // Task.Run is used instead of Response.OnCompleted because on IIS/server,
+                    // OnCompleted callbacks run within the request scope which can expire
+                    // before the slow E-Sign API calls (PDF.co, DocuSign) complete.
+                    var capturedUowManager = _unitOfWorkManager;
+                    _ = Task.Run(async () => {
                         try {
-                            await Task.Delay(1000); // Wait for main thread to commit record
-                            using (var unitOfWork = _unitOfWorkManager.Begin())
+                            await Task.Delay(2000); // Safety buffer for DB commit
+                            LogAutoUpdateError("BackgroundStart", new Exception($"Starting background processing for file master {fileMasterId} in escrow {escrowId}"));
+                            using (var unitOfWork = capturedUowManager.Begin())
                             {
                                 await ProcessFileLogicInternalAsync(fileMasterId, escrowId);
                                 await unitOfWork.CompleteAsync();
                             }
+                            LogAutoUpdateError("BackgroundComplete", new Exception($"Successfully completed processing for file master {fileMasterId}"));
                         } catch (Exception ex) {
                             LogAutoUpdateError("BackgroundProcess", ex);
                         }
@@ -2232,8 +2159,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     return Json(new { 
                         success = true, 
                         isUploaded = true, 
-                        fileMasterId = result.fileMasterId, 
-                        escrowId = result.escrowId, 
+                        fileMasterId = fileMasterId, 
+                        escrowId = escrowId, 
                         message = "File uploaded successfully. Processing in background." 
                     });
                 }
@@ -2290,6 +2217,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             var fileNewName = fileUpdateName;
 
             var usrid = _escrowDetailRepository.GetAll().Where(x => x.EscrowId == escrowId).ToList();
+            var signers = new List<EscrowDetail>();
             MatchCollection matchesData = regexx.Matches(fileUpdateName);
             string BRXUserList = "", SRXUserList = "", BRXType = "", SRXType = "";
 
@@ -2313,7 +2241,21 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             var creds = await GetDocuSignCredentialsForEscrow(escrowId);
             
             string destPath = Path.Combine(destDir, fileNewName);
-            using (var stream = new FileStream(destPath, FileMode.Create)) { await file.CopyToAsync(stream); }
+            int retryCount = 10;
+            while (retryCount > 0)
+            {
+                try
+                {
+                    using (var stream = new FileStream(destPath, FileMode.Create)) { await file.CopyToAsync(stream); }
+                    break;
+                }
+                catch (System.IO.IOException)
+                {
+                    retryCount--;
+                    if (retryCount == 0) throw;
+                    await Task.Delay(1500);
+                }
+            }
 
             string masterPath = Path.Combine(destDir, fileUpdateName);
             var dbMaster = _srEscrowFileMasterRepository.GetAll().FirstOrDefault(x => x.FileFullName == masterPath);
@@ -2345,11 +2287,18 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     {
                         string rep = m.Value.Replace("{", "").Replace("}", "");
                         string actionCode = rep.Contains('-') ? rep.Substring(rep.IndexOf('-') + 1).ToUpper() : "";
+                        string targetCode = rep.Contains('-') ? rep.Substring(0, rep.IndexOf('-')).ToUpper() : rep.ToUpper();
+                        string userTypeUpp = (usr.Usertype ?? "").ToUpper();
 
-                        // Check if this token belongs to the current user type (supporting BRX/SRX expansion)
-                        if (rep.Contains(usr.Usertype ?? "") || 
-                           (rep.Contains("BRX") && (usr.Usertype?.Contains("BR") ?? false)) || 
-                           (rep.Contains("SRX") && (usr.Usertype?.Contains("SR") ?? false)))
+                        // Check if this token belongs to the current user type exactly
+                        if (targetCode == userTypeUpp || 
+                           (targetCode == "BRX" && userTypeUpp.StartsWith("BR")) || 
+                           (targetCode == "SRX" && userTypeUpp.StartsWith("SR")) ||
+                           (targetCode == "RAX" && userTypeUpp.StartsWith("RA")) ||
+                           (targetCode == "RBX" && userTypeUpp.StartsWith("RB")) ||
+                           (targetCode == "TCX" && userTypeUpp.StartsWith("TC")) ||
+                           (targetCode == "EOX" && userTypeUpp.StartsWith("EO")) ||
+                           (targetCode == "EAX" && userTypeUpp.StartsWith("EA")))
                         {
                             // Create specific mapping for the matched user
                             _ISrFileMappingsAppService.CreateOrEdit(new CreateOrEditSrFileMappingDto {
@@ -2358,7 +2307,10 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                             // Detect permission level precisely (Prioritize Read to avoid READS matching Sign)
                             string docType = "Read";
-                            if (actionCode.Contains("SIGN") || actionCode == "S") docType = "Sign";
+                            if (actionCode.Contains("SIGN") || actionCode == "S") {
+                                docType = "Sign";
+                                signers.Add(usr); // Track signers for secondary notification
+                            }
                             else if (actionCode.Contains("INPUT") || actionCode == "E" || actionCode == "I") docType = "Input";
                             else if (actionCode.Contains("READ")) docType = "Read"; // Explicitly READS/READ
                             
@@ -2373,10 +2325,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 }
             }
 
-            // Fire and forget handles the slow e-sign process in the background
-            // allowing the UI to render the file in milliseconds.
-            _ = HandleESignIntegrationInternalAsync(masterId, escrowId, creds);
-
             return masterId;
         }
 
@@ -2390,9 +2338,21 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
         private async Task ProcessFileLogicInternalAsync(long fileMasterId, string escrowId)
         {
-            var master = await _srEscrowFileMasterRepository.GetAsync(fileMasterId);
+            // Handle potential race condition where record isn't committed yet in DB
+            SREscrowFileMaster master = null;
+            for (int i = 0; i < 15; i++)
+            {
+                master = await _srEscrowFileMasterRepository.FirstOrDefaultAsync(fileMasterId);
+                if (master != null) break;
+                await Task.Delay(1000); // Wait for main thread to commit
+            }
+            if (master == null) {
+                 LogAutoUpdateError("BackgroundProcess", new Exception($"Master record {fileMasterId} not found after retry."));
+                 return;
+            }
             var usrid = _escrowDetailRepository.GetAll().Where(x => x.EscrowId == escrowId).ToList();
             var creds = await GetDocuSignCredentialsForEscrow(escrowId);
+            var signers = new List<EscrowDetail>();
             
             foreach (var usr in usrid)
             {
@@ -2403,27 +2363,52 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     if (fileName.Contains("~")) acces = fileName.Substring(fileName.LastIndexOf("~") + 1);
                     else if (fileName.Contains("-'-")) acces = fileName.Substring(fileName.LastIndexOf("-'-") + 3);
                     else if (fileName.Contains("_'_")) acces = fileName.Substring(fileName.LastIndexOf("_'_") + 3);
-
+ 
                     MatchCollection matches = regexx.Matches(acces);
                     foreach (Match match in matches)
                     {
                         string rep = match.Value.Replace("{", "").Replace("}", "");
                         string actionCode = rep.Contains('-') ? rep.Substring(rep.IndexOf('-') + 1).ToUpper() : "";
-
-                        if (rep.Contains(usr.Usertype ?? "") || 
-                           (rep.Contains("BRX") && (usr.Usertype?.Contains("BR") ?? false)) || 
-                           (rep.Contains("SRX") && (usr.Usertype?.Contains("SR") ?? false)))
+                        string targetCode = rep.Contains('-') ? rep.Substring(0, rep.IndexOf('-')).ToUpper() : rep.ToUpper();
+                        string userTypeUpp = (usr.Usertype ?? "").ToUpper();
+ 
+                        if (targetCode == userTypeUpp || 
+                           (targetCode == "BRX" && userTypeUpp.StartsWith("BR")) || 
+                           (targetCode == "SRX" && userTypeUpp.StartsWith("SR")) ||
+                           (targetCode == "RAX" && userTypeUpp.StartsWith("RA")) ||
+                           (targetCode == "RBX" && userTypeUpp.StartsWith("RB")) ||
+                           (targetCode == "TCX" && userTypeUpp.StartsWith("TC")) ||
+                           (targetCode == "EOX" && userTypeUpp.StartsWith("EO")) ||
+                           (targetCode == "EAX" && userTypeUpp.StartsWith("EA")))
                         {
-                            if (actionCode.Contains("E") || actionCode == "I") DocumentRecord(fileName, "Input", (long)usr.UserId, fileMasterId);
-                            if (actionCode.Contains("S")) DocumentRecord(fileName, "Sign", (long)usr.UserId, fileMasterId);
-                            if (actionCode.Contains("READ") || actionCode == "R") DocumentRecord(fileName, "Read", (long)usr.UserId, fileMasterId);
+                            // Classify permission precisely — READS = Read + Sign, SIGN = Sign, INPUT/E = Input
+                            if (actionCode.Contains("SIGN") || actionCode == "S") {
+                                DocumentRecord(fileName, "Sign", (long)usr.UserId, fileMasterId);
+                                signers.Add(usr);
+                            }
+                            else if (actionCode.Contains("INPUT") || actionCode == "E" || actionCode == "I") {
+                                DocumentRecord(fileName, "Input", (long)usr.UserId, fileMasterId);
+                            }
+                            
+                            // READS contains both READ and S — treat as Read WITH signing capability
+                            if (actionCode.Contains("READ")) {
+                                DocumentRecord(fileName, "Read", (long)usr.UserId, fileMasterId);
+                                // READS also grants signing
+                                if (actionCode.Contains("S")) {
+                                    DocumentRecord(fileName, "Sign", (long)usr.UserId, fileMasterId);
+                                    if (!signers.Contains(usr)) signers.Add(usr);
+                                }
+                            }
+                            else if (actionCode == "R") {
+                                DocumentRecord(fileName, "Read", (long)usr.UserId, fileMasterId);
+                            }
                             
                             await SendFileNotificationAsync(usr, fileName, escrowId);
                         }
                     }
                 }
             }
-            await HandleESignIntegrationInternalAsync(fileMasterId, escrowId, creds);
+            await HandleESignIntegrationInternalAsync(fileMasterId, escrowId, creds, signers);
         }
 
         private async Task SendFileNotificationAsync(EscrowDetail user, string fileName, string escrowId)
@@ -2431,16 +2416,39 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             try
             {
                 var dbUser = _userRepository.GetAll().FirstOrDefault(x => x.EmailAddress == user.Email);
-                if (dbUser != null && dbUser.IsEmailConfirmed)
+                if (dbUser != null)
                 {
-                    MailMessage mail = new MailMessage("Noreply@EscrowBasePortal.com", user.Email) { Subject = "New File Uploaded", IsBodyHtml = true, Body = $"A new document delivered regarding escrow {escrowId}: '{fileName}'" };
-                    using var smtp = new SmtpClient("smtp.gmail.com", 587) { Credentials = new NetworkCredential("office@mandavconsultancy.com", "aouownmhogfobzbc"), EnableSsl = true };
-                    smtp.Send(mail);
+                    string notificationMessage = $"File '{fileName}' is ready for your attention in escrow {escrowId}.";
+                    
+                    // Publish transient toast via SignalR (Removed per user request - too many notifications)
+                    // await _hub.Clients.All.SendAsync("getFileUploadMessage", notificationMessage);
+
+                    // Existing Email Notification
+                    if (dbUser.IsEmailConfirmed)
+                    {
+                        MailMessage mail = new MailMessage("Noreply@EscrowBasePortal.com", user.Email) { Subject = "New File Uploaded", IsBodyHtml = true, Body = notificationMessage };
+                        using var smtp = new SmtpClient("smtp.gmail.com", 587) { Credentials = new NetworkCredential("office@mandavconsultancy.com", "aouownmhogfobzbc"), EnableSsl = true };
+                        smtp.Send(mail);
+                    }
                 }
             } catch (Exception ex) { LogAutoUpdateError("Notification", ex); }
         }
 
-        private async Task HandleESignIntegrationInternalAsync(long fileMasterId, string escrowId, ESignResolvedCreds creds)
+        private async Task SendSignNotificationAsync(EscrowDetail user, string fileName, string escrowId)
+        {
+            try
+            {
+                var dbUser = _userRepository.GetAll().FirstOrDefault(x => x.EmailAddress == user.Email);
+                if (dbUser != null)
+                {
+                    string message = $"File '{fileName}' is now ready to sign in escrow {escrowId}.";
+                    // Publish transient toast via SignalR
+                    await _hub.Clients.All.SendAsync("getFileUploadMessage", message);
+                }
+            } catch (Exception ex) { LogAutoUpdateError("SignNotification", ex); }
+        }
+
+        private async Task HandleESignIntegrationInternalAsync(long fileMasterId, string escrowId, ESignResolvedCreds creds, List<EscrowDetail> signers)
         {
             try
             {
@@ -2448,13 +2456,35 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 var destPath = master.FileFullName;
                 var fileName = Path.GetFileName(destPath);
                 var esignPath = destPath.Substring(destPath.LastIndexOf("Paperless\\") + 10).Replace(fileName, "");
-                switch (creds.SystemCode) {
-                    case 2001: await ZohoESignCreateDocument(esignPath, fileName, escrowId, creds); break;
-                    case 3001: await DocuSiginESignCreateDocument(esignPath, fileName, escrowId, creds); break;
-                    case 4001: await SendSutiSignRequest(esignPath, fileName, escrowId, creds); break;
+                
+                // Rate-limit external E-Sign API calls (PDF.co, DocuSign, Zoho, SutiSoft)
+                await _eSignSemaphore.WaitAsync();
+                try {
+                    switch (creds.SystemCode) {
+                        case 2001: await ZohoESignCreateDocument(esignPath, fileName, escrowId, creds); break;
+                        case 3001: await DocuSiginESignCreateDocument(esignPath, fileName, escrowId, creds); break;
+                        case 4001: await SendSutiSignRequest(esignPath, fileName, escrowId, creds); break;
+                    }
+                } finally {
+                    _eSignSemaphore.Release();
                 }
-                await _hub.Clients.All.SendAsync("getFileUploadMessage", true);
-            } catch (Exception ex) { LogAutoUpdateError("ESign", ex); }
+
+                // Notify signers that the package is ready
+                foreach (var signer in signers)
+                {
+                    await SendSignNotificationAsync(signer, fileName, escrowId);
+                }
+
+                // await _hub.Clients.All.SendAsync("getFileUploadMessage", "File processing and E-Sign preparation complete.");
+            } 
+            catch (Exception ex) 
+            { 
+                if (ex.Message.Contains("credit", StringComparison.OrdinalIgnoreCase))
+                {
+                    await _hub.Clients.All.SendAsync("getFileUploadMessage", "URGENT: PDF.co processing tokens are exhausted. Please renew the token to continue processing files.");
+                }
+                LogAutoUpdateError("ESign", ex); 
+            }
         }
 
         private void LogAutoUpdateError(string step, Exception ex)
@@ -2915,16 +2945,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                         }
                                     }
 
-
-                                    //CreateOrEditSrFileMappingDto coesfm1 = new CreateOrEditSrFileMappingDto();
-                                    //coesfm1.FileName = destnations;
-                                    //coesfm1.UserId = (int)usr.UserId;
-                                    //coesfm1.Action = matches[i].Value;
-                                    //coesfm1.EscrowiId = escrowidZohoPdf;
-                                    //coesfm1.IsActive = true;
-                                    //var filemap = _ISrFileMappingsAppService.CreateOrEditdata(coesfm1);
-
-
                                     string filem = destnations;
                                     MailMessage mail = new MailMessage();
                                     mail.From = new MailAddress("Noreply@EscrowBasePortal.com");
@@ -3067,21 +3087,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                         }
                     }
-                    //if (isFileConverted == false && fileUesrTokenCount > 0)
-                    //{
-                    //    isFileConverted = true;
-
-                    //    var esignPath = pathZohoPdf.ToString().Replace("Other", "");
-                    //    var esign = destnation1;
-                    //    string[] esignKey = esign.Split("\\");
-                    //    string shortfileName = esignKey.Where(x => x.Contains(".pdf")).FirstOrDefault();
-
-                    //    esignPath = esignPath.Replace(shortfileName, "");
-
-                    //    //var esignUser = (int)usr.UserId;
-                    //    var sign = await ZohoESignCreateDocument(esignPath, shortfileName, escrowidZohoPdf);
-
-                    //}
+                    
                     if (!isFileConverted && fileUesrTokenCount > 0)
                     {
 
@@ -3127,7 +3133,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     writer101.WriteLine("Program Executed Successfully" + message + " " + DateTime.Now.ToString());
                     writer101.Close();
 
-                    await _hub.Clients.All.SendAsync("getFileUploadMessage", isUploaded);
+                    await _hub.Clients.All.SendAsync("getFileUploadMessage", isUploaded ? "File uploaded successfully." : "File upload failed.");
 
                     message += "(Program Executed Successfully)";
                     string logs1 = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\Logs.txt");
@@ -3509,7 +3515,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             }
             response.statusCode = 200;
             response.message = "Sucess";
-            _hub.Clients.All.SendAsync("getFileUploadMessage", true);
 
             return response;
         }
@@ -3938,72 +3943,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 });
             }
         }
-
-
-        //[HttpGet("GetEsignStatus")]
-        //public async Task<IActionResult> GetESignStatus(string escrowId)
-        //{
-        //    try
-        //    {
-        //        var entity = await _enterpriseRepository.FirstOrDefaultAsync(e => e.EnterpriseName == escrowId);
-        //        if (entity == null)
-        //            return NotFound(new { success = false, message = "Enterprise not found" });
-
-        //        bool hasCreds = false;
-
-        //        if (entity.IsAdminAssigned)
-        //        {
-        //            hasCreds = true;
-        //        }
-        //        else if (!string.IsNullOrWhiteSpace(entity.ESignProviderCode))
-        //        {
-        //            // Check based on provider code
-        //            switch (entity.ESignProviderCode.Trim())
-        //            {
-        //                case "2001": // Zoho
-        //                    hasCreds =
-        //                        !string.IsNullOrWhiteSpace(entity.ESignClientId) &&
-        //                        !string.IsNullOrWhiteSpace(entity.ESignClientSecret) &&
-        //                        !string.IsNullOrWhiteSpace(entity.ESignFolderId) &&
-        //                        !string.IsNullOrWhiteSpace(entity.RefreshToken) &&
-        //                        !string.IsNullOrWhiteSpace(entity.AccessToken);
-        //                    break;
-
-        //                default: // Other providers (e.g., DocuSign 3001, SutiSign 4001)
-        //                    hasCreds =
-        //                        !string.IsNullOrWhiteSpace(entity.ESignClientId) &&
-        //                        !string.IsNullOrWhiteSpace(entity.ESignClientSecret) &&
-        //                        !string.IsNullOrWhiteSpace(entity.ESignApiAccountId) &&
-        //                        !string.IsNullOrWhiteSpace(entity.ESignUserId) &&
-        //                        !string.IsNullOrWhiteSpace(entity.RefreshToken) &&
-        //                        !string.IsNullOrWhiteSpace(entity.AccessToken);
-        //                    break;
-        //            }
-        //        }
-
-        //        return Ok(new
-        //        {
-        //            success = true,
-        //            result = new
-        //            {
-        //                hasCredentials = hasCreds,
-        //                isAdminAssigned = entity.IsAdminAssigned,
-        //                enterpriseId = entity.Id,
-        //                enterpriseName = entity.EnterpriseName
-        //            }
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Logger.Error("Error fetching e-sign status", ex);
-        //        return StatusCode(500, new
-        //        {
-        //            success = false,
-        //            message = "An unexpected error occurred while retrieving status.",
-        //            details = ex.Message
-        //        });
-        //    }
-        //}
 
         [HttpGet("GetEsignStatus")]
         public async Task<IActionResult> GetESignStatus(string escrowId)
@@ -5996,7 +5935,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     ? esignKey.Substring(esignKey.LastIndexOf("~") + 1)
                     : "";
 
-                Regex regex = new Regex(@"\{([A-Z]+[0-9]+)-.*?\}");
+                Regex regex = new Regex(@"\{([A-Z0-9]+)-.*?\}");
                 var extractedCodes = regex.Matches(tokenPart)
                                           .Select(m => m.Groups[1].Value)
                                           .Distinct()
@@ -6045,47 +5984,45 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 foreach (var signer in signerList)
                 {
                     string code = extractedCodes[signerCounter - 1];
-                    string[] sigPlaceholders = { $"@{{{code}:S:1}}", $"@{{{code}:s:1}}" };
-                    string[] titlePlaceholders = { $"@{{{code}:I:1}}", $"@{{{code}:i:1}}" };
+                    string anchorText = $"/signature{signer.recipientId}/";
 
+                    // SIGNATURES: Find and replace ALL occurrences (case-insensitive)
                     signer.SignatureAnchors.Clear();
-                    // SIGNATURES
-                    foreach (var sigPlaceholder in sigPlaceholders)
+                    string sigPlaceholder = $"@{{{code}:s:1}}"; // case-insensitive search handles both S:1 and s:1
+                    var sigFindResults = await findPdfTextMultiple(sigPlaceholder, "", fileUrl, uploadedFileName);
+                    if (sigFindResults?.Any() == true)
                     {
-                        var sigFindResults = await findPdfTextMultiple(sigPlaceholder, "", fileUrl, uploadedFileName);
-                        if (sigFindResults?.Any() == true)
+                        var sigReplaceResp = await TextFindAndReplaceDocusign(fileUrl,
+                            new[] { sigPlaceholder },
+                            new[] { anchorText },
+                            uploadedFileName);
+                        if (!string.IsNullOrWhiteSpace(sigReplaceResp?.Url))
                         {
-                            foreach (var result in sigFindResults)
-                            {
-                                string anchorText = $"/signature{signer.recipientId}/";
-                                var replaceResp = await TextFindAndReplaceDocusign(fileUrl, new[] { sigPlaceholder }, new[] { anchorText }, uploadedFileName);
-                                if (!string.IsNullOrWhiteSpace(replaceResp?.Url))
-                                {
-                                    fileUrl = replaceResp.Url;
-                                    signer.SignatureAnchors.Add(anchorText);
-                                    signer.totalSignatureCount++;
-                                    signer.totalMandatorySignatureCount++;
-                                }
-                            }
+                            fileUrl = sigReplaceResp.Url;
+                            signer.SignatureAnchors.Add(anchorText);
+                            signer.totalSignatureCount = sigFindResults.Count;
+                            signer.totalMandatorySignatureCount = sigFindResults.Count;
                         }
                     }
 
-                    // TITLES / INITIALS
+                    // TITLES / INITIALS: Find and replace ALL occurrences (case-insensitive)
                     signer.TitleAnchors.Clear();
-                    foreach (var titlePlaceholder in titlePlaceholders)
+                    string titlePlaceholder = $"@{{{code}:i:1}}"; // case-insensitive search handles both I:1 and i:1
+                    var titleFindResults = await findPdfTextMultiple(titlePlaceholder, "", fileUrl, uploadedFileName);
+                    if (titleFindResults?.Any() == true)
                     {
-                        var titleFindResults = await findPdfTextMultiple(titlePlaceholder, "", fileUrl, uploadedFileName);
-                        if (titleFindResults?.Any() == true)
+                        var titleReplaceResp = await TextFindAndReplaceDocusign(fileUrl,
+                            new[] { titlePlaceholder },
+                            new[] { titlePlaceholder }, // Keep the tag as anchor but hide it in PDF via DocuSign tabs
+                            uploadedFileName);
+                        if (!string.IsNullOrWhiteSpace(titleReplaceResp?.Url))
                         {
-                            foreach (var result in titleFindResults)
-                            {
-                                signer.TitleAnchors.Add(titlePlaceholder);
-                                signer.totalTitleCount++;
-                                signer.totalInitialsCount++;
-                                signer.totalMandatoryInitialsCount++;
-                                // For now, we use the last found placeholder as the main anchor
-                                signer.TitleAnchor = titlePlaceholder;
-                            }
+                            fileUrl = titleReplaceResp.Url;
+                            signer.TitleAnchor = titlePlaceholder;
+                            signer.TitleAnchors.Add(titlePlaceholder);
+                            signer.totalTitleCount = titleFindResults.Count;
+                            signer.totalInitialsCount = titleFindResults.Count;
+                            signer.totalMandatoryInitialsCount = titleFindResults.Count;
                         }
                     }
 
@@ -6126,7 +6063,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                         anchorXOffset = "0"
                                     }
                                 },
-                                textTabs = new[] {new
+                                textTabs = string.IsNullOrEmpty(x.TitleAnchor) ? null : new[] {new
                                     {
                                         anchorString = x.TitleAnchor,
                                         anchorUnits = "pixels",
@@ -6264,379 +6201,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         #endregion
 
         #region 
-        // Upload folder to the zohowebsite 
-
-        //public async Task<responseBack> ZohoESignCreateDocument(string esignPath, string esignKey, string EscrowId)
-        //{
-        //    responseBack res = new responseBack();
-
-        //    List<EscrowDetail> EscrowUserList = new List<EscrowDetail>();
-        //    try
-        //    {
-        //        var accessToken = await ZohoESignGetAccessToken();
-        //        List<ZohoSigninUserMapping> zohoSigninUserMapping = new List<ZohoSigninUserMapping>();
-        //        List<UserTypeList> userTypeList = new List<UserTypeList>();
-        //        List<UserTypeList> userTypeListInitials = new List<UserTypeList>();
-        //        string fileTokenList = string.Empty;
-        //        List<string> extractedCodes = new List<string>();
-        //        using (var unit = _unitOfWorkManager.Begin())
-        //        {
-        //            EscrowUserList = _escrowDetailRepository.GetAll().Where(x => x.EscrowId == EscrowId).ToList();
-        //            unit.Complete();
-        //        }
-        //        using (HttpClient httpClient = new HttpClient())
-        //        {
-        //            string pdfFilePath = "wwwroot\\Common\\Paperless\\" + esignPath;
-        //            string pdfFilePathAfterConvert = "wwwroot\\Common\\replacedSign.pdf";
-        //            string dateTimeStamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        //            string createFileForZoho = $"wwwroot\\Common\\convertToSign_{dateTimeStamp}.pdf";
-        //            pdfFilePath = pdfFilePath + esignKey;
-        //            pdfFilePath = pdfFilePath.Replace("/", "\\");
-        //            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        //            FileInfo file = new FileInfo(pdfFilePath);
-        //            if (file.Exists)
-        //            {
-        //                FileInfo fileZoho = new FileInfo(createFileForZoho);
-        //                if (fileZoho.Exists)
-        //                {
-        //                    FileInfo fileConverted = new FileInfo(createFileForZoho);
-        //                    fileConverted.Delete();
-        //                }
-        //                //createFileForZoho
-        //                System.IO.File.Copy(pdfFilePath, createFileForZoho);
-
-        //            }
-        //            if (pdfFilePath.Contains("~") || pdfFilePath.Contains("-'-") || pdfFilePath.Contains("_'_"))
-        //            {
-        //                if (pdfFilePath.Contains("~"))
-        //                    fileTokenList = pdfFilePath.Substring(pdfFilePath.LastIndexOf("~") + 1);
-        //                if (pdfFilePath.Contains("-'-"))
-        //                    fileTokenList = pdfFilePath.Substring(pdfFilePath.LastIndexOf("-'-") + 3);
-        //                if (pdfFilePath.Contains("_'_"))
-        //                    fileTokenList = pdfFilePath.Substring(pdfFilePath.LastIndexOf("_'_") + 3);
-
-        //                string match = String.Empty;
-
-        //                MatchCollection matches = regexx.Matches(fileTokenList);
-        //                for (int i = 0; i < matches.Count; i++)
-        //                {
-        //                    string rep = matches[i].Value.Replace("{", "").Replace("}", "");
-        //                    int index = rep.IndexOf('-');
-        //                    match = rep.Substring(index + 1);
-        //                    if (match.Contains("S"))
-        //                    {
-        //                        extractedCodes.Add(rep.Substring(0, index));
-        //                    }
-        //                }
-
-        //                List<EscrowDetail> filteredEscrowUserList = new List<EscrowDetail>();
-
-        //                // Filter using foreach loop with specific checks
-        //                foreach (var user in EscrowUserList)
-        //                {
-        //                    // Check if extractedCodes contains SRX or BRX
-        //                    if (extractedCodes.Contains("SRX") && user.Usertype.StartsWith("SR") ||
-        //                        extractedCodes.Contains("BRX") && user.Usertype.StartsWith("BR"))
-        //                    {
-        //                        filteredEscrowUserList.Add(user);
-        //                    }
-        //                    // Check for exact match
-        //                    else if (extractedCodes.Contains(user.Usertype))
-        //                    {
-        //                        filteredEscrowUserList.Add(user);
-        //                    }
-        //                }
-        //                EscrowUserList = filteredEscrowUserList.Where(x => x.Usertype != "EOX").ToList();
-        //            }
-
-        //            var findWord = new List<string>();
-        //            var replaceWord = new List<string>();
-        //            var idx = 1;
-        //            string updatedUrl = "";
-        //            var fileData = await uploadFileToTextReplace(createFileForZoho);
-        //            List<AddTextToReplaceDto> addTextToReplaceList = new List<AddTextToReplaceDto>();
-        //            foreach (var escrowUser in EscrowUserList)
-        //            {
-
-        //                AddTextToReplaceDto addTextResponse = await findPdfText($"@{{{escrowUser.Usertype}:S:1}}", $"{{{{S:R{idx}*}}}}", fileData.Url, Path.GetFileName(createFileForZoho));
-        //                if (string.IsNullOrWhiteSpace(addTextResponse.Url))
-        //                {
-
-        //                    findWord.Add($"@{{{escrowUser.Usertype}:S:1}}");
-        //                    replaceWord.Add($"{{{{S:R{idx}*}}}}");
-
-        //                    var escrowDetails = EscrowUserList.Where(x => x.Usertype == escrowUser.Usertype).FirstOrDefault();
-        //                    if (escrowDetails != null)
-        //                    {
-        //                        var check = zohoSigninUserMapping.Where(x => x.recipientEmail == escrowDetails.Email).FirstOrDefault();
-        //                        if (check == null)
-        //                        {
-        //                            ZohoSigninUserMapping zohoSignin = new ZohoSigninUserMapping();
-        //                            zohoSignin.recipientName = escrowDetails.Name;
-        //                            zohoSignin.recipientEmail = escrowDetails.Email;
-        //                            zohoSignin.signingOrder = idx;
-        //                            zohoSigninUserMapping.Add(zohoSignin);
-        //                        }
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    addTextToReplaceList.Add(addTextResponse);
-        //                    fileData.Url = addTextResponse.Url;
-
-        //                    var escrowDetails = EscrowUserList.Where(x => x.Usertype == escrowUser.Usertype).FirstOrDefault();
-        //                    if (escrowDetails != null)
-        //                    {
-        //                        var check = zohoSigninUserMapping.Where(x => x.recipientEmail == escrowDetails.Email).FirstOrDefault();
-        //                        if (check == null)
-        //                        {
-        //                            ZohoSigninUserMapping zohoSignin = new ZohoSigninUserMapping();
-        //                            zohoSignin.recipientName = escrowDetails.Name;
-        //                            zohoSignin.recipientEmail = escrowDetails.Email;
-        //                            zohoSignin.signingOrder = idx;
-        //                            zohoSigninUserMapping.Add(zohoSignin);
-        //                        }
-        //                    }
-        //                }
-        //                idx++;
-        //            }
-
-        //            // If you need to convert them to arrays afterward:
-        //            string[] findWordArray = findWord.ToArray();
-        //            string[] replaceWordArray = replaceWord.ToArray();
-        //            FileUploadResponse fileUploadResponse = new FileUploadResponse();
-        //            if (findWord.Count == 0 && addTextToReplaceList.Count > 0)
-        //            {
-        //                var lastUrl = addTextToReplaceList.LastOrDefault().Url;
-        //                var index = 1;
-        //                bool isAsync = false;
-        //                foreach (var item in addTextToReplaceList)
-        //                {
-        //                    if (index == addTextToReplaceList.Count)
-        //                    {
-        //                        isAsync = true;
-        //                    }
-        //                    fileUploadResponse = await AddPdfText(item.replaceWord, lastUrl, item.left, item.top, Path.GetFileName(createFileForZoho), isAsync);
-        //                    if (!string.IsNullOrWhiteSpace(fileUploadResponse.Url))
-        //                    {
-        //                        lastUrl = fileUploadResponse.Url;
-        //                    }
-        //                    if (index == addTextToReplaceList.Count)
-        //                    {
-        //                        fileData.Url = fileUploadResponse.Url;
-        //                        fileData.jobId = fileUploadResponse.jobId;
-        //                    }
-        //                    index++;
-        //                }
-
-        //            }
-
-        //            if (findWord.Count > 0)
-        //            {
-        //                var lastUrl = addTextToReplaceList.LastOrDefault().Url;
-        //                var index = 1;
-        //                bool isAsync = false;
-        //                foreach (var item in addTextToReplaceList)
-        //                {
-
-        //                    fileUploadResponse = await AddPdfText(item.replaceWord, lastUrl, item.left, item.top, Path.GetFileName(createFileForZoho), isAsync);
-        //                    if (!string.IsNullOrWhiteSpace(fileUploadResponse.Url))
-        //                    {
-        //                        lastUrl = fileUploadResponse.Url;
-        //                    }
-        //                    if (index == addTextToReplaceList.Count)
-        //                    {
-        //                        fileData.Url = fileUploadResponse.Url;
-        //                    }
-        //                    index++;
-        //                }
-        //                var textFindAndReplaceResponse = await TextFindAndReplace(fileData.Url, findWordArray, replaceWordArray, Path.GetFileName(createFileForZoho));
-        //                if (!string.IsNullOrWhiteSpace(textFindAndReplaceResponse.jobId))
-        //                {
-        //                    fileData.jobId = textFindAndReplaceResponse.jobId;
-        //                }
-        //            }
-        //            if (!string.IsNullOrWhiteSpace(fileData.Url))
-        //            {
-        //                var jobStatus = await TextFindAndReplaceFileJobStatus(fileData.jobId);
-        //                await DownloadFileAsync(jobStatus.url, pdfFilePath);
-        //            }
-        //            // Create a multipart form data content
-        //            var multipartContent = new MultipartFormDataContent();
-
-        //            // Read the PDF file and add it to the content
-        //            byte[] pdfBytes = System.IO.File.ReadAllBytes(pdfFilePath);
-        //            ByteArrayContent fileContent = new ByteArrayContent(pdfBytes);
-        //            fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
-        //            string fileName = "esignFile.pdf";
-        //            multipartContent.Add(fileContent, "file", fileName); // "file" is the form field name
-        //            string logs1 = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\FoxitPdf.txt");
-        //            if (!System.IO.File.Exists(logs1))
-        //            {
-        //                FileStream fs1 = new FileStream(logs1, FileMode.OpenOrCreate, FileAccess.Write);
-        //            }
-        //            StreamWriter writer1 = new StreamWriter(logs1, true);
-        //            writer1.WriteLine($" createing zoho doc " + DateTime.Now.ToString());
-        //            writer1.Close();
-
-        //            CreateDocumentRequest createDocumentRequest = new CreateDocumentRequest();
-        //            createDocumentRequest.requests = new Requests();
-        //            createDocumentRequest.requests.request_name = "EsignRequst";
-        //            createDocumentRequest.requests.expiration_days = "30";
-        //            createDocumentRequest.requests.is_sequential = false;
-        //            createDocumentRequest.requests.email_reminders = true;
-        //            createDocumentRequest.requests.reminder_period = 10;
-        //            // createDocumentRequest.requests.folder_id = "78657000000035001";
-        //            createDocumentRequest.requests.folder_id = conf["zoho:FolderId"].ToString();
-
-        //            createDocumentRequest.requests.actions = new List<Models.ZohoESign.Action>();
-
-        //            foreach (var item in zohoSigninUserMapping)
-        //            {
-        //                createDocumentRequest.requests.actions.Add(new Models.ZohoESign.Action
-        //                {
-        //                    action_type = "SIGN",
-        //                    recipient_email = item.recipientEmail,
-        //                    recipient_name = item.recipientName,
-        //                    signing_order = item.signingOrder,
-        //                    verify_recipient = false,
-        //                    verification_type = "EMAIL",
-        //                    verification_code = "",
-        //                    private_notes = "Please get back to us for further queries",
-        //                    is_embedded = true,
-        //                    is_bulk = true,
-
-        //                });
-        //            }
-
-        //            var json = JsonConvert.SerializeObject(createDocumentRequest);
-        //            multipartContent.Add(new StringContent(json), "data");
-        //            // Send the POST request with the multipart content
-        //            HttpResponseMessage response = await httpClient.PostAsync("https://sign.zoho.in/api/v1/requests?testing=true", multipartContent);
-
-        //            StreamWriter writer88 = new StreamWriter(logs1, true);
-        //            writer88.WriteLine($" Request Payload " + DateTime.Now.ToString() + "  " + json);
-        //            writer88.Close();
-        //            StreamWriter writer89 = new StreamWriter(logs1, true);
-        //            writer89.WriteLine($" Access Toke  " + DateTime.Now.ToString() + "  " + accessToken);
-        //            writer89.Close();
-
-
-        //            //HttpRequestMessage requestItem = new HttpRequestMessage(HttpMethod.Post, "")
-
-        //            //{
-        //            //    Content = new StringContent(json, Encoding.UTF8, "application/json")
-        //            //};
-
-        //            //// Send the POST request
-        //            //HttpResponseMessage response = await httpClient.SendAsync(requestItem);
-
-        //            // Check if the request was successful (status code 2xx)
-        //            if (response.IsSuccessStatusCode)
-        //            {
-        //                // Read and process the response content
-        //                string responseBody = await response.Content.ReadAsStringAsync();
-        //                CreateDocumentResponse CreateDocumentResponse = JsonConvert.DeserializeObject<CreateDocumentResponse>(responseBody);
-        //                // DocumentSignature(pdfFilePath, accessToken, CreateDocumentResponse);
-
-        //                string logs2 = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\FoxitPdf.txt");
-        //                if (!System.IO.File.Exists(logs2))
-        //                {
-
-        //                    FileStream fs1 = new FileStream(logs2, FileMode.OpenOrCreate, FileAccess.Write);
-        //                }
-        //                StreamWriter writer2 = new StreamWriter(logs1, true);
-        //                writer2.WriteLine($" response success " + DateTime.Now.ToString());
-        //                writer2.Close();
-
-        //                CreateOrEditE_SignRecordDto std = new CreateOrEditE_SignRecordDto();
-        //                var requests = CreateDocumentResponse.requests;
-        //                std.FolderId = long.Parse(requests.folder_id);
-        //                std.FolderName = requests.folder_name;
-        //                std.FileName = esignKey;
-        //                std.Status = "Unsigned";
-        //                std.RequestId = requests.request_id;
-        //                if (!string.IsNullOrWhiteSpace(requests.document_ids.FirstOrDefault().document_id))
-        //                {
-        //                    std.DocumentId = long.Parse(requests.document_ids.FirstOrDefault().document_id);
-        //                }
-        //                std.FullFilePath = pdfFilePath;
-        //                if (requests.actions.Count > 0)
-        //                {
-        //                    std.ZohoAction = JsonConvert.SerializeObject(requests.actions);
-        //                }
-        //                else
-        //                {
-        //                    std.ZohoAction = "";
-        //                }
-
-
-        //                std.EsignCompanyCode = 2001;
-        //                // std.CompanyId = requests.owner_id;
-        //                std.EmailId = requests.owner_email;
-        //                //  std.EmbeddedToken = sign.embeddedToken;
-        //                //std.EmbeddedURL = sign.embeddedSessionURL;
-        //                var i = await _e_SignRecordsAppService.CreateOrEdit(std);
-        //                var esignData = JsonConvert.SerializeObject(std);
-
-        //                string logs5 = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\FoxitPdf.txt");
-        //                if (!System.IO.File.Exists(logs2))
-        //                {
-        //                    FileStream fs1 = new FileStream(logs5, FileMode.OpenOrCreate, FileAccess.Write);
-        //                }
-        //                StreamWriter writer5 = new StreamWriter(logs5, true);
-        //                writer5.WriteLine($" Created zoho file in db success " + i + DateTime.Now.ToString());
-        //                writer5.WriteLine($" EsignRecord Json " + esignData);
-        //                writer5.Close();
-        //                //  DocumentSignature(std.DocumentId.ToString(), accessToken);
-        //            }
-        //            else
-        //            {
-        //                string logs8 = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\FoxitPdf.txt");
-        //                if (!System.IO.File.Exists(logs8))
-        //                {
-        //                    FileStream fs1 = new FileStream(logs8, FileMode.OpenOrCreate, FileAccess.Write);
-        //                }
-
-        //                string responseBody = await response.Content.ReadAsStringAsync();
-        //                StreamWriter writer2 = new StreamWriter(logs8, true);
-        //                writer2.WriteLine($" response unsuccess " + responseBody);
-
-        //                writer2.WriteLine("from dto" + json);
-        //                writer2.Close();
-        //                CreateDocumentResponse responseUpload = JsonConvert.DeserializeObject<CreateDocumentResponse>(responseBody);
-
-        //                CreateOrEditE_SignRecordDto std = new CreateOrEditE_SignRecordDto();
-
-        //                std.FolderId = 0;
-        //                std.FolderName = "Not valid file";
-        //                std.FileName = esignKey;
-        //                std.Status = "Unsigned";
-        //                std.RequestId = "0";
-        //                std.DocumentId = 0;
-        //                std.FullFilePath = pdfFilePath;
-        //                std.ZohoAction = "";
-
-        //                std.EsignCompanyCode = 2001;
-        //                // std.CompanyId = requests.owner_id;
-        //                std.EmailId = "";
-        //                //  std.EmbeddedToken = sign.embeddedToken;
-        //                //std.EmbeddedURL = sign.embeddedSessionURL;
-        //                var i = await _e_SignRecordsAppService.CreateOrEdit(std);
-
-
-
-        //            }
-
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-
-        //    }
-        //    return res;
-        //}
-
+       
         public async Task<responseBack> ZohoESignCreateDocument(string esignPath, string esignKey, string EscrowId, ESignResolvedCreds creds)
         {
             responseBack res = new responseBack();
@@ -7187,10 +6752,12 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                     int recipentId = 1;
                     string recipientName = "";
-                    var actionData = list.FirstOrDefault(x => x.recipientEmail == email);
+                    var actionData = list.FirstOrDefault(x => string.Equals(x.recipientEmail, email, StringComparison.OrdinalIgnoreCase));
                     if (actionData != null)
+                    {
                         recipentId = actionData.signingOrder;
-                    recipientName = actionData.recipientName;
+                        recipientName = actionData.recipientName;
+                    }
 
                     var token = await GetEmbeddedUrlDocuSign(envelopeId, email, recipentId, recipientName, accessToken, creds.ApiAccountId);
 
@@ -7566,7 +7133,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 writer7.WriteLine("exception  in file download " + ex.Message);
                 writer7.Close();
             }
-            _hub.Clients.All.SendAsync("getFileUploadMessage", true);
+            // _hub.Clients.All.SendAsync("getFileUploadMessage", true);
             return responseBack;
         }
 
@@ -7942,7 +7509,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 System.IO.File.AppendAllText(logsPath, $"[{DateTime.Now}] Exception: {ex.Message}\n");
             }
 
-            await _hub.Clients.All.SendAsync("getFileUploadMessage", true);
+            // await _hub.Clients.All.SendAsync("getFileUploadMessage", "Background task finished.");
             return responseBack;
         }
 
@@ -8425,240 +7992,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                         }
 
-                        //using (PDFDoc doc = new PDFDoc(createFileForZoho))
-                        //{
-                        //    error_code = doc.Load(null);
-
-                        //    if (error_code != foxit.common.ErrorCode.e_ErrSuccess)
-                        //    {
-                        //        Console.WriteLine("The PDFDoc " + pdfFilePath + " Error: " + error_code);
-                        //        // return;
-                        //    }
-
-                        //    int pageCount = doc.GetPageCount();
-
-
-
-                        //    using (TextSearch search = new TextSearch(doc, null, (int)TextPage.TextParseFlags.e_ParseTextNormal))
-                        //    {
-
-                        //        for (int i = 0; i < pageCount; i++)
-                        //        {
-                        //            using (var page = doc.GetPage(i))
-                        //            {
-                        //                // Parse page
-                        //                page.StartParse((int)PDFPage.ParseFlags.e_ParsePageNormal, null, false);
-                        //                // Get the text select object.
-
-
-                        //                using (var text_select = new TextPage(page, (int)TextPage.TextParseFlags.e_ParseTextNormal))
-                        //                {
-                        //                    int count = text_select.GetCharCount();
-                        //                    if (count > 0)
-                        //                    {
-                        //                        String chars = text_select.GetChars(0, count);
-                        //                        string[] lines = chars.Split('\n', ' ');
-                        //                        //string[] filter = lines.Where(x => x.Contains("{{Signature_")).Distinct().ToArray();
-                        //                        //string[] filterInitial = lines.Where(x => x.Contains("{{Initial_")).Distinct().ToArray();
-                        //                        string[] filter = lines.Where(x => x.Contains("@{")).Distinct().ToArray();
-                        //                        string[] filterInitial = lines.Where(x => x.Contains("{{Initial_")).Distinct().ToArray();
-
-                        //                        if (filter.Length == 0)
-                        //                        {
-                        //                            continue;
-                        //                        }
-
-
-                        //                        foreach (var txt in filter)
-                        //                        {
-
-                        //                            var usertext = txt;
-                        //                            bool isTextCorrected = true;
-
-                        //                            if (usertext.Contains("\r"))
-                        //                            {
-                        //                                //isTextCorrected = false;
-                        //                                usertext = usertext.Replace("\r", "");
-                        //                            }
-
-                        //                            string trimmedInput = usertext.TrimStart('@').TrimStart('{').TrimEnd('}');
-
-                        //                            // Split the string by the colon (":")
-                        //                            string[] parts = trimmedInput.Split(':');
-
-                        //                            // Extract the values
-                        //                            string part1 = parts[0]; // BR1
-                        //                            string part2 = parts[1]; // S
-                        //                                                     //  string part3 = (signingOrder++).ToString(); // 1
-
-                        //                            UserTypeList TypeList = new UserTypeList();
-                        //                            TypeList.userType = part1;
-
-                        //                            TypeList.sign_type = part2;
-                        //                            if (isTextCorrected == true)
-                        //                            {
-                        //                                TypeList.searchPattren = "@{" + TypeList.userType + ":" + TypeList.sign_type + ":1" + "}";
-                        //                            }
-                        //                            else
-                        //                            {
-                        //                                TypeList.searchPattren = "@{" + TypeList.userType + ":" + TypeList.sign_type + ":1" + "}\r";
-                        //                            }
-                        //                            //if(actionsDataOld.Count > 0)
-                        //                            //{
-                        //                            //    var escrowDetailsItem = EscrowUserList.Where(x => x.Usertype == TypeList.userType).FirstOrDefault();
-                        //                            //    if (escrowDetailsItem != null)
-                        //                            //    {
-                        //                            //        // check here if user already signed
-                        //                            //        var actionData = actionsDataOld.Where(x => x.recipient_email == escrowDetailsItem.Email).FirstOrDefault();
-                        //                            //        if(actionData != null)
-                        //                            //        {
-                        //                            //            TypeList.signingOrder = actionData.signing_order;
-                        //                            //            userTypeList.Add(TypeList);
-                        //                            //        }
-                        //                            //    }
-                        //                            //}
-
-                        //                            var checkUserAlready = userTypeList.Where(x => x.userType == TypeList.userType).FirstOrDefault();
-                        //                            if (checkUserAlready == null && (EscrowUserList.Where(x => x.Usertype == TypeList.userType).FirstOrDefault() != null))
-                        //                            {
-                        //                                TypeList.signingOrder = signingOrder++;
-                        //                                userTypeList.Add(TypeList);
-                        //                            }
-
-
-
-                        //                        }
-
-
-                        //                        foreach (var item in userTypeList)
-                        //                        {
-                        //                            using (TextSearchReplace searchreplace = new TextSearchReplace(doc))
-                        //                            using (FindOption find_option = new FindOption(false, false))
-                        //                            using (ReplaceCallbackImpl replace_callback = new ReplaceCallbackImpl())
-                        //                            {
-                        //                                searchreplace.SetReplaceCallback(replace_callback);
-
-
-                        //                                if (item.isReplaced == false)
-                        //                                {
-                        //                                    // searchreplace.SetPattern("{{Signature_" + item.userType + ":", i, find_option);
-                        //                                    searchreplace.SetPattern(item.searchPattren, i, find_option);
-
-
-                        //                                    //  while (searchreplace.ReplaceNext($"{{Signature:Recipient{item.signingOrder}}}"))
-                        //                                    var replaceText = "{{S:R" + item.signingOrder + "*}}";
-                        //                                    while (searchreplace.ReplaceNext(replaceText))
-                        //                                    {
-                        //                                        try
-                        //                                        {
-                        //                                            var escrowDetails = EscrowUserList.Where(x => x.Usertype == item.userType).FirstOrDefault();
-                        //                                            if (escrowDetails != null)
-                        //                                            {
-                        //                                                var check = zohoSigninUserMapping.Where(x => x.recipientEmail == escrowDetails.Email).FirstOrDefault();
-                        //                                                if (check == null)
-                        //                                                {
-                        //                                                    ZohoSigninUserMapping zohoSignin = new ZohoSigninUserMapping();
-                        //                                                    zohoSignin.recipientName = escrowDetails.Name;
-                        //                                                    zohoSignin.recipientEmail = escrowDetails.Email;
-                        //                                                    zohoSignin.signingOrder = item.signingOrder;
-                        //                                                    zohoSigninUserMapping.Add(zohoSignin);
-                        //                                                }
-                        //                                            }
-                        //                                        }
-                        //                                        catch (Exception ex)
-                        //                                        {
-                        //                                            throw ex;
-                        //                                        }
-
-                        //                                    }
-                        //                                }
-                        //                                else
-                        //                                {
-                        //                                    var escrowDetails = EscrowUserList.Where(x => x.Usertype == item.userType).FirstOrDefault();
-                        //                                    ZohoSigninUserMapping zohoSignin = new ZohoSigninUserMapping();
-                        //                                    zohoSignin.recipientName = escrowDetails.Name;
-                        //                                    zohoSignin.recipientEmail = escrowDetails.Email;
-                        //                                    zohoSignin.signingOrder = item.signingOrder;
-                        //                                    zohoSigninUserMapping.Add(zohoSignin);
-                        //                                }
-
-                        //                            }
-                        //                            doc.SaveAs(pdfFilePathAfterConvert, 0);
-                        //                        }
-
-
-                        //                        // replace initials in pdf 
-
-                        //                        foreach (var txt in filterInitial)
-                        //                        {
-                        //                            string[] parts = txt.TrimStart('{').TrimEnd('}').Split(':');
-
-                        //                            var getUserType = parts[0].Replace("Initial_", "");
-                        //                            var getRecipeint = parts[1].Replace("Recipient", "");
-                        //                            // var getUserType = parts[0].Replace("@{", "");
-                        //                            // var getRecipeint = parts[2].Replace("}", "");
-                        //                            char getRecipeint1 = getRecipeint[0];
-
-                        //                            //userTypeList
-                        //                            UserTypeList TypeList = new UserTypeList();
-                        //                            TypeList.userType = getUserType;
-                        //                            TypeList.signingOrder = int.Parse(getRecipeint1.ToString());
-                        //                            //TypeList.signingOrder = int.Parse(getRecipeint.ToString());
-
-                        //                            userTypeListInitials.Add(TypeList);
-                        //                        }
-
-                        //                        foreach (var item in userTypeListInitials)
-                        //                        {
-                        //                            using (TextSearchReplace searchreplace = new TextSearchReplace(doc))
-                        //                            using (FindOption find_option = new FindOption(false, false))
-                        //                            using (ReplaceCallbackImpl replace_callback = new ReplaceCallbackImpl())
-                        //                            {
-                        //                                searchreplace.SetReplaceCallback(replace_callback);
-                        //                                searchreplace.SetPattern("{{Initial_" + item.userType + ":", i, find_option);
-                        //                                // searchreplace.SetPattern("@{" + item.userType + ":", i, find_option);
-
-                        //                                while (searchreplace.ReplaceNext("{{Initial:"))
-                        //                                {
-
-                        //                                    //try
-                        //                                    //{
-                        //                                    //    var escrowDetails = EscrowUserList.Where(x => x.Usertype == item.userType).FirstOrDefault();
-                        //                                    //    if (escrowDetails != null)
-                        //                                    //    {
-                        //                                    //        var check = zohoSigninUserMapping.Where(x => x.recipientEmail == escrowDetails.Email).FirstOrDefault();
-                        //                                    //        if (check == null)
-                        //                                    //        {
-
-
-                        //                                    //            ZohoSigninUserMapping zohoSignin = new ZohoSigninUserMapping();
-                        //                                    //            zohoSignin.recipientName = escrowDetails.Name;
-                        //                                    //            zohoSignin.recipientEmail = escrowDetails.Email;
-                        //                                    //            zohoSignin.signingOrder = item.signingOrder;
-                        //                                    //            zohoSigninUserMapping.Add(zohoSignin);
-                        //                                    //        }
-                        //                                    //    }
-                        //                                    //}
-                        //                                    //catch (Exception ex)
-                        //                                    //{
-
-                        //                                    //    throw ex;
-                        //                                    //}
-
-                        //                                }
-                        //                            }
-                        //                            doc.SaveAs(pdfFilePathAfterConvert, 0);
-                        //                        }
-
-
-                        //                    }
-
-                        //                    Console.WriteLine("Search Replace demo finished.");
-                        //                }
-                        //            }
-                        //        }
-                        //    }
-                        //}
                     }
                     catch (System.Exception e)
                     {
@@ -8674,21 +8007,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         writer3.Close();
                         foxit.common.Library.Reinitialize();
                     }
-
-
-                    //if (System.IO.File.Exists(pdfFilePathAfterConvert))
-                    //{
-                    //    FileInfo file = new FileInfo(pdfFilePath);
-                    //    file.Delete();
-                    //    System.IO.File.Copy(pdfFilePathAfterConvert, pdfFilePath);
-
-                    //    FileInfo fileNew = new FileInfo(pdfFilePathAfterConvert);
-                    //    fileNew.Delete();
-                    //    FileInfo fileConverted = new FileInfo(createFileForZoho);
-                    //    fileConverted.Delete();
-
-                    //}
-
+                    
                     await deleteZohoPdf(accessToken, requestId);
 
 
@@ -8835,8 +8154,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             return res;
         }
 
-
-
         public async Task<responseBack> deleteZohoPdf(string accessToken, string RequestId)
         {
             try
@@ -8888,7 +8205,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         {
             FileUploadResponse responseData = new FileUploadResponse();
             string apiUrl = "https://api.pdf.co/v1/file/upload";
-            //string apiKey = "anu@mandavconsultancy.com_vaVoisqPAEzcXOCUqJgawt6uUJTTktHI9dsdjJDZ1F7Uz7x7s64vrHnkBbrLQNsl";
             string apiKey = conf["PdfCo:ApiKey"];
             if (!System.IO.File.Exists(filePath))
             {
@@ -8917,8 +8233,10 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     }
                     else
                     {
+                        string err = await response.Content.ReadAsStringAsync();
+                        if (err.Contains("credit", StringComparison.OrdinalIgnoreCase)) throw new Exception("PDF.co credits exhausted. Please renew.");
                         Console.WriteLine("Failed to upload file. Status Code: " + response.StatusCode);
-                        Console.WriteLine("Response: " + await response.Content.ReadAsStringAsync());
+                        Console.WriteLine("Response: " + err);
                     }
                 }
             }
@@ -8959,11 +8277,11 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     string result = await response.Content.ReadAsStringAsync();
                     responseData = JsonConvert.DeserializeObject<FileUploadResponse>(result);
                     return responseData;
-
                 }
                 else
                 {
                     string errorDetails = await response.Content.ReadAsStringAsync();
+                    if (errorDetails.Contains("credit", StringComparison.OrdinalIgnoreCase)) throw new Exception("PDF.co credits exhausted. Please renew.");
                     Console.WriteLine("Error: " + response.StatusCode);
                     Console.WriteLine("Details: " + errorDetails);
                 }
@@ -8972,7 +8290,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         }
         static async Task<FileUploadResponse> TextFindAndReplaceDocusign(string url, string[] searchStrings, string[] replaceStrings, string fileName)
         {
-            //string API_KEY = "anu@mandavconsultancy.com_vaVoisqPAEzcXOCUqJgawt6uUJTTktHI9dsdjJDZ1F7Uz7x7s64vrHnkBbrLQNsl";
             string API_KEY = conf["PdfCo:ApiKey"];
             const string ApiUrl = "https://api.pdf.co/v1/pdf/edit/replace-text";
             var jsonBody = new
@@ -8980,12 +8297,11 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 url = url,
                 searchStrings = searchStrings,
                 replaceStrings = replaceStrings,
-                caseSensitive = true,
-                replacementLimit = 1,
+                caseSensitive = false, // Case-insensitive to match both @{SR1:S:1} and @{SR1:s:1}
                 pages = "",
                 password = "",
                 name = fileName,
-                async = true   // keep async = true if you want
+                async = true  
             };
 
             using (HttpClient client = new HttpClient())
@@ -9236,6 +8552,10 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     responseData = JsonConvert.DeserializeObject<FileUploadResponse>(result);
                     return responseData;
                 }
+                else
+                {
+                    if (result.Contains("credit", StringComparison.OrdinalIgnoreCase)) throw new Exception("PDF.co credits exhausted. Please renew.");
+                }
 
             }
             return responseData;
@@ -9284,7 +8604,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             const string ApiUrl = "https://api.pdf.co/v1/pdf/find";
 
             var isTag = SearchText.StartsWith("@");
-            var searchPattern = isTag ? $@"[_\s]*{Regex.Escape(SearchText)}" : SearchText;
+            var searchPattern = isTag ? $@"(?i)[_\s]*{Regex.Escape(SearchText)}" : SearchText; // (?i) makes it case-insensitive
 
             var data = new
             {
@@ -9396,7 +8716,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 var escrowUsers = _escrowDetailRepository.GetAll().Where(x => x.EscrowId == escrowId).ToList();
                 string tokenPart = esignKey.Contains("~") ? esignKey.Split("~").Last() : "";
 
-                Regex regex = new Regex(@"\{([A-Z]+[0-9]+)-.*?\}");
+                Regex regex = new Regex(@"\{([A-Z0-9]+)-.*?\}");
                 var extractedCodes = regex.Matches(tokenPart)
                                           .Select(m => m.Groups[1].Value)
                                           .Distinct()
@@ -9611,34 +8931,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     signerId++;
                 }
 
-                //int signerId = 1;
-                //foreach (var signerObj in signerList)
-                //{
-                //    dynamic s = signerObj;
-                //    await _e_SignRecordsAppService.CreateOrEdit(new CreateOrEditE_SignRecordDto
-                //    {
-                //        FileName = esignKey,
-                //        Status = status,
-                //        RequestId = requestId,
-                //        FullFilePath = Path.Combine("wwwroot", "Common", "Paperless", esignPath + esignKey),
-                //        EsignCompanyCode = 4001,
-                //        EmbeddedURL = embeddedUrl,
-                //        ZohoAction = JsonConvert.SerializeObject(new[] {
-                //   new {
-                //          recipientEmail = s.email,
-                //          recipientName = s.fullname,
-                //          signingOrder = s.signerOrder,
-                //          recipientId = signerId,
-                //          isReplaced = false,
-                //          status = status,
-                //          signedDateTime = (string)null,
-                //         }
-                //}),
-                //        EmailId = s.email
-                //    });
-
-                //    signerId++;
-                //}
             }
             catch (Exception ex)
             {

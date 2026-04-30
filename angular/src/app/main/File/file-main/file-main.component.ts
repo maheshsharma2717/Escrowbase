@@ -632,8 +632,6 @@ debugger;
         }, 100);
 
         
-        // Trick Windows File Explorer into accepting the drag (removes the 🚫 icon)
-        // Only apply if not in Thunderbird mode to prevent blue links/0-byte attachments
         if (!this.isThunderbirdMode) {
             event.dataTransfer.setData('text/uri-list', '\\\\.\\NUL');
           // event.dataTransfer.setData('text/uri-list', `${payload}`);

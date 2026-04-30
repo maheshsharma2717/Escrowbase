@@ -70,7 +70,6 @@ export class ChatSignalrService extends AppComponentBase {
     }
 
     registerChatEvents(connection): void {
-        debugger
         connection.on('getChatMessage', message => {
             abp.event.trigger('app.chat.messageReceived', message);
         });
@@ -112,12 +111,17 @@ export class ChatSignalrService extends AppComponentBase {
                     friend: friend
                 });
         });
-        connection.on('getFileUploadMessage', friend => {
-            
-        if (friend)
-        {
-           this.callComponentMethod();
-        }
+        connection.on('getFileUploadMessage', data => {
+            this._zone.run(() => {
+                console.log('getFileUploadMessage received:', data);
+                if (data) {
+                    if (typeof data === 'string') {
+                        console.log('Displaying toast:', data);
+                        abp.notify.info(data, 'System Update');
+                    }
+                    this.callComponentMethod();
+                }
+            });
         });
         connection.on('CurrentEscrow', (data) => {
         console.log('Escrow received from server:', data);

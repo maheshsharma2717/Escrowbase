@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Abp;
@@ -68,10 +68,10 @@ namespace SR.EscrowBaseWeb.Web.Chat.SignalR
             }
         }
 
-        public async Task<string> SendFileUploadMesagge(string message)
+        public async Task<string> SendFileUploadMessage(string message)
         {
             var signalR = GetSignalRClientOrNull(); ;
-            await signalR.SendAsync("getFileUploadMesagge", message);
+            await signalR.SendAsync("getFileUploadMessage", message);
             return "";
         }
         private IClientProxy GetSignalRClientOrNull()

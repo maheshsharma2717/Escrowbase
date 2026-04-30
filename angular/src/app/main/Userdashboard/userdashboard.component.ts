@@ -1,4 +1,4 @@
-import { Component, Injector, ViewEncapsulation, ViewChild, EventEmitter, HostListener, OnInit, Inject, Output, ComponentFactoryResolver } from '@angular/core';
+import { Component, Injector, ViewEncapsulation, ViewChild, EventEmitter, HostListener, OnInit, Inject, Output, ComponentFactoryResolver, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EscrowClientsServiceProxy, EscrowClientDto, SrFileMappingsServiceProxy, EscrowDetailsServiceProxy, SrEscrowsServiceProxy } from '@shared/service-proxies/service-proxies';
 import { NotifyService } from 'abp-ng2-module';
@@ -109,34 +109,12 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         private _router: Router,
         private route: ActivatedRoute,
         private _defaultLayoutComponent: DefaultLayoutComponent,
-        private sharedServices: SharedServices
+        private sharedServices: SharedServices,
+        private _changeDetectorRef: ChangeDetectorRef
     ) {
         super(injector);
 
     }
-
-    //Commented because it logouts session on refresh
-    //     @HostListener('window:beforeunload')
-    //     async ngOnDestroytest() {
-    //   
-    //         console.log(this._router.url);
-
-    //         if (localStorage.getItem('homeOpened') == 'true') {
-
-    //             localStorage.removeItem('homeOpened');
-    //             localStorage.setItem('homeOpened', 'false');
-    //         }
-
-    //            if (localStorage.getItem('Signing') != 'true'){
-
-    //             this._authService.logout();
-    //                 localStorage.removeItem('OpenTabList');
-    //                 abp.auth.clearToken();
-    //                 abp.auth.clearRefreshToken();
-    //            }
-    //            else{}
-    //     }
-
 
     openNewTab() {
 
@@ -222,7 +200,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
 
     availableEscrows: any[] = [];
     recentEscrows: any[] = [];
-    selectedEscrow: any = "";
+    selectedEscrow: any = null;
 
     populateRecentDropdown() {
         const url = AppConsts.remoteServiceBaseUrl + "/api/services/app/CurrentEscrows/GetAll";
@@ -284,8 +262,11 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     }
 
     assembleDropdown(currentEscrowItem) {
-        debugger;
         this.availableEscrows = [];
+        setTimeout(() => {
+            this.selectedEscrow = null;
+            this._changeDetectorRef.detectChanges();
+        });
 
         // Add "Current/Selected" escrow item first if it exists and is valid
         if (currentEscrowItem && currentEscrowItem.value !== '') {
@@ -293,6 +274,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         } else {
             // Keep the placeholder if no current escrow, but ensure it doesn't duplicate the HTML "Select Escrow"
             this.availableEscrows.push({ label: 'Current escrow not sent', value: '', disabled: true });
+            this.selectedEscrow = "";
         }
 
         // Fetch recent escrows from backend
@@ -354,11 +336,14 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     onEscrowSelect() {
         if (this.selectedEscrow) {
             this.checkAndOpenFile(this.selectedEscrow);
+            setTimeout(() => {
+                this.selectedEscrow = null;
+                this._changeDetectorRef.detectChanges();
+            });
         }
     }
 
     getEscrowClients(event?: LazyLoadEvent, IsRefresh: boolean = false) {
-        debugger
         //this.MyRefresh();
 
         if (IsRefresh) {
@@ -502,8 +487,6 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
 
         }
 
-        // Always restore tabs from OpenTabList so they remain visible in the UI
-        // On dashboard reload, tabs will be created but not selected, then dashboard tab will be selected
         const navEntry = performance.getEntriesByType('navigation')[0] as any;
         const isReload = navEntry?.type === 'reload';
         const isDashboardRoute = this._router.url?.includes('/main/dashboard') || this._router.url?.includes('/main/Userdashboard');
@@ -524,8 +507,6 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                 }, 500);
             }
 
-            // After restoring all tabs, if on dashboard reload AND no escrow tab was active, ensure dashboard tab is selected
-            // If an escrow tab was active, it will be restored by TabsComponent.restoreSavedTab()
             const savedTab = localStorage.getItem('activeTab');
             if (isReload && isDashboardRoute && (!savedTab || savedTab === 'Dashboard')) {
                 setTimeout(() => {
@@ -567,7 +548,6 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     }
 
     onOpenFileManager(dataNew, fromUI) {
-        debugger
         console.log('onOpenFileManager called', dataNew, fromUI);
         if (fromUI == true) {
             var queryParams = dataNew;
@@ -597,14 +577,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     }
 
     logEscrowAccess(escrowIdOrNumber: string, isId: boolean = false) {
-        debugger;
         console.log('logEscrowAccess called', escrowIdOrNumber, isId);
-
-        // IMPORTANT: The 'isId' flag is unreliable. The value might be:
-        // 1. A numeric ID as a string (e.g., "123")
-        // 2. An alphanumeric escrow number (e.g., "CB125")
-        // Always try to parse as a number first.
-
         let id: number | null = null;
         let num: string | null = null;
 
@@ -680,34 +653,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         }
     }
 
-    // loadTabFromStorage() {
-    //       
-
-    //     var listOfOpenTab = localStorage.getItem("OpenTabList")
-    //     if (listOfOpenTab != null || listOfOpenTab !== undefined || listOfOpenTab != "") {
-    //     if (listOfOpenTab != "" && listOfOpenTab != null && listOfOpenTab != undefined) {
-    //         var list = JSON.parse(listOfOpenTab);
-    //         list.forEach(element => {
-    //               
-    //             let data=element;
-    //              data.dataNew2 = {
-
-    //                 c: data.c,
-    //                 e: data.e,
-    //                 sc:data.sc,
-    //                 u: data.u,
-    //             }
-    //               
-    //             // this.escrowList.push(data.dataNew2);
-
-    //             this._defaultLayoutComponent.onOpenAbout(data.dataNew2);
-
-    //         });
-    //     }}
-    // }
-
     setListOfOpenTab(item) {
-        debugger
         var listOfOpenTab = localStorage.getItem("OpenTabList")
         if (listOfOpenTab != "" && listOfOpenTab != null && listOfOpenTab != undefined) {
             var listData: any = [];
@@ -725,8 +671,6 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         }
     }
     checkAndOpenFile(dataNew: any) {
-        debugger;
-        debugger;
         const enterpriseName = atob(dataNew.c);
         const url = AppConsts.remoteServiceBaseUrl + "/GetEsignStatus?escrowId=" + enterpriseName;
         this.http.get(url).subscribe({
@@ -751,40 +695,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
             }
         });
     }
-    // editESignCreds(dataNew: any) {
-    //     const enterpriseId = atob(dataNew.c);
-    //     const url = AppConsts.remoteServiceBaseUrl + "/GetUserCreds?enterpriseId=" + enterpriseId;
 
-    //     this.http.get(url).subscribe({
-    //         next: (res: any) => {
-    //             if (res?.success && res?.result) {
-    //                 const creds = res.result.result;
-    //                 this.selectedESignCompany = creds.eSignProviderCode;
-    //                 this.eSignCreds = {
-    //                     clientId: creds.eSignClientId,
-    //                     clientSecret: creds.eSignClientSecret,
-    //                     apiAccountId: creds.eSignApiAccountId,
-    //                     userId: creds.eSignUserId,
-    //                     folderId: creds.eSignFolderId,
-    //                     refreshToken: creds.refreshToken,
-    //                     accessToken: creds.accessToken,
-    //                     accessTokenTime: creds.accessTokenTime,
-    //                      dataNew.enterpriseId = result.enterpriseId;
-    //                     dataNew.enterpriseName = result.enterpriseName;
-    //                 };
-
-    //                 this.isAdminAssigned = creds.isAdminAssigned;
-    //                 this.tempDataNew = dataNew;
-    //                 this.showESignModal = true; // open modal for edit
-    //             } else {
-    //                 this.message.error("No credentials found to edit.");
-    //             }
-    //         },
-    //         error: () => {
-    //             this.message.error("Unable to fetch credentials.");
-    //         }
-    //     });
-    // }
 
     editESignCreds(dataNew: any) {
         const enterpriseId = atob(dataNew.c);
@@ -838,34 +749,40 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
 
 
     saveESignAndContinue() {
-        debugger;
         this.isFormSubmitted = true;
         // Required fields for all companies
         if (!this.selectedESignCompany || !this.selectedESignCompany.trim()) {
+            this.message.warn("Please select an E-Sign company.");
             return;
         }
         if (this.selectedESignCompany !== 'admin-suggested') {
             if (!this.eSignCreds.clientId || !this.eSignCreds.clientId.trim()) {
+                this.message.warn("Client ID / Access Key is required.");
                 return;
             }
             if (!this.eSignCreds.clientSecret || !this.eSignCreds.clientSecret.trim()) {
+                this.message.warn("Client Secret / Product Key is required.");
                 return;
             }
             if (this.selectedESignCompany !== '2001') {
                 if (!this.eSignCreds.apiAccountId || !this.eSignCreds.apiAccountId.trim()) {
+                    this.message.warn("API Account ID / Company ID is required.");
                     return;
                 }
                 if (!this.eSignCreds.userId || !this.eSignCreds.userId.trim()) {
+                    this.message.warn("User ID is required.");
                     return;
                 }
             }
             if (this.selectedESignCompany === '2001') {
                 if (!this.eSignCreds.folderId || !this.eSignCreds.folderId.trim()) {
+                    this.message.warn("Folder ID is required.");
                     return;
                 }
             }
             if (this.selectedESignCompany !== '4001') {
                 if (!this.eSignCreds.refreshToken || !this.eSignCreds.refreshToken.trim()) {
+                    this.message.warn("Refresh Token is required.");
                     return;
                 }
             }
@@ -912,20 +829,6 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     closeModal() {
         this.showESignModal = false;
     }
-    // onESignCompanyChange() {
-    //     if (this.selectedESignCompany === 'admin-suggested') {
-    //         this.eSignCreds = {
-    //             clientId: '',
-    //             clientSecret: '',
-    //             apiAccountId: '',
-    //             userId: '',
-    //             folderId: ''
-    //         };
-    //         this.isAdminAssigned = true;
-    //     } else {
-    //         this.isAdminAssigned = false;
-    //     }
-    // }
 
     onESignCompanyChange() {
         this.eSignCreds = {

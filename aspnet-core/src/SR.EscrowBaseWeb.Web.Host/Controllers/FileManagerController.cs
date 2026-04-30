@@ -1261,94 +1261,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///<Summary>
         /// Get signing file status details
         ///</Summary>
-        //public async Task<List<EsignNameStatus>> GetSignDetails(string type, string filename, string Escrow)
-        //{
-        //    List<EsignNameStatus> zohosignInPopup = new List<EsignNameStatus>();
-
-        //    var get = _esignRepository.GetAll().Where(x => x.FileName == filename).ToList();
-        //    var JoinResult = (from p in get.AsEnumerable()
-        //                      select new EsignNameStatus()
-        //                      {
-        //                          Status = p.Status,
-        //                          Signin_percentage = p.Signin_percentage
-
-        //                      }).ToList();
-
-        //    var dbEsignRecord = _e_SignRecordsAppService.GetAllE_Sign(2001);
-        //    var find = dbEsignRecord.Where(x => x.FileName == filename).FirstOrDefault();
-        //    if (find != null)
-        //    {
-        //        var EscrowDetails = _escrowDetailRepository.GetAll().Where(x => x.EscrowId == Escrow).ToList();
-
-        //        var myDeserializedClass = await getSignStatus(find.RequestId);
-        //        var action = find.ZohoAction;
-        //        var ZohoAction = JsonConvert.DeserializeObject<List<Action>>(find.ZohoAction);
-        //        if (myDeserializedClass.document_form_data != null && myDeserializedClass.document_form_data.actions != null)
-        //        {
-        //            var signPercentage = myDeserializedClass.document_form_data.actions;
-        //            foreach (var item in ZohoAction)
-        //            {
-
-        //                EsignNameStatus zohosignIn = new EsignNameStatus();
-        //                zohosignIn.Email = item.recipient_email;
-        //                zohosignIn.Name = item.recipient_name;
-        //                zohosignIn.UserType = EscrowDetails.Where(x => x.Email == zohosignIn.Email).FirstOrDefault().Usertype;
-        //                zohosignIn.signing_order = item.signing_order;
-        //                zohosignIn.TotalSignatureCount = item.fields.Where(x => x.field_type_name == "Signature").ToList().Count();
-        //                zohosignIn.TotalinitialsCount = item.fields.Where(x => x.field_type_name == "Initial").ToList().Count();
-        //                zohosignIn.TotalMandatorySignatureCount = item.fields.Where(x => x.field_type_name == "Signature" && x.is_mandatory == true).ToList().Count();
-        //                zohosignIn.TotalMandatoryInitialsCount = item.fields.Where(x => x.field_type_name == "Initial" && x.is_mandatory == true).ToList().Count();
-        //                zohosignIn.TotalOptinalSignatureCount = zohosignIn.TotalSignatureCount - zohosignIn.TotalMandatorySignatureCount;
-        //                zohosignIn.TotalOptinalInitialsCount = zohosignIn.TotalinitialsCount - zohosignIn.TotalMandatoryInitialsCount;
-
-
-        //                var signData = signPercentage.Where(x => x.recipient_email == item.recipient_email).FirstOrDefault();
-        //                if (signData != null)
-        //                {
-        //                    if (!string.IsNullOrWhiteSpace(signData.signed_time))
-        //                    {
-        //                        zohosignIn.ZohoSignSignature = true;
-        //                    }
-        //                    else
-        //                    {
-        //                        zohosignIn.ZohoSignSignature = false;
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    zohosignIn.ZohoSignSignature = false;
-        //                }
-        //                zohosignInPopup.Add(zohosignIn);
-
-
-        //            }
-        //        }
-        //        else
-        //        {
-        //            foreach (var item in ZohoAction)
-        //            {
-
-        //                EsignNameStatus zohosignIn = new EsignNameStatus();
-        //                zohosignIn.Email = item.recipient_email;
-        //                zohosignIn.Name = item.recipient_name;
-        //                zohosignIn.UserType = EscrowDetails.Where(x => x.Email == zohosignIn.Email).FirstOrDefault().Usertype;
-        //                zohosignIn.signing_order = item.signing_order;
-        //                zohosignIn.TotalSignatureCount = item.fields.Where(x => x.field_type_name == "Signature").ToList().Count();
-        //                zohosignIn.TotalinitialsCount = item.fields.Where(x => x.field_type_name == "Initial").ToList().Count();
-        //                zohosignIn.TotalMandatorySignatureCount = item.fields.Where(x => x.field_type_name == "Signature" && x.is_mandatory == true).ToList().Count();
-        //                zohosignIn.TotalMandatoryInitialsCount = item.fields.Where(x => x.field_type_name == "Initial" && x.is_mandatory == true).ToList().Count();
-        //                zohosignIn.TotalOptinalSignatureCount = zohosignIn.TotalSignatureCount - zohosignIn.TotalMandatorySignatureCount;
-        //                zohosignIn.TotalOptinalInitialsCount = zohosignIn.TotalinitialsCount - zohosignIn.TotalMandatoryInitialsCount;
-        //                zohosignIn.ZohoSignSignature = false;
-        //                zohosignInPopup.Add(zohosignIn);
-
-        //            }
-        //        }
-        //    }
-
-
-        //    return zohosignInPopup.ToList();
-        //}
+    
         public async Task<List<EsignNameStatus>> GetSignDetails(string type, string filename, string Escrow)
         {
             List<EsignNameStatus> zohosignInPopup = new List<EsignNameStatus>();
@@ -1857,24 +1770,39 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                             if (temp1 == null)
                             {
-                                if (usertype.StartsWith("SR") == true)
-                                {
-                                    temp1 = checkPermission.Where(x => x.FileName.Contains(strBunch) && x.FileName.Contains(lst.name) && x.Action.Contains("SRX")).FirstOrDefault();
-                                }
-                                else if (usertype.StartsWith("BR") == true)
-                                {
-                                    temp1 = checkPermission.Where(x => x.FileName.Contains(strBunch) && x.FileName.Contains(lst.name) && x.Action.Contains("BRX")).FirstOrDefault();
-                                }
-                                else if (usertype.StartsWith("TC") == true)
-                                {
-                                    temp1 = checkPermission.Where(x => x.FileName.Contains(strBunch) && x.FileName.Contains(lst.name) && x.Action.Contains("TCX")).FirstOrDefault();
-                                }
+                                 if (usertype.StartsWith("SR") == true)
+                                 {
+                                     temp1 = checkPermission.Where(x => x.FileName.Contains(strBunch) && x.FileName.Contains(lst.name) && x.Action.Contains("SRX")).FirstOrDefault();
+                                 }
+                                 else if (usertype.StartsWith("BR") == true)
+                                 {
+                                     temp1 = checkPermission.Where(x => x.FileName.Contains(strBunch) && x.FileName.Contains(lst.name) && x.Action.Contains("BRX")).FirstOrDefault();
+                                 }
+                                 else if (usertype.StartsWith("TC") == true)
+                                 {
+                                     temp1 = checkPermission.Where(x => x.FileName.Contains(strBunch) && x.FileName.Contains(lst.name) && x.Action.Contains("TCX")).FirstOrDefault();
+                                 }
+                                 else if (usertype.StartsWith("RA") == true)
+                                 {
+                                     temp1 = checkPermission.Where(x => x.FileName.Contains(strBunch) && x.FileName.Contains(lst.name) && x.Action.Contains("RAX")).FirstOrDefault();
+                                 }
+                                 else if (usertype.StartsWith("RB") == true)
+                                 {
+                                     temp1 = checkPermission.Where(x => x.FileName.Contains(strBunch) && x.FileName.Contains(lst.name) && x.Action.Contains("RBX")).FirstOrDefault();
+                                 }
+                                 else if (usertype.StartsWith("EO") == true)
+                                 {
+                                     temp1 = checkPermission.Where(x => x.FileName.Contains(strBunch) && x.FileName.Contains(lst.name) && x.Action.Contains("EOX")).FirstOrDefault();
+                                 }
+                                 else if (usertype.StartsWith("EA") == true)
+                                 {
+                                     temp1 = checkPermission.Where(x => x.FileName.Contains(strBunch) && x.FileName.Contains(lst.name) && x.Action.Contains("EAX")).FirstOrDefault();
+                                 }
+                            }
                                 if (temp1 == null)
                                 {
                                     temp1 = checkPermission.Where(x => x.FileName.Contains(company) && x.FileName.Contains(subCompany) && x.FileName.Contains(escrow) && x.Action.Contains(usertype)).FirstOrDefault();
                                 }
-
-                            }
 
 
                             var comp = lst.name.Contains(usertype);
@@ -1895,18 +1823,34 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                                 else
                                 {
-                                    if (usertype.Contains("BR") && lst.name.Contains("BRX"))
-                                    {
-                                        isValidFileForUserType = true;
-                                    }
-                                    else if (usertype.Contains("SR") && lst.name.Contains("SRX"))
-                                    {
-                                        isValidFileForUserType = true;
-                                    }
-                                    else if (usertype.Contains("TC") && lst.name.Contains("TCX"))
-                                    {
-                                        isValidFileForUserType = true;
-                                    }
+                                     if (usertype.Contains("BR") && lst.name.Contains("BRX"))
+                                     {
+                                         isValidFileForUserType = true;
+                                     }
+                                     else if (usertype.Contains("SR") && lst.name.Contains("SRX"))
+                                     {
+                                         isValidFileForUserType = true;
+                                     }
+                                     else if (usertype.Contains("TC") && lst.name.Contains("TCX"))
+                                     {
+                                         isValidFileForUserType = true;
+                                     }
+                                     else if (usertype.Contains("RA") && lst.name.Contains("RAX"))
+                                     {
+                                         isValidFileForUserType = true;
+                                     }
+                                     else if (usertype.Contains("RB") && lst.name.Contains("RBX"))
+                                     {
+                                         isValidFileForUserType = true;
+                                     }
+                                     else if (usertype.Contains("EO") && lst.name.Contains("EOX"))
+                                     {
+                                         isValidFileForUserType = true;
+                                     }
+                                     else if (usertype.Contains("EA") && lst.name.Contains("EAX"))
+                                     {
+                                         isValidFileForUserType = true;
+                                     }
                                     else
                                     {
                                         isValidFileForUserType = false;
@@ -1968,7 +1912,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                         res.srAssignedFileId = 0;
                                         res.signing = "No record found";
                                         res.status = "Not applicable";
-                                        return res; // or continue based on your logic
+                                        continue; // or continue based on your logic
                                     }
                                     var filefound = _srfilemapRepository.GetAll().ToList();
                                     var selectedfile = filefound.Where(x => x.FileName.Contains(st.FileName)).FirstOrDefault();
@@ -2052,59 +1996,48 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                     }
 
                                     // Access and action logic based on the access type (userType)
-                                    if (lst.key.Contains(userType) || (lst.key.Contains("BRX") || lst.key.Contains("SRX")))
+                                     if (lst.key.Contains(userType) || (lst.key.Contains("BRX") || lst.key.Contains("SRX") || lst.key.Contains("RAX") || lst.key.Contains("RBX") || lst.key.Contains("EOX") || lst.key.Contains("EAX")))
                                     {
-                                        if (lst.key.Contains("BRX") && userType.Contains("BR"))
+                                        string tempAccess = string.Empty;
+                                        
+                                        // First, try to find the exact usertype tag, e.g. {SR1-READS}
+                                        var exactMatch = System.Text.RegularExpressions.Regex.Match(lst.key, @"\{" + usertype + @"-([^}]+)\}");
+                                        if (exactMatch.Success)
                                         {
-                                            var accessKey1 = lst.key;
-                                            var idx1 = accessKey1.IndexOf('{');
-                                            var idx2 = accessKey1.IndexOf('}');
-
-                                            // Extracting the content between { and } 
-                                            string tempAccess1 = idx1 >= 0 && idx2 > idx1 ? accessKey1.Substring(idx1 + 1, idx2 - idx1 - 1) : string.Empty;
-
-                                            // Further split by "-" and get the second part (READS)
-                                            if (!string.IsNullOrEmpty(tempAccess1) && tempAccess1.Contains("-"))
-                                            {
-                                                tempAccess1 = tempAccess1.Split('-')[1].Trim();
-                                            }
-
-                                            res.access = tempAccess1; // Expected to get "READS"
-                                        }
-                                        else if (lst.key.Contains("SRX") && userType.Contains("SR"))
-                                        {
-                                            var accessKey1 = lst.key;
-                                            var idx1 = accessKey1.IndexOf('{');
-                                            var idx2 = accessKey1.IndexOf('}');
-
-                                            // Extracting the content between { and } 
-                                            string tempAccess1 = idx1 >= 0 && idx2 > idx1 ? accessKey1.Substring(idx1 + 1, idx2 - idx1 - 1) : string.Empty;
-
-                                            // Further split by "-" and get the second part (READS)
-                                            if (!string.IsNullOrEmpty(tempAccess1) && tempAccess1.Contains("-"))
-                                            {
-                                                tempAccess1 = tempAccess1.Split('-')[1].Trim();
-                                            }
-
-                                            res.access = tempAccess1; // Expected to get "READS"
+                                            tempAccess = exactMatch.Groups[1].Value.Trim();
                                         }
                                         else
                                         {
-                                            var accessKey = lst.key;
-                                            var idx = accessKey.IndexOf('{' + usertype);
-                                            string tempAccess = idx > 0 ? accessKey.Substring(idx + 5, 6).Replace('}', ' ').Trim() : string.Empty;
+                                            // Try wildcard match based on usertype prefix
+                                            string wildcard = string.Empty;
+                                            if (usertype.StartsWith("SR")) wildcard = "SRX";
+                                            else if (usertype.StartsWith("BR")) wildcard = "BRX";
+                                            else if (usertype.StartsWith("TC")) wildcard = "TCX";
+                                            else if (usertype.StartsWith("RA")) wildcard = "RAX";
+                                            else if (usertype.StartsWith("RB")) wildcard = "RBX";
+                                            else if (usertype.StartsWith("EO")) wildcard = "EOX";
+                                            else if (usertype.StartsWith("EA")) wildcard = "EAX";
 
-                                            res.access = tempAccess.Replace("-", "");
+                                            if (!string.IsNullOrEmpty(wildcard))
+                                            {
+                                                var wildcardMatch = System.Text.RegularExpressions.Regex.Match(lst.key, @"\{" + wildcard + @"-([^}]+)\}");
+                                                if (wildcardMatch.Success)
+                                                {
+                                                    tempAccess = wildcardMatch.Groups[1].Value.Trim();
+                                                }
+                                            }
                                         }
+
+                                        res.access = tempAccess.Replace("-", "");
 
                                         // Determine action and status based on the signing status
                                         if (res.access.Contains("S"))
                                         {
-                                            res.action = usertype == "EOX"
-                                            ? "No Action Required"
-                                            : (st.SigningStatus == "Signed"
-                                                ? "Completed"
-                                                : "Fill out and Electronically Sign");
+                                            res.action = (usertype == "EOX" || usertype == "EAX")
+                                                ? "No Action Required"
+                                                : (st.SigningStatus == "Signed"
+                                                    ? "Completed"
+                                                    : "Fill out and Electronically Sign");
                                             res.status = st.SigningStatus == "Signed" ? "Signed Fully" : "Nobody signed yet";
                                         }
                                         else if (res.access.Contains("E"))
@@ -2121,8 +2054,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                                     res.name = lst.name.Substring(0, lst.name.IndexOf("~"));
 
-
-                                    ///
 
                                 }
 
@@ -2155,8 +2086,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     {
                         userType = userType.Substring(0, index1);
                     }
-
-
 
                     GetAllSrInvitationRecordsInput oj = new GetAllSrInvitationRecordsInput();
                     oj.EscrowOfficerFilter = usersname;
@@ -2323,34 +2252,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             return null;
         }
 
-        //public async Task<IActionResult> ConvertDocToDocxAsync([FromForm] string inputFilePath)
-        //{
-        //    string apiUrl = "https://api.pdf.co/v1/docx/convert/from/doc";
-        //    string apiKey = "narender@mandavconsultancy.com_z56MDLfD2tahF0ECxC3M6VChszYeWQoD1z0S8ISTv8VG70AYhkIBFEidLzuKehsw";
-
-        //    using (var client = new HttpClient())
-        //    {
-        //        client.DefaultRequestHeaders.Add("x-api-key", apiKey);
-
-        //        var formData = new MultipartFormDataContent();
-        //        formData.Add(new StringContent("application/vnd.openxmlformats-officedocument.wordprocessingml.document"), "file");
-
-        //        byte[] fileBytes = System.IO.File.ReadAllBytes(inputFilePath);
-        //        var fileContent = new ByteArrayContent(fileBytes);
-        //        formData.Add(fileContent, "file", Path.GetFileName(inputFilePath));
-
-        //        var response = await client.PostAsync(apiUrl, formData);
-        //        response.EnsureSuccessStatusCode();
-
-        //        byte[] resultFileBytes = await response.Content.ReadAsByteArrayAsync();
-
-        //        string outputFilePath = Path.ChangeExtension(inputFilePath, ".docx");
-
-        //        await System.IO.File.WriteAllBytesAsync(outputFilePath, resultFileBytes);
-
-        //        return File(resultFileBytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "converted.docx");
-        //    }
-        //}
 
         ///<Summary>
         /// Get User Context (Companies and Escrows) for Sync App

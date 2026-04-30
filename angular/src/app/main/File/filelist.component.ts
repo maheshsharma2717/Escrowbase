@@ -1771,15 +1771,7 @@ export class FileViewComponent extends AppComponentBase {
 
         let path = this.completeEnterprisePathOther;
         let key = element.key;
-        // let strng = path.replace(/#/g, "%23");
-        // let strng1 = key.replace(/#/g, "%23");
-        // this.downloadname = key;
-        // const token = 'my JWT';
-        // const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
-        // this.globalService.folderPath = this.folderPath;
-        // this.globalService.oldPathSelectedFile = strng;
-        // Ensure both path and key are valid
-
+        
         // Ensure both path and key are valid
         if (!path || !key) {
           console.error('Path or key is missing');
@@ -2902,74 +2894,6 @@ export class FileViewComponent extends AppComponentBase {
     }
   }
 
-  //This is iFreame alternate working code only opnly for popup open need to handle the download logic on close of popup
-  // e_SignWithSutiSign(selectedFile: any) {
-  //   
-
-  //   let strcheck: string | undefined;
-  //   let file = selectedFile;
-  //   let action = file.key.substring(file.key.indexOf("~") + 1);
-
-  //   const paramsPattern = /[^{\}]+(?=})/g;
-  //   let extractParams = action.match(paramsPattern);
-
-  //   if (extractParams) {
-  //     for (let i = 0; i < extractParams.length; i++) {
-  //       let my = extractParams[i].replace("{", "");
-  //       let my1 = my;
-  //       my = my.substring(0, my.indexOf('-'));
-  //       my1 = my1.substring(my1.indexOf('-') + 1);
-  //       if (my == this.Action || (my == 'BRX' || my == 'SRX')) {
-  //         strcheck = my1;
-  //       }
-  //     }
-  //   }
-
-  //   if (!strcheck || strcheck.indexOf("S") === -1) {
-  //     this.ErrorMessage = "!Oops you don't have E-sign Permission for this file";
-  //     abp.notify.error(this.ErrorMessage, "Error");
-  //     return;
-  //   }
-
-  //   let strng = file.key.replace(/#/g, "%23");
-  //   let srId = selectedFile.srAssignedFileId;
-  //   let escrow = localStorage.getItem("activeTab");
-  //   let userType = localStorage.getItem("accessTYpe" + escrow);
-
-  //   const popupWidth = 800;
-  //   const popupHeight = 650;
-  //   const left = (window.screen.width / 2) - (popupWidth / 2);
-  //   const top = (window.screen.height / 2) - (popupHeight / 2);
-  //   const popup = window.open(
-  //     'about:blank',
-  //     '_blank',
-  //     `toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=${popupWidth},height=${popupHeight},top=${top},left=${left}`
-  //   );
-
-  //   this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetEmbeddedLinkDocuSign?filePath=" + strng + "&escrow=" + escrow + "&userType=" + userType + "&srAssignedFileId=" + srId)
-  //     .subscribe({
-  //       next: (response: any) => {
-  //         const sutiLink = response?.result?.result || response?.result?.link;
-
-  //         if (sutiLink) {
-  //           popup.location.href = sutiLink;
-  //         } else {
-  //           popup.close();
-  //           Swal.fire({
-  //             title: 'No signature required for this file.',
-  //             icon: 'info',
-  //             confirmButtonText: 'OK'
-  //           });
-  //         }
-  //       },
-  //       error: (error) => {
-  //         popup.close();
-  //         const message = error?.error?.result?.result || "Something went wrong while fetching the SutiSign link.";
-  //         abp.notify.error(message, "Error");
-  //       }
-  //     });
-  // }
-
   e_SignWithSutiSign(popupesign: TemplateRef<any>, selectedFile: any) {
     debugger
     this.check();
@@ -3063,204 +2987,7 @@ export class FileViewComponent extends AppComponentBase {
       });
   }
 
-  // e_Sign(popupesign: TemplateRef<any>) {
-  //   console.log(popupesign);
-  //   this.check();
-  //   let config = { class: 'gray modal-lg', backdrop: false, ignoreBackdropClick: true };
-  //   this.items = this.fileManager.instance.getSelectedItems();
-  //   let strcheck;
-  //   this.items.forEach(ele => {
-  //     let compare = ""
-  //     let action = ele.key;
-  //     action = action.substring(action.indexOf("~") + 1);
-  //     compare = this.Action;
-  //     compare = compare.replace("{", "");
-  //     compare = compare.replace("}", "");
-  //     //compare = compare.substring(0,compare.indexOf('-'));
-  //     const paramsPattern = /[^{\}]+(?=})/g;
-  //     let extractParams = action.match(paramsPattern);
-  //     for (let i = 0; i < extractParams.length; i++) {
-  //       let my = extractParams[i].replace("{", "");
-  //       let my1 = my;
-  //       my = my.substring(0, my.indexOf('-'));
-  //       my1 = my1.substring(my1.indexOf('-') + 1);
-  //       if (my == compare || (my == 'BRX' || my == 'SRX')) {
-  //         strcheck = my1;
-  //       }
-  //     }
-  //   });
-
-  //   if (strcheck.indexOf("S") === -1) {
-  //     this.ErrorMessage = "!Oops you don't have  E-sign Permission for this file";
-  //   }
-  //   else {
-  //     this.docx = false;
-  //     this.msgShow = false;
-  //     let dir = this.fileManager.instance.getSelectedItems();
-  //     let strng;
-  //     if (dir.length > 0) {
-  //       for (let i = 0; i < dir.length; i++) {
-  //         let item = dir[i];
-  //         let source = item['parentPath'] + "/" + item['key'];
-  //         strng = item['key'].replace(/#/g, "%23");
-
-  //         var zohoKey = 2001;
-  //         if (zohoKey != 2001) {
-  //           this.http.get(this.folderPath + "E_SignView?path=" + item['parentPath'] + "&key=" + strng + "&user=" + this.appSession.userId.toString()).subscribe((response: any) => {
-  //             let data = response['result'];
-  //             let name = data["firstPara"];
-  //             console.log("signing test" + data);
-  //             if (name == "Signed") {
-  //               alert("No Action Required!");
-  //             } else {
-  //               this.eSign = true;
-  //               this.modalReff = this.modalService.show(
-  //                 popupesign, config
-  //               );
-  //               this.embedUrl = name;
-  //               console.log("signing test" + this.embedUrl);
-  //               this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(this.embedUrl);
-  //               console.log("signing test" + this.EMBED_SESSION_URL);
-  //               localStorage.setItem('Signing', 'true');
-  //             }
-  //           });
-  //         } else {
-  //           let srId = dir[0].dataItem.srAssignedFileId
-  //           let escrow = localStorage.getItem("activeTab")
-  //           let userType = localStorage.getItem("accessTYpe" + escrow);
-
-  //           this.selectedFileForDownload = strng;
-  //           this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetEmbeddedLink?filePath=" + strng + "&escrow=" + escrow + "&userType=" + userType + "&srAssignedFileId=" + srId).subscribe((response: any) => {
-  //             if (response.result) {
-
-
-  //               this.embedUrl = response.result;
-  //               this.eSign = true;
-  //               debugger
-  //               this.modalReff = this.modalService.show(
-  //                 popupesign, config
-  //               );
-  //               console.log("signing test" + this.embedUrl);
-  //               this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(this.embedUrl);
-  //               debugger
-  //             }
-  //             else {
-  //               Swal.fire({
-  //                 title: 'No signature required for this file.',
-  //                 text: '',
-  //                 icon: '',
-  //                 confirmButtonText: 'OK'
-  //               });
-  //             }
-
-  //           })
-
-  //         }
-  //       }
-  //     }
-  //   }
-
-  // }
-
-  // eSignPopupFromMain(popupesign: TemplateRef<any>){
-  //   console.log(popupesign);
-  //   this.check();
-  //   let config = { class: 'gray modal-lg', backdrop: false, ignoreBackdropClick: true };
-  //  // this.items = this.fileManager.instance.getSelectedItems();
-  //   let strcheck;
-  //   this.items.forEach(ele => {
-  //     let compare = ""
-  //     let action = ele.key;
-  //     action = action.substring(action.indexOf("~") + 1);
-  //     compare = this.Action;
-  //     compare = compare.replace("{", "");
-  //     compare = compare.replace("}", "");
-  //     //compare = compare.substring(0,compare.indexOf('-'));
-  //     const paramsPattern = /[^{\}]+(?=})/g;
-  //     let extractParams = action.match(paramsPattern);
-  //     for (let i = 0; i < extractParams.length; i++) {
-  //       let my = extractParams[i].replace("{", "");
-  //       let my1 = my;
-  //       my = my.substring(0, my.indexOf('-'));
-  //       my1 = my1.substring(my1.indexOf('-') + 1);
-  //       if (my == compare || (my == 'BRX' || my == 'SRX')) {
-  //         strcheck = my1;
-  //       }
-  //     }
-  //   });
-
-  //   if (strcheck.indexOf("S") === -1) {
-  //     this.ErrorMessage = "!Oops you don't have  E-sign Permission for this file";
-  //   }
-  //   else {
-  //     this.docx = false;
-  //     this.msgShow = false;
-  //     let dir = this.fileManager.instance.getSelectedItems();
-  //     let strng;
-  //     if (dir.length > 0) {
-  //       for (let i = 0; i < dir.length; i++) {
-  //         let item = dir[i];
-  //         let source = item['parentPath'] + "/" + item['key'];
-  //         strng = item['key'].replace(/#/g, "%23");
-
-  //         var zohoKey = 2001;
-  //         if (zohoKey != 2001) {
-  //           this.http.get(this.folderPath + "E_SignView?path=" + item['parentPath'] + "&key=" + strng + "&user=" + this.appSession.userId.toString()).subscribe((response: any) => {
-  //             let data = response['result'];
-  //             let name = data["firstPara"];
-  //             console.log("signing test" + data);
-  //             if (name == "Signed") {
-  //               alert("No Action Required!");
-  //             } else {
-  //               this.eSign = true;
-  //               this.modalReff = this.modalService.show(
-  //                 popupesign, config
-  //               );
-  //               this.embedUrl = name;
-  //               console.log("signing test" + this.embedUrl);
-  //               this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(this.embedUrl);
-  //               console.log("signing test" + this.EMBED_SESSION_URL);
-  //               localStorage.setItem('Signing', 'true');
-  //             }
-  //           });
-  //         } else {
-  //           let srId = dir[0].dataItem.srAssignedFileId
-  //           let escrow = localStorage.getItem("activeTab")
-  //           let userType = localStorage.getItem("accessTYpe" + escrow);
-
-  //           this.selectedFileForDownload = strng;
-  //           this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetEmbeddedLink?filePath=" + strng + "&escrow=" + escrow + "&userType=" + userType + "&srAssignedFileId=" + srId).subscribe((response: any) => {
-  //             if (response.result) {
-
-
-  //               this.embedUrl = response.result;
-  //               this.eSign = true;
-  //               debugger
-  //               this.modalReff = this.modalService.show(
-  //                 popupesign, config
-  //               );
-  //               console.log("signing test" + this.embedUrl);
-  //               this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(this.embedUrl);
-  //               debugger
-  //             }
-  //             else {
-  //               Swal.fire({
-  //                 title: 'No signature required for this file.',
-  //                 text: '',
-  //                 icon: '',
-  //                 confirmButtonText: 'OK'
-  //               });
-  //             }
-
-  //           })
-
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-
-  Hide() {
+   Hide() {
     this.check();
     if (this.docx && this.editPermission) {
       Swal.fire({
@@ -3317,38 +3044,7 @@ export class FileViewComponent extends AppComponentBase {
     })
   }
 
-  // DownloadDocuSignedPdf() {
-  //   debugger
-  //   let dir = this.mainFileSelected;
-  //   let fileId = dir.srAssignedFileId;
-  //   const escrow = localStorage.getItem("activeTab");
-  //   this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/DownloadDocuSignPdf?filePath=" + this.selectedFileForDownload + "&srAssignedFileId=" + fileId + escrow).subscribe((response: any) => {
-
-  //     if (response != null) {
-  //       if (response.result.signingStatus != "Unsigned") {
-  //         this.isRename = false;
-  //         this.editPermission = false;
-  //         this.renamePermission = false;
-  //         this.renameFileName = true;
-
-  //         this.fileMainComponent.getAllFiles();
-  //         this.fileOtherComponent.getAllFiles();
-  //         setTimeout(() => {
-  //           this.fileManager.instance.refresh().done((result) => {
-  //             console.log("calling when refresh is done for fileManager after sign")
-  //             this.fileManager.instance.option('selectedItems', []);
-  //             this.check();
-  //           })
-  //         }, 1000);
-  //       } else {
-  //         this.isRename = true;
-  //         this.editPermission = true;
-  //         this.renamePermission = true;
-  //       }
-  //     }
-
-  //   })
-  // }
+  
   DownloadDocuSignedPdf() {
     debugger
     const dir = this.mainFileSelected;
@@ -4442,5 +4138,4 @@ export class GlobalService {
   oldPathSelectedFile = ""
   editor: any;
 }
-
 

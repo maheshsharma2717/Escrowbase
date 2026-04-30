@@ -18,7 +18,7 @@
                                     <span class="searchlable">Recent escrow</span>
                                     <select class="form-control" [(ngModel)]="selectedEscrow"
                                         (change)="onEscrowSelect()">
-                                        <option value="">Select Escrow</option>
+                                        <option [ngValue]="null">Select Escrow</option>
                                         <option *ngFor="let escrow of availableEscrows" [ngValue]="escrow.value"
                                             [disabled]="escrow.disabled">
                                             {{escrow.label}}</option>
