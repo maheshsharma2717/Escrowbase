@@ -27,7 +27,8 @@
         color: black;
         padding: inherit;
     ">
-            <span *ngIf="isMultiTenancyEnabled" class="tenancy-name"></span><b>{{userName}} - {{userType}}</b>
+            <span *ngIf="isMultiTenancyEnabled" class="tenancy-name"></span><b>
+                {{userName}} - {{userType}}</b>
         </span>
         <span [class]="symbolCssClass">
             <span [class]="symbolTextCssClass">{{usernameFirstLetter}}</span>
@@ -50,8 +51,9 @@
             </div>
             <div class="d-flex flex-column">
                 <a href="javascript:;" class="font-weight-bold font-size-h5 text-dark-75 text-hover-primary topbar-username">
-                    <span *ngIf="isMultiTenancyEnabled" class="tenancy-name">{{tenancyName}}</span>{{userName}} - {{userType}}
-                    
+                    <span *ngIf="isMultiTenancyEnabled" class="tenancy-name">{{tenancyName}}</span>
+                    <!-- {{userName}} - {{userType}} -->
+                    {{userType}} 
                 </a>
                 
                 <div class="navi mt-2" *ngIf="showLogout">

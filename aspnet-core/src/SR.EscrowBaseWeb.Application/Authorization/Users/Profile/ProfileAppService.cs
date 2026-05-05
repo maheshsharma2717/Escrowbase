@@ -331,10 +331,10 @@ namespace SR.EscrowBaseWeb.Authorization.Users.Profile
                 return new GetProfilePictureOutput(string.Empty);
             }
 
-            
-            using (var profileImageService = await _profileImageServiceFactory.Get(friendUserIdentifier))
+            var verifiedFriendIdentifier = new UserIdentifier(friendShip.FriendTenantId, friendShip.FriendUserId);
+            using (var profileImageService = await _profileImageServiceFactory.Get(verifiedFriendIdentifier))
             {
-                var image = await profileImageService.Object.GetProfilePictureContentForUser(friendUserIdentifier);
+                var image = await profileImageService.Object.GetProfilePictureContentForUser(verifiedFriendIdentifier);
                 return new GetProfilePictureOutput(image);
             }
         }

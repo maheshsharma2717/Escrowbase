@@ -70,7 +70,6 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     data: string;
     escrowList: Array<escrows> = [];
 
-
     _entityTypeFullName = 'SR.EscrowBaseWeb.SREscrowClient.EscrowClient';
     entityHistoryEnabled = false;
     folderPath: string;
@@ -173,7 +172,6 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
 
         this.getEscrowClients(null, true);
     }
-
 
     private setIsEntityHistoryEnabled(): boolean {
         let customSettings = (abp as any).custom;

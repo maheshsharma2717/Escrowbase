@@ -3,12 +3,12 @@
         <sub-header [title]="'OrganizationUnits' | localize" [description]="'OrganizationUnitsHeaderInfo' | localize">
         </sub-header>
         <div [class]="containerClass">
-            <div class="row">
-                <div class="col-6">
+            <div class="row mb-5">
+                <div class="col-lg-6 col-12 mb-5 mb-lg-0 d-flex flex-column">
                     <organization-tree #ouTree (ouSelected)="ouSelected($event)"></organization-tree>
                 </div>
-                <div class="col-6">
-                    <div class="card card-custom gutter-b">
+                <div class="col-lg-6 col-12 d-flex flex-column">
+                    <div class="card card-custom h-100">
                         <div class="card-header align-items-center border-0">
                             <h3 class="card-title align-items-start flex-column">
                                 <span class="font-weight-bolder text-dark">  <span *ngIf="organizationUnit">{{organizationUnit.displayName}}</span></span>

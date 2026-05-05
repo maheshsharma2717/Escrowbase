@@ -7,7 +7,7 @@ import { OffcanvasOptions } from '@metronic/app/core/_base/layout/directives/off
 import { AppConsts } from '@shared/AppConsts';
 import { ToggleOptions } from '@metronic/app/core/_base/layout/directives/toggle.directive';
 import { EscrowDetailsServiceProxy, SrEscrowsServiceProxy } from '@shared/service-proxies/service-proxies';
-import { Router } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { TabsComponent } from '@app/tabs/tabs.component';
 import { PermissionCheckerService } from 'abp-ng2-module';
@@ -33,6 +33,7 @@ export class DefaultLayoutComponent extends ThemesLayoutBaseComponent implements
     tempdefaultLogo: any;
     @Input() person;
     isAdmin: boolean = false;
+    isAdminPage: boolean = false;
     isMenuToggled: boolean = false;
     dlogo;
     menuCanvasOptions: OffcanvasOptions = {
@@ -71,8 +72,42 @@ export class DefaultLayoutComponent extends ThemesLayoutBaseComponent implements
 
     ngOnInit() {
         this._appNavigationService.menuToggle$.subscribe((state) => {
-
             this.isMenuToggled = state;
+        });
+
+        const checkAdmin = (url: string) => {
+            if (url.includes('Userdashboard')) {
+                return false;
+            }
+            return url.includes('/app/admin/') || 
+                   url.includes('/app/main/srEnterprise') || 
+                   url.includes('/app/main/srEscrowClient') ||
+                   url.includes('/app/admin/users') ||
+                   url.includes('/app/admin/roles');
+        };
+
+        this.isAdminPage = checkAdmin(this.router.url);
+        if (this.isAdminPage) {
+            this.document.body.classList.add('aside-enabled');
+            this.document.body.classList.add('admin-layout');
+        } else {
+            this.document.body.classList.remove('aside-enabled');
+            this.document.body.classList.remove('aside-fixed');
+            this.document.body.classList.remove('admin-layout');
+        }
+
+        this.router.events.subscribe((event) => {
+            if (event instanceof NavigationEnd) {
+                this.isAdminPage = checkAdmin(event.urlAfterRedirects || event.url);
+                if (this.isAdminPage) {
+                    this.document.body.classList.add('aside-enabled');
+                    this.document.body.classList.add('admin-layout');
+                } else {
+                    this.document.body.classList.remove('aside-enabled');
+                    this.document.body.classList.remove('aside-fixed');
+                    this.document.body.classList.remove('admin-layout');
+                }
+            }
         });
 
         if (this._activatedRoute.snapshot.queryParams['sc'] != undefined) {

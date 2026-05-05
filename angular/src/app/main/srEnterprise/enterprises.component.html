@@ -1,4 +1,4 @@
-﻿<div [@routerTransition]>
+<div [@routerTransition]>
     <div class="content d-flex flex-column flex-column-fluid">
         <sub-header [title]="'Enterprises' | localize" [description]="'EnterprisesHeaderInfo' | localize">
             <div role="actions">
@@ -76,13 +76,26 @@
                             <div class="row align-items-center">
                                 <!--<Primeng-Datatable-Start>-->
                                 <div class="primeng-datatable-container col-12" [busyIf]="primengTableHelper.isLoading">
-                                    <p-table #dataTable (onLazyLoad)="getEnterprises($event)"
-                                        [value]="primengTableHelper.records"
-                                        rows="{{primengTableHelper.defaultRecordsCountPerPage}}" [paginator]="false"
-                                        [lazy]="true" [scrollable]="true" ScrollWidth="100%"
-                                        [responsive]="primengTableHelper.isResponsive"
-                                        [resizableColumns]="primengTableHelper.resizableColumns">
-                                        <ng-template pTemplate="header">
+                                        <p-table #dataTable (onLazyLoad)="getEnterprises($event)"
+                                            [value]="primengTableHelper.records"
+                                            rows="{{primengTableHelper.defaultRecordsCountPerPage}}" [paginator]="false"
+                                            [lazy]="true" [scrollable]="true" ScrollWidth="100%"
+                                            [responsive]="primengTableHelper.isResponsive"
+                                            [resizableColumns]="primengTableHelper.resizableColumns">
+                                            <ng-template pTemplate="colgroup">
+                                                <colgroup>
+                                                    <col style="width: 150px">
+                                                    <col style="width: 150px">
+                                                    <col style="width: 150px">
+                                                    <col style="width: 150px">
+                                                    <col style="width: 150px">
+                                                    <col style="width: 150px">
+                                                    <col style="width: 150px">
+                                                    <col style="width: 150px">
+                                                    <col style="width: 130px">
+                                                </colgroup>
+                                            </ng-template>
+                                            <ng-template pTemplate="header">
                                             <tr>
 
                                                 <th style="width: 150px" pSortableColumn="enterpriseName">
@@ -127,12 +140,14 @@
                                             <tr>
 
                                                 <td style="width:150px">
-                                                    <!-- <span class="ui-column-title"> {{l('EnterpriseName')}}</span> -->
-                                                    {{record.enterprise.enterpriseName}}
+                                                    <span [title]="record.enterprise.enterpriseName">
+                                                        {{ record.enterprise.enterpriseName.length > 12 ? (record.enterprise.enterpriseName | slice:0:12) + '...' : record.enterprise.enterpriseName }}
+                                                    </span>
                                                 </td>
                                                 <td style="width:150px">
-                                                    <!-- <span class="ui-column-title"> {{l('Email')}}</span> -->
-                                                    {{record.enterprise.secondaryEnterpriseEmail}}
+                                                    <span [title]="record.enterprise.secondaryEnterpriseEmail">
+                                                        {{ record.enterprise.secondaryEnterpriseEmail.length > 12 ? (record.enterprise.secondaryEnterpriseEmail | slice:0:12) + '...' : record.enterprise.secondaryEnterpriseEmail }}
+                                                    </span>
                                                 </td>
                                                 <td style="width:150px">
                                                     <!-- <span class="ui-column-title"> {{l('Phone')}}</span> -->

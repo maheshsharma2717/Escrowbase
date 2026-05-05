@@ -1,5 +1,4 @@
-<div [class]="currentTheme.baseSettings.subHeader.containerStyle"
-    [ngStyle]="isAdmin && !isMenuToggled ? {  marginLeft: '265px' } : {marginLeft:'0px'}">
+<div [class]="currentTheme.baseSettings.subHeader.containerStyle">
     <div [class]="containerClass + ' d-flex align-items-center justify-content-between flex-wrap flex-sm-nowrap'">
         <div class="d-flex align-items-center flex-wrap mr-2">
             <h1 *ngIf="currentTheme.baseSettings.subHeader.subheaderSize == 1"
@@ -11,11 +10,17 @@
             <h4 *ngIf="currentTheme.baseSettings.subHeader.subheaderSize == 4"
                 [class]="currentTheme.baseSettings.subHeader.titleStlye">{{title}}</h4>
             <h5 style="margin:10px 0px 14px 0px !important"
-                *ngIf="!isAdmin && currentTheme.baseSettings.subHeader.subheaderSize == 5"
-                [class]="currentTheme.baseSettings.subHeader.titleStlye">This is your landing page, this is where you
-                will see the escrow(s) and the Escrow Companie(s)
-                that you have been given access to. <br><b>Click on the blue button to the right of the escrow you want
-                    to work on to gain access and begin your Web Portal Process.</b></h5>
+                *ngIf="currentTheme.baseSettings.subHeader.subheaderSize == 5"
+                [class]="currentTheme.baseSettings.subHeader.titleStlye">
+                <ng-container *ngIf="title">
+                    {{title}}
+                </ng-container>
+                <ng-container *ngIf="!title && !isAdmin">
+                    This is your landing page, this is where you will see the escrow(s) and the Escrow Companie(s)
+                    that you have been given access to. <br><b>Click on the blue button to the right of the escrow you want
+                        to work on to gain access and begin your Web Portal Process.</b>
+                </ng-container>
+            </h5>
 
             <h6 *ngIf="currentTheme.baseSettings.subHeader.subheaderSize == 6"
                 [class]="currentTheme.baseSettings.subHeader.titleStlye">{{title}}</h6>

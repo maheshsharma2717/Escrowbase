@@ -1,4 +1,4 @@
-﻿<div [@routerTransition]>
+<div [@routerTransition]>
     <div class="content d-flex flex-column flex-column-fluid">
         <sub-header [title]="'EscrowClients' | localize" [description]="'EscrowClientsHeaderInfo' | localize">
             <div role="actions">
@@ -87,6 +87,18 @@
                                         [lazy]="true" [scrollable]="true" ScrollWidth="100%"
                                         [responsive]="primengTableHelper.isResponsive"
                                         [resizableColumns]="primengTableHelper.resizableColumns">
+                                        <ng-template pTemplate="colgroup">
+                                            <colgroup>
+                                                <col style="width: 150px">
+                                                <col style="width: 150px">
+                                                <col style="width: 150px">
+                                                <col style="width: 150px">
+                                                <col style="width: 150px">
+                                                <col style="width: 150px">
+                                                <col style="width: 150px">
+                                                <col style="width: 130px">
+                                            </colgroup>
+                                        </ng-template>
                                         <ng-template pTemplate="header">
                                             <tr>
                                               
@@ -127,31 +139,28 @@
                                             <tr>
                                                
                                                 <td style="width:150px">
-                                                    <span class="ui-column-title"> {{l('EscrowNumber')}}</span>
                                                     {{record.escrowClient.escrowNumber}}
                                                 </td>
                                                 <td style="width:150px">
-                                                    <span class="ui-column-title"> {{l('Name')}}</span>
-                                                    {{record.escrowClient.name}}
+                                                    <span [title]="record.escrowClient.name">
+                                                        {{ record.escrowClient.name.length > 12 ? (record.escrowClient.name | slice:0:12) + '...' : record.escrowClient.name }}
+                                                    </span>
                                                 </td>
                                                 <td style="width:150px">
-                                                    <span class="ui-column-title"> {{l('Email')}}</span>
-                                                    {{record.escrowClient.email}}
+                                                    <span [title]="record.escrowClient.email">
+                                                        {{ record.escrowClient.email.length > 12 ? (record.escrowClient.email | slice:0:12) + '...' : record.escrowClient.email }}
+                                                    </span>
                                                 </td>
                                                 <td style="width:150px">
-                                                    <span class="ui-column-title"> {{l('Phone')}}</span>
                                                     {{record.escrowClient.phone}}
                                                 </td>
                                                 <td style="width:150px">
-                                                    <span class="ui-column-title"> {{l('Address')}}</span>
                                                     {{record.escrowClient.address}}
                                                 </td>
                                                 <td style="width:150px">
-                                                    <span class="ui-column-title"> {{l('State')}}</span>
                                                     {{record.escrowClient.state}}
                                                 </td>
                                                 <td style="width:150px">
-                                                    <span class="ui-column-title"> {{l('Pincode')}}</span>
                                                     {{record.escrowClient.pincode}}
                                                 </td>
                                                 <td style="width: 130px"

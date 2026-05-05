@@ -106,12 +106,22 @@
                     <div class="row align-items-center">
                         <!--<Primeng-TurboTable-Start>-->
                         <div class="primeng-datatable-container" [busyIf]="primengTableHelper.isLoading">
-                            <p-table #dataTable sortMode="multiple" (onLazyLoad)="getUsers($event)"
-                                [value]="primengTableHelper.records"
+                            <p-table #dataTable (onLazyLoad)="getUsers($event)" [value]="primengTableHelper.records"
                                 rows="{{primengTableHelper.defaultRecordsCountPerPage}}" [paginator]="false"
                                 [lazy]="true" [scrollable]="true" ScrollWidth="100%"
                                 [responsive]="primengTableHelper.isResponsive"
                                 [resizableColumns]="primengTableHelper.resizableColumns">
+                                <ng-template pTemplate="colgroup">
+                                    <colgroup>
+                                        <col style="width: 130px">
+                                        <col style="width: 300px">
+                                        <col style="width: 150px">
+                                        <col style="width: 150px">
+                                        <col style="width: 100px">
+                                        <col style="width: 300px">
+                                        <col style="width: 100px">
+                                    </colgroup>
+                                </ng-template>
                                 <ng-template pTemplate="header">
                                     <tr>
                                         <th style="width: 130px"
@@ -200,28 +210,22 @@
                                         </td>
                                         <td style="width: 300px">
                                             <!-- //<span class="ui-column-title"> {{'UserName' | localize}}</span> -->
-                                            <span>
-                                                <!-- <a [href]="record.profilePictureUrl" target="_blank">
-                                                    <img class="img-circle" width="50px" [src]="record.profilePictureUrl">
-                                                </a> -->
-                                                {{record.userName}}
+                                            <span [title]="record.userName">
+                                                {{ record.userName.length > 12 ? (record.userName | slice:0:12) + '...' : record.userName }}
                                             </span>
                                         </td>
                                         <td style="width: 150px">
-                                            <!-- <span class="ui-column-title"> {{'Name' | localize}}</span> -->
-                                            {{record.name}}
+                                            <span [title]="record.name">{{record.name}}</span>
                                         </td>
                                         <td style="width: 150px">
-                                            <!-- <span class="ui-column-title"> {{'Surname' | localize}}</span> -->
-                                            {{record.surname}}
+                                            <span [title]="record.surname">{{record.surname}}</span>
                                         </td>
                                         <td style="width: 100px">
                                             <!-- <span class="ui-column-title"> {{'Roles' | localize}}</span> -->
                                             {{getRolesAsString(record.roles)}}
                                         </td>
                                         <td style="width: 300px">
-                                            <!-- <span class="ui-column-title"> {{'EmailAddress' | localize}}</span> -->
-                                            {{record.emailAddress}}
+                                            <span [title]="record.emailAddress">{{ record.emailAddress.length > 12 ? (record.emailAddress | slice:0:12) + '...' : record.emailAddress }}</span>
                                         </td>
                                         <td style="width: 100px">
                                             <!-- <span class="ui-column-title"> {{'EmailConfirm' | localize}}</span> -->

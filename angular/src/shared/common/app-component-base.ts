@@ -111,11 +111,7 @@ export abstract class AppComponentBase {
     }
 
     get containerClass(): string {
-        if (this.appSession.theme.baseSettings.layout.layoutType === 'fluid') {
-            return 'container-fluid';
-        }
-
-        return 'container';
+        return 'container-fluid';
     }
 
     showMainSpinner(text?: string): void {

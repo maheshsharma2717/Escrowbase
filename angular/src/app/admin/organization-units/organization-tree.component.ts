@@ -31,7 +31,10 @@ export interface IOrganizationUnitOnTree extends IBasicOrganizationUnitInfo {
 
 @Component({
     selector: 'organization-tree',
-    templateUrl: './organization-tree.component.html'
+    templateUrl: './organization-tree.component.html',
+    host: {
+        'class': 'd-block h-100'
+    }
 })
 export class OrganizationTreeComponent extends AppComponentBase implements OnInit {
 

@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Threading.Tasks;
 using Abp;
@@ -22,8 +22,8 @@ namespace SR.EscrowBaseWeb.Authorization.Users.Profile
         
         public async Task<string> GetProfilePictureContentForUser(UserIdentifier userIdentifier)
         {
-            var user = await _userManager.GetUserAsync(userIdentifier);
-            if (user.ProfilePictureId == null)
+            var user = await _userManager.GetUserOrNullAsync(userIdentifier);
+            if (user == null || user.ProfilePictureId == null)
             {
                 return "";
             }

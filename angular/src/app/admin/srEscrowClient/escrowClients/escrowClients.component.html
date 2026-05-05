@@ -1,4 +1,4 @@
-﻿<div [@routerTransition]>
+<div [@routerTransition]>
   <div class="kt-content kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor">
   
   
@@ -85,16 +85,22 @@
                     <!--<Primeng-Datatable-Start>-->
                     <div class="primeng-datatable-container col-12"
                          [busyIf]="primengTableHelper.isLoading">
-                        <p-table #dataTable
-                                     (onLazyLoad)="getEscrowClients($event)"
-                                     [value]="primengTableHelper.records"
-                                     rows="{{primengTableHelper.defaultRecordsCountPerPage}}"
-                                     [paginator]="false"
-                                     [lazy]="true"
-                                     [scrollable]="true"
-                                     ScrollWidth="100%"
-                                     [responsive]="primengTableHelper.isResponsive"
-                                     [resizableColumns]="primengTableHelper.resizableColumns">
+                        <p-table #dataTable (onLazyLoad)="getEscrowClients($event)" [value]="primengTableHelper.records"
+                        rows="{{primengTableHelper.defaultRecordsCountPerPage}}" [paginator]="false" [lazy]="true"
+                        [scrollable]="true" ScrollWidth="100%" [responsive]="primengTableHelper.isResponsive"
+                        [resizableColumns]="primengTableHelper.resizableColumns">
+                        <ng-template pTemplate="colgroup">
+                            <colgroup>
+                                <col style="width: 130px">
+                                <col style="width: 150px">
+                                <col style="width: 150px">
+                                <col style="width: 150px">
+                                <col style="width: 150px">
+                                <col style="width: 150px">
+                                <col style="width: 150px">
+                                <col style="width: 150px">
+                            </colgroup>
+                        </ng-template>
                             <ng-template pTemplate="header">
                                 <tr>
                                     <th style="width: 130px" [hidden]="!isGrantedAny('Pages.Administration.EscrowClients.Edit', 'Pages.Administration.EscrowClients.Delete')">{{l('Actions')}}</th>
@@ -158,31 +164,24 @@
                                         </div>
                                     </td>
                                     <td style="width:150px">
-											<span class="ui-column-title"> {{l('EscrowNumber')}}</span>
-											{{record.escrowClient.escrowNumber}}
+											<span [title]="record.escrowClient.escrowNumber">{{record.escrowClient.escrowNumber}}</span>
 										</td>
                                     <td style="width:150px">
-											<span class="ui-column-title"> {{l('Name')}}</span>
-											{{record.escrowClient.name}}
+											<span [title]="record.escrowClient.name">{{ record.escrowClient.name.length > 12 ? (record.escrowClient.name | slice:0:12) + '...' : record.escrowClient.name }}</span>
 										</td>
                                     <td style="width:150px">
-											<span class="ui-column-title"> {{l('Email')}}</span>
-											{{record.escrowClient.email}}
+											<span [title]="record.escrowClient.email">{{ record.escrowClient.email.length > 12 ? (record.escrowClient.email | slice:0:12) + '...' : record.escrowClient.email }}</span>
 										</td>
                                     <td style="width:150px">
-											<span class="ui-column-title"> {{l('Phone')}}</span>
 											{{record.escrowClient.phone}}
 										</td>
                                     <td style="width:150px">
-											<span class="ui-column-title"> {{l('Address')}}</span>
-											{{record.escrowClient.address}}
+											<span [title]="record.escrowClient.address">{{record.escrowClient.address}}</span>
 										</td>
                                     <td style="width:150px">
-											<span class="ui-column-title"> {{l('State')}}</span>
 											{{record.escrowClient.state}}
 										</td>
                                     <td style="width:150px">
-											<span class="ui-column-title"> {{l('Pincode')}}</span>
 											{{record.escrowClient.pincode}}
 										</td>
 

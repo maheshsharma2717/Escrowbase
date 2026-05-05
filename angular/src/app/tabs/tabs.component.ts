@@ -17,7 +17,7 @@ import { DynamicTabsDirective } from './dynamic-tabs.directive';
 import { forEach } from 'lodash-es';
 import { SharedService } from '../main/File/UserTypeChangeService';
 import { delay, tap, switchMap } from "rxjs/operators";
-import { url } from 'inspector';
+
 import { AppSessionService } from '@shared/common/session/app-session.service';
 import { AppConsts } from '@shared/AppConsts';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -58,14 +58,9 @@ interface Escrow {
       </a>
     </li>
   </ul>
-  <div class="d-flex align-items-center ms-auto user-menu-wrapper" *ngIf="activeTabTitle !== 'Dashboard'">
-    <user-menu [iconOnly]="false"></user-menu>
   </div>
-
-  </div>
-      
-    <ng-content></ng-content>
-    <ng-template dynamic-tabs #container></ng-template>
+  <ng-content></ng-content>
+  <ng-template dynamic-tabs #container></ng-template>
   `,
   styles: [
     `

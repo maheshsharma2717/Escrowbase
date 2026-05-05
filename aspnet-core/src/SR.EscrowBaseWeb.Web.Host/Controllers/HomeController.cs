@@ -2120,6 +2120,13 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                     var file = Request.Form.Files[0];
                     
+                    // Validate that only PDF files are uploaded through the EXE
+                    var extension = Path.GetExtension(file.FileName).ToLower();
+                    if (extension != ".pdf")
+                    {
+                        return Json(new { success = false, message = "Only PDF files are allowed for automated E-Sign processing." });
+                    }
+                    
                     // Wrap upload in its own UnitOfWork so the DB transaction commits 
                     // BEFORE the background task tries to read the master record.
                     long fileMasterId;
