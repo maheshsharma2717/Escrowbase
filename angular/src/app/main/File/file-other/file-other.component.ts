@@ -65,6 +65,10 @@ export class FileOtherComponent extends AppComponentBase {
   selectedIndex: number | null = null;
   selectedTagIndex2: number | null = null;
   selectedRowIndex: number | null = null;
+  isFilterActive: boolean = false;
+  selectedFilterTagIds: Set<number> = new Set();
+  allFiles: any[] = [];
+  globalSearchQuery: string = '';
 
 
   constructor(
@@ -105,21 +109,20 @@ export class FileOtherComponent extends AppComponentBase {
       .getAllFilesApi(companyName, subCompanyName, EscrowTab, this.appSession.user.id.toString())
       .subscribe(
         (response) => {
-          debugger;
-          this.files = response.result;
+          this.allFiles = response.result;
+          this.files = [...this.allFiles];
+          
           const savedField = localStorage.getItem('otherSortField');
           const savedOrder = localStorage.getItem('otherSortOrder');
 
           if (savedField) {
             this.currentSortField = savedField;
             this.ascendingOrder = savedOrder === 'asc';
-            this.applySorting();
           }
-
-          // Force change detection to ensure view updates
+          
+          this.applyFilters();
           this.cdr.detectChanges();
         },
-
         (error) => {
           console.error('Error fetching files:', error);
         }
@@ -142,25 +145,104 @@ export class FileOtherComponent extends AppComponentBase {
   }
 
   selectTag3(tag: any): void {
-    debugger;
     if (tag === 'all') {
-      this.getAllFiles();
-    } else if (tag.escrowFileTags !== null) {
-      this.getAllFilesApi("Enterprise", "Enterprise", "ESCROW", "689")
-        .subscribe(
-          (response) => {
-            debugger;
-            this.files = response.result.filter((file: any) =>
-              Array.isArray(file.escrowFileTags) &&
-              file.escrowFileTags.some((t: any) => t.id === tag.id)
-            );
-          },
-          (error) => {
-            console.error("Error fetching files:", error);
-          }
-        );
+      this.searchQuery2 = '';
+      this.selectedFilterTagIds.clear();
+      this.isFilterActive = false;
+      this.applyFilters();
+      this.showDropdown = false;
+    } else {
+      if (this.selectedFilterTagIds.has(tag.id)) {
+        this.selectedFilterTagIds.delete(tag.id);
+      } else {
+        this.selectedFilterTagIds.add(tag.id);
+      }
+      this.isFilterActive = this.selectedFilterTagIds.size > 0;
+      this.applyFilters();
+      // Keep dropdown open for multi-selection
     }
-    this.showDropdown = false;
+  }
+
+  getTagCount(tagId: number): number {
+    if (!this.allFiles) return 0;
+    return this.allFiles.filter(file =>
+      Array.isArray(file.escrowFileTags) &&
+      file.escrowFileTags.some((t: any) => t.id === tagId)
+    ).length;
+  }
+
+  getSelectedTagsSummary(): string {
+    if (this.selectedFilterTagIds.size === 0) return '';
+    if (this.selectedFilterTagIds.size === 1) {
+      const id = Array.from(this.selectedFilterTagIds)[0];
+      const tag = this.allTagsList.find(t => t.id === id);
+      return tag ? tag.tagDescription : '1 Tag';
+    }
+    return `${this.selectedFilterTagIds.size} Tags`;
+  }
+
+  getSelectedTagNames(): string {
+    if (this.selectedFilterTagIds.size === 0) return '';
+    return this.allTagsList
+      .filter(t => this.selectedFilterTagIds.has(t.id))
+      .map(t => t.tagDescription)
+      .join(', ');
+  }
+
+  onGlobalSearch() {
+    this.applyFilters();
+  }
+
+  clearGlobalSearch() {
+    this.globalSearchQuery = '';
+    this.applyFilters();
+  }
+
+  onTagDeleted(tagId: number) {
+    // Remove the tag from all files locally
+    this.allFiles.forEach(file => {
+      if (Array.isArray(file.escrowFileTags)) {
+        file.escrowFileTags = file.escrowFileTags.filter((t: any) => t.id !== tagId);
+      }
+    });
+
+    // Remove from active filters if it was selected
+    if (this.selectedFilterTagIds.has(tagId)) {
+      this.selectedFilterTagIds.delete(tagId);
+      this.isFilterActive = this.selectedFilterTagIds.size > 0;
+    }
+
+    // Refresh tag lists for search dropdowns
+    this.getAllFileTags();
+    
+    // Update the filtered view
+    this.applyFilters();
+  }
+
+  applyFilters() {
+    let filtered = [...this.allFiles];
+
+    // Filter by Tag IDs (if active)
+    if (this.isFilterActive && this.selectedFilterTagIds.size > 0) {
+      filtered = filtered.filter(file =>
+        Array.isArray(file.escrowFileTags) &&
+        file.escrowFileTags.some((t: any) => this.selectedFilterTagIds.has(t.id))
+      );
+    }
+
+    // Filter by Global Search Query
+    if (this.globalSearchQuery.trim()) {
+      const query = this.globalSearchQuery.toLowerCase().trim();
+      filtered = filtered.filter(file =>
+        file.name.toLowerCase().includes(query) ||
+        (Array.isArray(file.escrowFileTags) &&
+          file.escrowFileTags.some((t: any) => t.tagDescription.toLowerCase().includes(query)))
+      );
+    }
+
+    this.files = filtered;
+    this.applySorting();
+    this.cdr.detectChanges();
   }
 
   getUniqueTags(): string[] {
@@ -496,7 +578,7 @@ export class FileOtherComponent extends AppComponentBase {
 
   get filteredItems() {
     if (!this.searchQuery) {
-      return this.manageTagList.slice(0, 8);
+      return this.manageTagList;
     } else {
       this.manageTagList = this.allTagsList;
       return this.manageTagList.filter(item =>
@@ -506,25 +588,17 @@ export class FileOtherComponent extends AppComponentBase {
   }
 
   onSearchTags() {
-    debugger;
-    this.getAllFileTags();
-    if (!this.searchQuery) {
-      return this.manageTagList;
-    }
-    return this.allTagsList.filter(item =>
-      item.escrowFileTags?.tagDescription?.toLowerCase().includes(this.searchQuery.toLowerCase())
-    );
+    // Getter filteredItems will handle the update automatically via change detection
   }
 
   filteredItems2() {
     if (!this.searchQuery2?.trim()) {
-      return this.allTagsList.slice(0, 8);
+      return this.allTagsList;
     }
     return this.allTagsList
       .filter(item =>
         item.tagDescription.toLowerCase().includes(this.searchQuery2.toLowerCase())
-      )
-      .slice(0, 8);
+      );
   }
 
   getAllFileTags() {
@@ -663,15 +737,40 @@ export class FileOtherComponent extends AppComponentBase {
     this.files.sort((a, b) => {
       let aValue = this.getSortValue(a, this.currentSortField);
       let bValue = this.getSortValue(b, this.currentSortField);
-      if (aValue === bValue) return 0;
-      return (aValue > bValue ? 1 : -1) * (this.ascendingOrder ? 1 : -1);
+
+      // Handle nulls (No tags or empty values) - always move to bottom
+      if (aValue === null && bValue === null) {
+        return a.name.localeCompare(b.name);
+      }
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
+
+      // Primary sort
+      let comparison = 0;
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        comparison = aValue.localeCompare(bValue);
+      } else {
+        comparison = aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      }
+
+      // Apply order
+      let result = comparison * (this.ascendingOrder ? 1 : -1);
+
+      // Secondary sort by name if primary values are equal
+      if (result === 0) {
+        return a.name.localeCompare(b.name);
+      }
+
+      return result;
     });
   }
 
-  getSortValue(file: any, field: string): string | null {
+  getSortValue(file: any, field: string): any {
     if (field === 'tags') {
-      const tagString = file.escrowFileTags?.map(tag => tag.tagDescription).join(', ');
-      return tagString || null;
+      if (!file.escrowFileTags || file.escrowFileTags.length === 0) {
+        return null;
+      }
+      return file.escrowFileTags.map(tag => tag.tagDescription).join(', ');
     }
 
     const value = file[field];

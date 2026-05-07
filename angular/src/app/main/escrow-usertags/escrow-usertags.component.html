@@ -3,16 +3,16 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{ editMode ? 'Edit Tag' : 'Add Tags' }}</h5>
-                <button type="button" class="close" (click)="closeStickyNoteModal()" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                <h5 class="modal-title">File Tags Management</h5>
+                <button type="button" class="btn btn-danger modal-close-btn" (click)="closeTagModal()" aria-label="Close">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
 
             <div class="modal-body">
                 <tabset #tagTabSet>
                     <!-- Create Sticky Note Tab -->
-                    <tab heading="Add Tag" (select)="createStickyNoteTabEvent()">
+                    <tab [heading]="editMode ? 'Edit Tag' : 'Add Tag'" (select)="createStickyNoteTabEvent()">
                         <br />
 
                         <div class="container mt-5">

@@ -2160,6 +2160,35 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                             LogAutoUpdateError("BackgroundComplete", new Exception($"Successfully completed processing for file master {fileMasterId}"));
                         } catch (Exception ex) {
                             LogAutoUpdateError("BackgroundProcess", ex);
+                            // Set error status so the spinner stops
+                            try {
+                                using (var unitOfWork = capturedUowManager.Begin()) {
+                                    var records = _srAssignedFilesDetailRepository.GetAll()
+                                        .Where(x => x.SrEscrowFileMasterId == fileMasterId && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..."))
+                                        .ToList();
+                                    foreach (var rec in records) {
+                                        if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "Error";
+                                        if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Unread";
+                                        _srAssignedFilesDetailRepository.Update(rec);
+                                    }
+                                    await unitOfWork.CompleteAsync();
+                                }
+                            } catch { /* nested catch safety */ }
+                        } finally {
+                             // Final safety check to ensure no records are left in "Preparing..."
+                             try {
+                                using (var unitOfWork = capturedUowManager.Begin()) {
+                                    var records = _srAssignedFilesDetailRepository.GetAll()
+                                        .Where(x => x.SrEscrowFileMasterId == fileMasterId && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..."))
+                                        .ToList();
+                                    foreach (var rec in records) {
+                                        if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "Unsigned";
+                                        if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Unread";
+                                        _srAssignedFilesDetailRepository.Update(rec);
+                                    }
+                                    await unitOfWork.CompleteAsync();
+                                }
+                             } catch { }
                         }
                     });
 
@@ -2476,10 +2505,31 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     _eSignSemaphore.Release();
                 }
 
-                // Notify signers that the package is ready
+                // Notify signers and mark files as ready
                 foreach (var signer in signers)
                 {
+                    var record = _srAssignedFilesDetailRepository.GetAll()
+                        .FirstOrDefault(x => x.FileName == fileName && x.UserId == (long)signer.UserId);
+                    if (record != null)
+                    {
+                        record.SigningStatus = "Unsigned";
+                        record.ReadStatus = "Unread"; // Finalize Read status too
+                        record.UpdatedOn = DateTime.UtcNow;
+                        await _srAssignedFilesDetailRepository.UpdateAsync(record);
+                    }
                     await SendSignNotificationAsync(signer, fileName, escrowId);
+                }
+                
+                // Also finalize any other users who had "Preparing..." but aren't signers
+                var otherRecords = _srAssignedFilesDetailRepository.GetAll()
+                    .Where(x => x.FileName == fileName && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..."))
+                    .ToList();
+                foreach (var rec in otherRecords)
+                {
+                    if (rec.SigningStatus == "Preparing...") rec.SigningStatus = ""; // Not a signer
+                    if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Unread";
+                    rec.UpdatedOn = DateTime.UtcNow;
+                    _srAssignedFilesDetailRepository.Update(rec);
                 }
 
                 // await _hub.Clients.All.SendAsync("getFileUploadMessage", "File processing and E-Sign preparation complete.");
@@ -4376,7 +4426,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 }
                 if (type == "Sign")
                 {
-                    temp.SigningStatus = "Unsigned";
+                    temp.SigningStatus = "Preparing...";
                 }
                 temp.UpdatedOn = DateTime.UtcNow;
                 srAssign = temp;
@@ -4385,18 +4435,9 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             {
                 srAssign.UserId = userId;
                 srAssign.FileName = filename;
-                if (type == "Read")
-                {
-                    srAssign.ReadStatus = "Unread";
-                }
-                else if (type == "Input")
-                {
-                    srAssign.InputStatus = "Input Incomplete";
-                }
-                else
-                {
-                    srAssign.SigningStatus = "Unsigned";
-                }
+                srAssign.ReadStatus = "Preparing...";
+                srAssign.InputStatus = "Preparing...";
+                srAssign.SigningStatus = "Preparing...";
                 srAssign.UpdatedOn = DateTime.UtcNow;
                 srAssign.SrEscrowFileMasterId = srEscrowFileMasterId;
             }

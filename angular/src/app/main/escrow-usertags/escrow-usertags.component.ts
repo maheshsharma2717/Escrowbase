@@ -59,6 +59,7 @@ export class EscrowUsertagsComponent extends AppComponentBase {
   @ViewChild('createOrEditEscrowUserTagModal', { static: true }) modal: ModalDirective;
   @Input() selectedFile: any;
   @Output() modalClosed: EventEmitter<void> = new EventEmitter<void>();
+  @Output() tagDeleted: EventEmitter<number> = new EventEmitter<number>();
   userType: string;
   stickyNoteContent: string = '';
   stickyNoteError: string = '';
@@ -198,6 +199,7 @@ export class EscrowUsertagsComponent extends AppComponentBase {
               confirmButtonText: 'OK'
             });
             this.getAllFileTags(); // Refresh tag list
+            this.tagDeleted.emit(id); // Notify parent to update UI
           },
           error: (err) => {
             console.error('Error deleting tag:', err);

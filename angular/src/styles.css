@@ -1,4 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
 .margin-left-5 {
   margin-left: 5px !important;
 }
@@ -132,19 +138,17 @@ body.swal2-height-auto {
 }
 
 .root-initial-loader .overlay {
-  position: absolute;
+  position: fixed;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
   background-color: rgba(51, 51, 51, 0.8);
   z-index: 99999 !important;
-  width: 100%;
-  height: 100%;
 }
 
 .root-initial-loader i {
-  position: absolute;
+  position: fixed;
   color: rgb(91, 167, 234);
   z-index: 100000 !important;
   top: 50%;
