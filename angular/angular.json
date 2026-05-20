@@ -54,6 +54,8 @@
               "src/assets/primeng/tree/css/primeng.tree.css",
               "src/assets/primeng/context-menu/css/primeng.context-menu.css",
 
+              "src/assets/fonts/fonts-poppins.css",
+              "src/assets/fonts/fonts-roboto.css",
 
               "src/assets/metronic/common/fonts/keenthemes-icons/ki.css",
 
@@ -80,9 +82,6 @@
               "src/assets/abp-web-resources/abp.sweet-alert.js",
               "src/assets/abp-web-resources/abp.notify.js",
               "src/assets/canvas-toBlob/canvas-toBlob.js",
-              "node_modules/ngx-extended-pdf-viewer/assets/pdf-2.7.673.js",
-              "node_modules/ngx-extended-pdf-viewer/assets/pdf.worker-2.7.673.js",
-              "node_modules/ngx-extended-pdf-viewer/assets/viewer-2.7.673.js",
               "node_modules/abp-web-resources/Abp/Framework/scripts/libs/abp.moment.js",
               
               "src/assets/metronic/vendors/global/vendors.bundle.js",

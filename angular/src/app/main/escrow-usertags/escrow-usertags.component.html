@@ -28,17 +28,19 @@
 
                                     <textarea id="text1" class="form-control mt1" [(ngModel)]="noteMessage"
                                         (ngModelChange)="checkLimit(noteMessage)" name="tagDescription" required
-                                        maxlength="60" (input)="textinput(); adjustHeight($event)" [ngStyle]="{
-        'border': '1px solid #2196F3',
-        'resize': 'none',
-        'overflow': 'hidden',
-        'border-radius': '15px',
-        'text-align': 'left',
-        'width': '100%',
-        'max-height': '45px',
-        'font-size': '18px'
-    }">
-</textarea>
+                                        maxlength="60" (input)="showValidation = false; textinput(); adjustHeight($event)" [ngStyle]="{
+                                        'border': '2px solid #3699FF',
+                                        'resize': 'none',
+                                        'overflow': 'hidden',
+                                        'border-radius': '15px',
+                                        'text-align': 'left',
+                                        'width': '100%',
+                                        'max-height': '45px',
+                                        'font-size': '18px'
+                                    }"></textarea>
+                                    <div *ngIf="showValidation && !noteMessage" style="color: #dc3545; font-size: 13px; margin-top: 8px; font-weight: 500;">
+                                        <i class="fas fa-exclamation-circle"></i> Please add tag description
+                                    </div>
                                     <!-- Optional: Show validation message -->
                                     <div *ngIf="noteMessage?.length > 60" class="text-danger mt-1">
                                         Description must be 60 characters or fewer.
@@ -148,8 +150,8 @@
                 </tabset>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" (click)="saveTag()">
+            <div class="modal-footer" *ngIf="tagTabSet.tabs[0].active">
+                <button type="button" class="btn btn-primary" (click)="saveTag()" [disabled]="isSaving">
                     {{ editMode ? 'Update' : 'Save' }}
                 </button>
                 <button type="button" class="btn btn-danger" (click)="closeTagModal()">Close</button>

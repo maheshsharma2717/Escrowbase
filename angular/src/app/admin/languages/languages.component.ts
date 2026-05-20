@@ -2,7 +2,7 @@ import { Component, ElementRef, Injector, ViewChild, ViewEncapsulation } from '@
 import { Router } from '@angular/router';
 import { appModuleAnimation } from '@shared/animations/routerTransition';
 import { AppComponentBase } from '@shared/common/app-component-base';
-import { ApplicationLanguageListDto, LanguageServiceProxy, SetDefaultLanguageInput } from '@shared/service-proxies/service-proxies';
+import { ApplicationLanguageListDto, LanguageServiceProxy, SetDefaultLanguageInput, ChangeUserLanguageDto, ProfileServiceProxy } from '@shared/service-proxies/service-proxies';
 import { Paginator } from 'primeng/paginator';
 import { Table } from 'primeng/table';
 import { CreateOrEditLanguageModalComponent } from './create-or-edit-language-modal.component';
@@ -27,6 +27,7 @@ export class LanguagesComponent extends AppComponentBase {
         injector: Injector,
         private _languageService: LanguageServiceProxy,
         private _sessionService: AbpSessionService,
+        private _profileServiceProxy: ProfileServiceProxy,
         private _router: Router
     ) {
         super(injector);
@@ -53,8 +54,21 @@ export class LanguagesComponent extends AppComponentBase {
         const input = new SetDefaultLanguageInput();
         input.name = language.name;
         this._languageService.setDefaultLanguage(input).subscribe(() => {
-            this.getLanguages();
-            this.notify.success(this.l('SuccessfullySaved'));
+            const changeLangInput = new ChangeUserLanguageDto();
+            changeLangInput.languageName = language.name;
+
+            this._profileServiceProxy.changeLanguage(changeLangInput).subscribe(() => {
+                this.notify.success(this.l('SuccessfullySaved'));
+                abp.utils.setCookieValue(
+                    'Abp.Localization.CultureName',
+                    language.name,
+                    new Date(new Date().getTime() + 5 * 365 * 86400000), // 5 years
+                    abp.appPath
+                );
+
+                let targetUrl = window.location.origin + window.location.pathname;
+                window.location.href = targetUrl + '?culture=' + language.name;
+            });
         });
     }
 

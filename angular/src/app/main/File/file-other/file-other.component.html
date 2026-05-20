@@ -243,5 +243,5 @@
         class="context-menu "> </div>
 
     <app-escrow-usertags #escrowUsertagsComponent [selectedFile]="selectedFile"
-        (modalClosed)="onChildModalClose()" (tagDeleted)="onTagDeleted($event)"></app-escrow-usertags>
+        (modalClosed)="onChildModalClose()" (tagDeleted)="onTagDeleted($event)" (tagSaved)="getAllFileTags()"></app-escrow-usertags>
 </div>

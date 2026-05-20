@@ -11,7 +11,7 @@ import { EsignCompleteComponent } from './main/File/esign-complete/esign-complet
     imports: [
         RouterModule.forChild([
             {
-                path: 'app',
+                path: '',
                 component: AppComponent,
                 canActivate: [AppRouteGuard],
                 canActivateChild: [AppRouteGuard],

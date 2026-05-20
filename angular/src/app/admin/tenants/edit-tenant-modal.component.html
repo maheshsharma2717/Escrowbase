@@ -61,7 +61,8 @@
                         [ngClass]="{'has-error': !subscriptionEndDateUtcIsValid }">
                         <label for="SubscriptionEndDateUtc">{{"SubscriptionEndDateUtc" | localize}}</label>
                         <input id="SubscriptionEndDateUtc" type="datetime" #SubscriptionEndDateUtc
-                            name="SubscriptionEndDateUtc" class="form-control" bsDatepicker datePickerMomentModifier
+                            name="SubscriptionEndDateUtc" class="form-control" bsDatepicker datePickerLuxonModifier
+
                             (dateChange)="subscriptionEndDateChange($event)" [(date)]="tenant.subscriptionEndDateUtc"
                             [bsConfig]="{ adaptivePosition: true }" [required]="!isUnlimited" />
                     </div>

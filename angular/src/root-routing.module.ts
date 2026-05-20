@@ -4,9 +4,10 @@ import { AppUiCustomizationService } from '@shared/common/ui/app-ui-customizatio
 
 const routes: Routes = [
     { path: '', redirectTo: '/app/main/dashboard', pathMatch: 'full' },
+    { path: 'account', loadChildren: () => import('account/account.module').then(m => m.AccountModule), data: { preload: true } },
     {
-        path: 'account',
-        loadChildren: () => import('account/account.module').then(m => m.AccountModule), //Lazy load account module
+        path: 'app',
+        loadChildren: () => import('app/app.module').then(m => m.AppModule), //Lazy load app module
         data: { preload: true }
     },
     { path: '**', redirectTo: '/app/main/dashboard' }

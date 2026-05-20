@@ -60,6 +60,7 @@ export class EscrowUsertagsComponent extends AppComponentBase {
   @Input() selectedFile: any;
   @Output() modalClosed: EventEmitter<void> = new EventEmitter<void>();
   @Output() tagDeleted: EventEmitter<number> = new EventEmitter<number>();
+  @Output() tagSaved: EventEmitter<void> = new EventEmitter<void>();
   userType: string;
   stickyNoteContent: string = '';
   stickyNoteError: string = '';
@@ -67,6 +68,8 @@ export class EscrowUsertagsComponent extends AppComponentBase {
   stickyNotesHistoryTabActive: boolean = false;
   primengTableHelper: PrimengTableHelper = new PrimengTableHelper();
   noteMessage: string = '';
+  showValidation: boolean = false;
+  isSaving: boolean = false;
   secondaryColor: string = '#000000';
   primaryColor: string = '#ffffff';
   isBackgroundPickerOpen: boolean = false;
@@ -104,6 +107,7 @@ export class EscrowUsertagsComponent extends AppComponentBase {
     const escrowNumber = localStorage.getItem('activeTab');
 
     if (!this.noteMessage) {
+      this.showValidation = true;
       abp.notify.error('Please add note message', 'Error', {
         positionClass: 'toast-top-center'
       });
@@ -152,7 +156,9 @@ export class EscrowUsertagsComponent extends AppComponentBase {
         });
 
         this.getAllFileTags();
+        this.tagSaved.emit(); // Notify parent to refresh search dropdowns
         this.noteMessage = '';
+        this.showValidation = false;
         this.primaryColor = '#ffffff';      // reset to default or any desired color
         this.secondaryColor = '#000000';
         this.selectedColor = null;

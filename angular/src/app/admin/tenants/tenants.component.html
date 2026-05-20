@@ -54,7 +54,7 @@
                                                [attr.disabled]="!filters.subscriptionEndDateRangeActive ? 'disabled' : null"
                                                #drpSubscriptionEndDateRange="bsDaterangepicker"
                                                bsDaterangepicker
-                                               readonly="readonly" dateRangePickerMomentModifier
+                                               readonly="readonly" dateRangePickerLuxonModifier
                                                [(date)]="subscriptionDateRange">
                                     </div>
                                     <div class="col-xl-6">
@@ -71,7 +71,7 @@
                                         <input class="form-control" name="CreationDateRange"
                                                [attr.disabled]="!filters.creationDateRangeActive ? 'disabled' : null"
                                                #drpCreationDateRange="bsDaterangepicker" bsDaterangepicker
-                                               readonly="readonly" dateRangePickerMomentModifier
+                                               readonly="readonly" dateRangePickerLuxonModifier
                                                [(date)]="creationDateRange"/>
                                     </div>
                                 </div>

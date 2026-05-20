@@ -1,4 +1,9 @@
 <div [@routerTransition]>
+    <style>
+        .ui-column-title {
+            display: none !important;
+        }
+    </style>
     <div class="content d-flex flex-column flex-column-fluid">
         <sub-header [title]="'AuditLogs' | localize">
         </sub-header>
@@ -24,7 +29,7 @@
                                                 <label for="StartEndRange">{{"DateRange" | localize}}</label>
                                                 <input class="form-control" id="StartEndRange" name="StartEndRange"
                                                     #drp="bsDaterangepicker" readonly="readonly" bsDaterangepicker
-                                                    dateRangePickerMomentModifier [(date)]="dateRange" />
+                                                    dateRangePickerLuxonModifier [(date)]="dateRange" />
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -164,35 +169,35 @@
                                                     </div>
                                                 </td>
                                                 <td style="width: 150px">
-                                                    <span class="ui-column-title">{{'UserName' | localize}}</span>
+                                                    
                                                     {{record.userName}}
                                                 </td>
                                                 <td style="width: 250px">
-                                                    <span class="ui-column-title">{{'Service' | localize}}</span>
-                                                    {{record.serviceName}}
+                                                    
+                                                    <span title="{{record.serviceName}}">{{truncateStringWithPostfix(record.serviceName, 13)}}</span>
                                                 </td>
                                                 <td style="width: 250px">
-                                                    <span class="ui-column-title">{{'Action' | localize}}</span>
-                                                    {{record.methodName}}
+                                                    
+                                                    <span title="{{record.methodName}}">{{truncateStringWithPostfix(record.methodName, 13)}}</span>
                                                 </td>
                                                 <td style="width: 100px">
-                                                    <span class="ui-column-title">{{'Duration' | localize}}</span>
+                                                    
                                                 </td>
                                                 <td style="width: 150px">
-                                                    <span class="ui-column-title">{{'IpAddress' | localize}}</span>
+                                                    
                                                     {{record.clientIpAddress}}
                                                 </td>
                                                 <td style="width: 150px">
-                                                    <span class="ui-column-title">{{'Client' | localize}}</span>
+                                                    
                                                     {{record.clientName}}
                                                 </td>
                                                 <td style="width: 150px">
-                                                    <span class="ui-column-title">{{'Browser' | localize}}</span>
+                                                    
                                                     <span
                                                         title="{{record.browserInfo}}">{{truncateStringWithPostfix(record.browserInfo, 20)}}</span>
                                                 </td>
                                                 <td style="width: 150px">
-                                                    <span class="ui-column-title">{{'Time' | localize}}</span>
+                                                    
                                                     {{ record.executionTime | momentFormat:'YYYY-MM-DD HH:mm:ss'}}
                                                 </td>
                                             </tr>
@@ -236,7 +241,8 @@
                                                 <input class="form-control" id="StartEndRangeEntityChange"
                                                     name="StartEndRangeEntityChange" readonly="readonly"
                                                     #drp="bsDaterangepicker" bsDaterangepicker
-                                                    dateRangePickerMomentModifier [(date)]="dateRange">
+                                                    dateRangePickerLuxonModifier [(date)]="dateRange">
+
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -304,20 +310,20 @@
                                                     </div>
                                                 </td>
                                                 <td style="width: 150px">
-                                                    <span class="ui-column-title">{{'Action' | localize}}</span>
+                                                    
                                                     <span
                                                         title="{{record.changeTypeName}}">{{l(record.changeTypeName)}}</span>
                                                 </td>
                                                 <td style="width: 250px">
-                                                    <span class="ui-column-title">{{'Object' | localize}}</span>
-                                                    {{record.entityTypeFullName}}
+                                                    
+                                                    <span title="{{record.entityTypeFullName}}">{{truncateStringWithPostfix(record.entityTypeFullName, 13)}}</span>
                                                 </td>
                                                 <td style="width: 150px">
-                                                    <span class="ui-column-title">{{'UserName' | localize}}</span>
+                                                    
                                                     {{record.userName}}
                                                 </td>
                                                 <td style="width: 150px">
-                                                    <span class="ui-column-title">{{'Time' | localize}}</span>
+                                                    
                                                     {{ record.changeTime | momentFormat:'YYYY-MM-DD HH:mm:ss'}}
                                                 </td>
                                             </tr>

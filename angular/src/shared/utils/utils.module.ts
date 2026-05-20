@@ -23,7 +23,11 @@ import { PermissionAllPipe } from '@shared/common/pipes/permission-all.pipe';
 import { FeatureCheckerPipe } from '@shared/common/pipes/feature-checker.pipe';
 import { DatePickerMomentModifierDirective } from './date-picker-moment-modifier.directive';
 import { DateRangePickerMomentModifierDirective } from './date-range-picker-moment-modifier.directive';
-import{ConvertedDatePipe} from '../utils/converted-date.pipe';
+import { ConvertedDatePipe } from '../utils/converted-date.pipe';
+import { DatePickerLuxonModifierDirective } from './date-time/date-picker-luxon-modifier.directive';
+import { DateRangePickerLuxonModifierDirective } from './date-time/date-range-picker-luxon-modifier.directive';
+import { LuxonFormatPipe } from './luxon-format.pipe';
+import { LuxonFromNowPipe } from './luxon-from-now.pipe';
 
 @NgModule({
     imports: [
@@ -55,6 +59,10 @@ import{ConvertedDatePipe} from '../utils/converted-date.pipe';
         FeatureCheckerPipe,
         DatePickerMomentModifierDirective,
         DateRangePickerMomentModifierDirective,
+        DatePickerLuxonModifierDirective,
+        DateRangePickerLuxonModifierDirective,
+        LuxonFormatPipe,
+        LuxonFromNowPipe,
         PermissionAllPipe,
         ConvertedDatePipe
     ],
@@ -75,6 +83,10 @@ import{ConvertedDatePipe} from '../utils/converted-date.pipe';
         FeatureCheckerPipe,
         DatePickerMomentModifierDirective,
         DateRangePickerMomentModifierDirective,
+        DatePickerLuxonModifierDirective,
+        DateRangePickerLuxonModifierDirective,
+        LuxonFormatPipe,
+        LuxonFromNowPipe,
         PermissionAllPipe,
         ConvertedDatePipe
     ]

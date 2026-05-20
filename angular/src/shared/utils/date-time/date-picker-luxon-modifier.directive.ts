@@ -27,7 +27,7 @@ export class DatePickerLuxonModifierDirective implements OnDestroy, OnChanges {
                     this.dateChange.emit(null);
                 } else if ((date instanceof Date && !compare(this.lastDate, date) && date.toString() !== 'Invalid Date')) {
                     this.lastDate = date;
-                    this.dateChange.emit(date);
+                    this.dateChange.emit(this._dateTimeService.fromJSDate(date));
                 }
             });
     }

@@ -27,6 +27,7 @@ export class DynamicResourcesHelper {
         const styleLoaderService = new StyleLoaderService();
 
         let styleUrls = [
+            AppConsts.appBaseUrl + '/assets/common/styles/syncfusion-material.css',
             AppConsts.appBaseUrl + '/assets/metronic/themes/' + theme + '/css/style.bundle' + cssPostfix.replace('-', '.') + '.min.css',
             AppConsts.appBaseUrl + '/assets/primeng/datatable/css/primeng.datatable' + cssPostfix + '.min.css',
             AppConsts.appBaseUrl + '/assets/common/styles/metronic-customize.min.css',

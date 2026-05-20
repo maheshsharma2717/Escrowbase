@@ -227,8 +227,6 @@ import { FileMainComponent } from './main/File/file-main/file-main.component';
         },
     ],
     entryComponents: [NgxSpinnerComponent,TabComponent],
-
-    bootstrap: [AppComponent]
 })
 export class AppModule {
 

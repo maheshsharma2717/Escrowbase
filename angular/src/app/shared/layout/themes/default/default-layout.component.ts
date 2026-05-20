@@ -113,7 +113,8 @@ export class DefaultLayoutComponent extends ThemesLayoutBaseComponent implements
         if (this._activatedRoute.snapshot.queryParams['sc'] != undefined) {
             this.tempcompany = atob(this._activatedRoute.snapshot.queryParams['sc']);
         }
-        this.defaultLogo = "";
+        this.defaultLogo = AppConsts.appBaseUrl + '/assets/common/images/Escrow-logo.png';
+        this.detail = "Escrow Secure Web Portal";
 
         this.isAdmin = this._permissionChecker.isGranted('Pages.Administration.Users')
 

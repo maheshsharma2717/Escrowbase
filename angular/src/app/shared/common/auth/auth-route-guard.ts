@@ -9,7 +9,9 @@ import { of, Subject } from 'rxjs';
 import { SrFileMappingsServiceProxy } from '@shared/service-proxies/service-proxies';
 import { NgxSpinnerService } from "ngx-spinner";  
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class AppRouteGuard extends AppComponentBase implements CanActivate, CanActivateChild, CanLoad {
 output = [];
 eFilter = [];
