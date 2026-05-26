@@ -39,18 +39,27 @@
                     [ngStyle]="isAdminPage && !isMenuToggled ? { left: '265px' } : isAdminPage && isMenuToggled ? { left: '70px' } : { left: '0px' }"
                     class="header header-{{currentTheme.baseSettings.header.desktopFixedHeader ? 'fixed':'static'}} head--skin-{{currentTheme.baseSettings.header.headerSkin}}">
 
-                    <div class="container-fluid d-flex align-items-stretch flex-nowrap justify-content-between">
-                        <div style="margin: 1px 0px 0px 0px; min-width: 26%;" class="flex-grow-1 d-none d-lg-block"><span
-                                [class.hidden]="isAdminPage"
-                                style="position: unset; font-size: large; position: relative; padding: 5px;background-color: rgb(255, 255, 106); top: 25%;">
-                                <b><i>{{detail}}</i></b><br></span>
+                    <div class="container-fluid d-flex align-items-stretch flex-nowrap justify-content-between" style="height: 100%; position: relative;">
+                        <!-- Left side: Logo -->
+                        <div class="flex-grow-1 d-none d-lg-flex align-items-center">
+                            <!-- Desktop Logo for non-admin -->
+                            <a routerLink="/" target="_blank" [class.hidden]="isAdminPage" class="mr-4">
+                                <img *ngIf="!appSession.tenant || !appSession.tenant.logoId" [src]="defaultLogo" alt="logo" height="38" />
+                                <img *ngIf="appSession.tenant && appSession.tenant.logoId"
+                                    [src]="remoteServiceBaseUrl + '/TenantCustomization/GetLogo?tenantId=' + appSession.tenant.id"
+                                    alt="logo" height="38" />
+                            </a>
                         </div>
-                        <div style="margin:0; justify-content:right;" class="topbar">
-                            <b><i style="padding: 0px 68px 0px 0px;color:blue; top: 5px;
-                            position: relative; font-size: 1.2vw;
-                        ">{{company}}</i>
-                                <div style="  color:blue;"
-                                    *ngIf=" companyLogo?.includes('.png') || companyLogo?.includes('.jpeg')">
+                        
+                        <!-- Center: Escrow Secure Web Portal Text -->
+                        <div class="d-none d-lg-flex align-items-center justify-content-center" style="position: absolute; left: 50%; top: 0; bottom: 0; transform: translateX(-50%); pointer-events: none;">
+                            <span [class.hidden]="isAdminPage" style="font-size: 1.05rem; padding: 5px 10px; background-color: rgb(255, 255, 106); font-weight: bold; font-style: italic; pointer-events: auto; border-radius: 4px;">
+                                {{detail}}
+                            </span>
+                        </div>
+                        <div style="margin:0; justify-content:right; align-items: center;" class="topbar d-flex">
+                            <b><i style="padding: 0px 68px 0px 0px;color:blue; font-size: 1.2vw;">{{company}}</i>
+                                <div style="color:blue;" *ngIf=" companyLogo?.includes('.png') || companyLogo?.includes('.jpeg')">
                                     <img *ngIf=" companyLogo?.includes('.png') || companyLogo?.includes('.jpeg')"
                                         [src]="companyLogo" [style]="display1" height="20" />
                                 </div>

@@ -31,6 +31,11 @@ td {
     border: none !important;
 }
 
+.radical-td {
+    padding: 6px 14px !important;
+    vertical-align: middle !important;
+}
+
 th {
     background-color: #adcde9;
 }
@@ -79,13 +84,10 @@ th {
 
 .fullscreen-container {
     position: fixed !important;
-    top: 98px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100vw;
-    height: calc(100vh - 98px);
-    background-color: white;
+    top: 142px;
+    left: 20px;
+    width: calc(100vw - 40px);
+    height: calc(100vh - 162px);
     z-index: 9999;
     overflow: auto;
 }

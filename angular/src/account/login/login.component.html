@@ -1,139 +1,215 @@
-
-
-<div>
-    <img style="width: 240px;" src="/assets/metronic/common/images/bg/EscrowBase-Logo.png">
-</div>
-<div class="kt-login__form" style="margin:0 !important;" [@routerTransition]>
+<div class="glass-login-wrapper" [@routerTransition]>
     
-    <div class="kt-login__title" style="margin: 0;">
-        <img style="width: 95px; border-radius: 50px;" src="/assets/metronic/common/images/bg/img_avatar.png">
-        <h3 class="mt-6">
-            {{ 'LogIn' | localize }}
-        </h3>
-        <br/>
+    <div class="text-center mb-5">
+        <img style="max-width: 200px; margin-bottom: 1.5rem;" src="/assets/metronic/common/images/bg/EscrowBase-Logo.png" alt="EscrowBase">
+        <h3 class="login-title">{{ 'Welcome Back' | localize }}</h3>
+        <p class="login-subtitle text-muted">Please sign in to your account</p>
     </div>
 
-    <form #loginForm="ngForm" class="kt-form" method="post" novalidate (ngSubmit)="login()" style="margin: 0;">
-        <div class="input-icons"> 
-        <div class="form-group" style="text-align: left;">
-            <i class="fa fa-user icon"></i> 
-            <input id="username" #userNameOrEmailAddressInput="ngModel"  style="text-align: left;" [(ngModel)]="loginService.authenticateModel.userNameOrEmailAddress" autoFocus class="form-control m-input" type="text" autocomplete="new-password" placeholder="{{'  Email' | localize}} *" name="userNameOrEmailAddress" required />
+    <form #loginForm="ngForm" class="glass-form" method="post" novalidate (ngSubmit)="login()">
+        
+        <div class="form-group mb-4 position-relative">
+            <i class="fas fa-envelope input-icon"></i>
+            <input id="username" 
+                   #userNameOrEmailAddressInput="ngModel"  
+                   [(ngModel)]="loginService.authenticateModel.userNameOrEmailAddress" 
+                   autoFocus 
+                   class="form-control glass-input" 
+                   type="text" 
+                   autocomplete="new-password" 
+                   placeholder="Email address" 
+                   name="userNameOrEmailAddress" 
+                   required />
             <validation-messages [formCtrl]="userNameOrEmailAddressInput" *ngIf="!userNameOrEmailAddressInput.touched"></validation-messages>
         </div>
 
-        <div class="form-group" style="text-align: left; position: relative;">
-            <i class="fa fa-key icon" style="position: absolute; top: 50%; left: 2px; transform: translateY(-50%);"></i>
-        
+        <div class="form-group mb-4 position-relative">
+            <i class="fas fa-lock input-icon"></i>
             <input id="password" 
                    #passwordInput="ngModel" 
                    [(ngModel)]="loginService.authenticateModel.password" 
-                   class="form-control m-input" 
+                   class="form-control glass-input pr-5" 
                    [type]="fieldTextType ? 'text' : 'password'" 
                    autocomplete="new-password" 
-                   placeholder="{{'Password' | localize}} *" 
+                   placeholder="Password" 
                    name="password" 
                    required 
-                   maxlength="32" 
-                   style="padding-right: 40px;" />
-        
-            <div class="input-group-append" style="position: absolute; top: 34%; right: 29px; transform: translateY(-50%);">
-                <i class="fa"  
-                   [ngClass]="{
-                       'fa-eye-slash': !fieldTextType,
-                       'fa-eye': fieldTextType
-                   }"
-                   (click)="toggleFieldTextType()"></i>
-            </div>
-        
+                   maxlength="32" />
+            
+            <button type="button" class="btn btn-icon password-toggle" (click)="toggleFieldTextType()">
+                <i class="fa" [ngClass]="{'fa-eye-slash': !fieldTextType, 'fa-eye': fieldTextType}"></i>
+            </button>
             <validation-messages [formCtrl]="passwordInput" *ngIf="!passwordInput.touched"></validation-messages>
         </div>
-   
-        </div>
       
-        <div class="form-group mt-4" style="text-align: left;">
-            <label class="kt-checkbox">
-                <input class="form-control" [(ngModel)]="loginService.rememberMe" type="checkbox" style="text-align: left; width:25px; float: left;" name="rememberMe" value="true" />
-                <span style="padding-left: 10px;
-                top: 10px;
-                position: relative;">{{"RememberMe" | localize}}</span>
+        <div class="d-flex justify-content-between align-items-center mb-5 mt-3">
+            <label class="glass-checkbox d-flex align-items-center m-0">
+                <input [(ngModel)]="loginService.rememberMe" type="checkbox" name="rememberMe" value="true" />
+                <span class="checkmark"></span>
+                <span class="ml-2 font-weight-500 text-muted">{{"Remember me" | localize}}</span>
             </label>
+            <a routerLink="/account/forgot-password" class="forgot-link text-primary font-weight-bold small">{{'Forgot Password?' | localize}}</a>
         </div>
-        <button id="btnLogIn" type="submit" style="background-color: #007bff; padding: 13px 32px;" class="btn btn-primary btn-sm" [disabled]="!loginForm.form.valid">{{"LogIn" | localize}}</button>
-        <div class="kt-login__actions">
-           
-            <a routerLink="/account/forgot-password" id="forget-password" class="kt-link kt-login__link-forgot">{{"ForgotPassword" | localize}}</a>
-          
-        </div>
+
+        <button id="btnLogIn" type="submit" class="btn btn-primary btn-block glass-btn" [disabled]="!loginForm.form.valid">
+            {{"Sign In" | localize}}
+        </button>
      
     </form>
-
-
-    <a id="opener"></a>
-
-    <!-- <div class="kt-login__divider">
-        <div class="kt-divider">
-            <span></span>
-            <span>{{"LoginWith" | localize}}</span>
-            <span></span>
-        </div>
-    </div>
-
-    <div class="kt-login__options" *ngIf="(multiTenancySideIsTeanant || !isMultiTenancyEnabled) && loginService.externalLoginProviders.length > 0">
-        <a *ngFor="let provider of loginService.externalLoginProviders" class="btn btn-outline-secondary kt-btn btn-sm" (click)="externalLogin(provider)" title="{{provider.name}}">
-            <i class="fab fa-{{provider.icon}}"></i>
-            {{provider.name}}
-        </a>
-    </div> -->
-
 </div>
-<!-- <div class="kt-login__account">
-    <span *ngIf="isSelfRegistrationAllowed">
-        <a routerLink="/account/register">{{"CreateAnAccount" | localize}}</a>
-        <span> | </span>
-    </span>
-    <span *ngIf="!multiTenancySideIsTeanant && isTenantSelfRegistrationAllowed">
-        <a routerLink="/account/select-edition">{{"NewTenant" | localize}}</a>
-        <span> | </span>
-    </span>
-    <a routerLink="/account/email-activation" id="email-activation-btn">{{"EmailActivation" | localize}}</a>
-</div> -->
 
-<style>.input-icons i { 
-    position: absolute; 
-} 
-  
-.input-icons { 
-    width: 100%; 
-    /* margin-bottom: 10px; 
-    padding: 15px; */
-} 
-  
-.icon { 
-    padding:16px 7px; 
-    min-width: 40px; 
-} 
-  
-.input-field { 
-    width: 100%; 
-  /* margin-bottom:5px; */
-    text-align: center; 
-    
-} 
-.form-control{
-    padding-left: 2.25rem !important;
-}
-.kt-login.kt-login--v1 .kt-login__wrapper {
-    padding: 1rem 1rem !important;}
-    .ng-tns-c310-1{
-        text-align: center;
-    }
-    .kt-login__form{
-        margin: 0 !important;
-    }
-    .kt-login__actions {
-  
-    margin: 1rem 0 !important;
+<style>
+.glass-login-wrapper {
+    width: 100%;
+    margin: 0 auto;
 }
 
- 
+.login-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.login-subtitle {
+    font-size: 1rem;
+    color: #64748b !important;
+}
+
+.glass-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.input-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    z-index: 2;
+    font-size: 1rem;
+}
+
+.glass-input {
+    background-color: #ffffff !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    border-radius: 8px !important;
+    padding: 14px 16px 14px 44px !important; /* Left padding for icon */
+    color: #0f172a !important;
+    transition: all 0.3s ease !important;
+    font-size: 1rem !important;
+    height: auto !important;
+}
+
+.glass-input:focus {
+    background-color: #ffffff !important;
+    border-color: #4b709a !important;
+    box-shadow: 0 0 0 3px rgba(75, 112, 154, 0.2) !important;
+    outline: none !important;
+}
+
+.glass-input::placeholder {
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent !important;
+    border: none !important;
+    color: #94a3b8 !important;
+    box-shadow: none !important;
+    z-index: 2;
+}
+
+.password-toggle:hover {
+    color: var(--primary-color) !important;
+}
+
+/* Custom Checkbox */
+.glass-checkbox {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+}
+
+.glass-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.glass-checkbox .checkmark {
+    position: relative;
+    display: inline-block;
+    height: 18px;
+    width: 18px;
+    background-color: #ffffff;
+    border: 2px solid #cbd5e1;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.glass-checkbox:hover input ~ .checkmark {
+    border-color: #4b709a;
+}
+
+.glass-checkbox input:checked ~ .checkmark {
+    background-color: #4b709a;
+    border-color: #4b709a;
+}
+
+.glass-checkbox .checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.glass-checkbox input:checked ~ .checkmark:after {
+    display: block;
+}
+
+.forgot-link {
+    transition: color 0.2s ease;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
+    color: var(--primary-hover) !important;
+}
+
+.glass-btn {
+    padding: 14px 24px !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    background: #50769d !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 6px -1px rgba(80, 118, 157, 0.2) !important;
+    transition: all 0.3s ease;
+}
+
+.glass-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: #416386 !important;
+    box-shadow: 0 8px 12px -3px rgba(80, 118, 157, 0.3) !important;
+}
+
+.glass-btn:disabled {
+    opacity: 0.7;
+    transform: none;
+}
 </style>

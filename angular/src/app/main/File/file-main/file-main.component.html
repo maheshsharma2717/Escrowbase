@@ -1,164 +1,213 @@
 <div #fullscreenElementMain [ngClass]="{'fullscreen-container-main': isFullScreenMain}">
-    <div style="text-align: left; font-size: small; line-height: 1.4; padding: 2px 10px;">
-        <b>
-            Escrow Generated Documents
-            <i style="color: royalblue; font-size: 12px;">
-                (This is the area where the escrow officer will download documents that you are required to give
-                attention to.)
-                &ensp;Select Document below you need to do work on and then choose the action required from the 4
-                buttons below to start that action.
-            </i>
-        </b>
-    </div>
-
-    <!-- Toolbar Section -->
-    <div style="background-color: #adcde9; padding: 5px 10px; display: flex; align-items: center;">
-        <span style="font-weight: bold; font-size: 14px;">Total Items: {{tableData.length}}</span>
-        <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
-            <button class="btn btn-primary btn-xs-custom fade-btn" (click)="downloadSelected()"
-                [class.visible]="selectedFiles.size > 0" [disabled]="selectedFiles.size === 0">
-                <i class="fa fa-download" style="font-size: 10px;"></i> Download Selected
+    <!-- Section Header & Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 px-4 py-3 rounded-xl shadow-sm border" style="background-color: #f0f7ff; border-left: 5px solid var(--primary-color) !important; border-color: #e2e8f0;">
+        <div class="d-flex flex-column justify-content-center">
+            <div class="d-flex align-items-center">
+                <i class="fa fa-folder-open text-primary mr-2" style="font-size: 1.3rem;"></i>
+                <h4 class="mb-0 font-weight-bolder" style="font-size: 1.25rem; color: var(--primary-color) !important;">
+                    Escrow Generated Documents
+                </h4>
+                <span class="ml-3 badge badge-primary font-weight-bold" style="font-size: 0.85rem; padding: 6px 10px; background-color: var(--primary-color);">{{ tableData.length }} Items</span>
+            </div>
+        </div>
+        
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-primary radical-btn" (click)="downloadSelected()"
+                [class.visible]="selectedFiles.size > 0" [disabled]="selectedFiles.size === 0" style="border-radius: 8px !important;">
+                <i class="fa fa-download"></i> Download
             </button>
-            <button class="btn btn-danger btn-xs-custom fade-btn" (click)="deleteSelected()"
-                [class.visible]="selectedFiles.size > 0" [disabled]="selectedFiles.size === 0">
-                <i class="fa fa-trash" style="font-size: 10px;"></i> Delete Selected
+            <button class="btn btn-danger radical-btn" (click)="deleteSelected()"
+                [class.visible]="selectedFiles.size > 0" [disabled]="selectedFiles.size === 0" style="border-radius: 8px !important;">
+                <i class="fa fa-trash"></i> Delete
             </button>
-            <span (click)="toggleFullScreenMain(fullscreenElementMain)" style="cursor: pointer; margin-left: 5px;"
-                [title]="isFullScreenMain ? 'Show other area' : 'Hide other area'">
-                <i class="fas fullscreen-toggle-icon"
-                    [ngClass]="{'fa-expand-alt': !isFullScreenMain, 'fa-compress-alt': isFullScreenMain}"
-                    style="font-size: 15px; color: #464E5F;"></i>
-            </span>
+            <button class="btn btn-light-dark btn-icon ml-2" (click)="toggleFullScreenMain(fullscreenElementMain)" 
+                style="border-radius: 50%;" [title]="isFullScreenMain ? 'Show other area' : 'Hide other area'">
+                <i class="fas" [ngClass]="{'fa-expand-arrows-alt': !isFullScreenMain, 'fa-compress-arrows-alt': isFullScreenMain}" style="font-size: 1.1rem;"></i>
+            </button>
         </div>
     </div>
 
-    <!-- Table Section -->
-    <div class="table-container" style="min-height: 400px; background-color: white">
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-            <tr style="height: 26px;">
-                <th style="width: 33%; cursor: pointer; padding-left: 10px;" (click)="sortTable('name')">
-                    <input type="checkbox" [checked]="isAllSelected" (change)="toggleSelectAll($event)"
-                        (click)="$event.stopPropagation()" style="margin-right: 5px; cursor: pointer;" />
-                    Name
-                    <span *ngIf="currentSortField === 'name'">
-                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
-                    </span>
-                </th>
-                <th style="width: 8%; cursor: pointer;" (click)="sortTable('access')">Access Level
-                    <span *ngIf="currentSortField === 'access'">
-                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
-                    </span>
-                </th>
-                <th style="width: 15%; cursor: pointer;" (click)="sortTable('action')">Signing Actions
-                    <span *ngIf="currentSortField === 'action'">
-                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
-                    </span>
-                </th>
-                <th style="width: 21%; cursor: pointer;" (click)="sortTable('otherAction')">Other Action
-                    <span *ngIf="currentSortField === 'otherAction'">
-                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
-                    </span>
-                </th>
-                <th style="width: 6%; cursor: pointer;" (click)="sortTable('signStatus')">My Status
-                    <span *ngIf="currentSortField === 'signStatus'">
-                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
-                    </span>
-                </th>
-                <th style="width: 8%; cursor: pointer;" (click)="sortTable('signing')">Signing Status
-                    <span *ngIf="currentSortField === 'signing'">
-                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
-                    </span>
-                </th>
-                <th style="width: 9%; cursor: pointer;" (click)="sortTable('updateOn')">Updated On
-                    <span *ngIf="currentSortField === 'updateOn'">
-                        <i [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
-                    </span>
-                </th>
-            </tr>
+    <!-- Sleek Info Banner -->
+    <div class="alert alert-custom fade show mb-4 shadow-sm d-flex align-items-center" role="alert" style="border: 1px solid #e0f2fe; border-radius: 8px; background-color: #f8fafc; padding: 0.75rem 1rem;">
+        <div class="alert-icon mr-3" style="color: #0ea5e9;">
+            <i class="fas fa-info-circle" style="font-size: 1.5rem;"></i>
+        </div>
+        <div class="alert-text" style="color: #334155; font-size: 0.95rem; line-height: 1.5; font-weight: 500;">
+            <span style="color: #0284c7; font-weight: 600;">(This is the area where the escrow officer will download documents that you are required to give attention to.)</span> 
+            Select Document below you need to do work on and then choose the action required from the 4 buttons below to start that action.
+        </div>
+    </div>
 
+    <!-- Radically Redesigned Data Table -->
+    <div class="radical-table-container bg-white rounded-xl shadow-sm border" style="border-color: #f1f5f9;">
+        <table class="radical-table w-100">
+            <thead class="bg-light">
+                <tr>
+                    <th class="radical-th" style="width: 33%; cursor: pointer;" (click)="sortTable('name')">
+                        <div class="d-flex align-items-center">
+                            <label class="radical-checkbox mr-3">
+                                <input type="checkbox" [checked]="isAllSelected" (change)="toggleSelectAll($event)" (click)="$event.stopPropagation()">
+                                <span class="checkmark"></span>
+                            </label>
+                            Document Name <i class="ml-2 text-muted" *ngIf="currentSortField === 'name'" [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                        </div>
+                    </th>
+                    <th class="radical-th" style="cursor: pointer;" (click)="sortTable('access')">
+                        Access Level <i class="ml-1 text-muted" *ngIf="currentSortField === 'access'" [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </th>
+                    <th class="radical-th" style="cursor: pointer;" (click)="sortTable('action')">
+                        Signing Actions <i class="ml-1 text-muted" *ngIf="currentSortField === 'action'" [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </th>
+                    <th class="radical-th" style="cursor: pointer;" (click)="sortTable('otherAction')">
+                        Other Action <i class="ml-1 text-muted" *ngIf="currentSortField === 'otherAction'" [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </th>
+                    <th class="radical-th" style="cursor: pointer;" (click)="sortTable('signStatus')">
+                        Status <i class="ml-1 text-muted" *ngIf="currentSortField === 'signStatus'" [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </th>
+                    <th class="radical-th" style="cursor: pointer;" (click)="sortTable('updateOn')">
+                        Updated On <i class="ml-1 text-muted" *ngIf="currentSortField === 'updateOn'" [ngClass]="ascendingOrder ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down'"></i>
+                    </th>
+                </tr>
+            </thead>
             <tbody>
                 <tr *ngIf="!tableData.length">
-                    <td colspan="8" style="text-align: center; padding:5px">No data available</td>
+                    <td colspan="6" class="text-center py-5 text-muted font-weight-bold">
+                        <i class="fa fa-folder-open mb-3 text-light-dark" style="font-size: 2rem;"></i><br>
+                        No documents available in this escrow
+                    </td>
                 </tr>
-                <tr *ngFor="let file of tableData; let i = index" (contextmenu)="onRightClick($event, i, file, 'All')"
-                    class="hover-row" draggable="true" (dragstart)="onDragStart($event, file)" (dragend)="onDragEnd($event, file)">
+                <tr *ngFor="let file of tableData; let i = index" class="radical-row" (contextmenu)="onRightClick($event, i, file, 'All')" draggable="true" (dragstart)="onDragStart($event, file)" (dragend)="onDragEnd($event, file)">
+                    
+                    <td class="radical-td">
+                        <div class="d-flex align-items-center">
+                            <label class="radical-checkbox mr-3" [style.visibility]="selectedFiles.has(file.srAssignedFileId || file.key) ? 'visible' : ''">
+                                <input type="checkbox" [checked]="selectedFiles.has(file.srAssignedFileId || file.key)" (change)="toggleSelection(file)" (dragstart)="$event.stopPropagation()">
+                                <span class="checkmark"></span>
+                            </label>
+                            <span class="file-icon-wrapper mr-3" [innerHTML]="getFileIcon(file)"></span>
+                            <span class="font-weight-bold text-dark text-truncate" style="max-width: 250px;" [title]="file.name">
+                                {{ file.name }}
+                            </span>
+                        </div>
 
-
-                    <!-- First TD: Includes context menu -->
-                    <td style="position: relative; padding-left: 10px;">
-                        <input type="checkbox" [checked]="selectedFiles.has(file.srAssignedFileId || file.key)"
-                            (change)="toggleSelection(file)" (dragstart)="$event.stopPropagation()" draggable="false"
-                            [style.display]="selectedFiles.size > 0 ? 'inline-block' : null"
-                            style="margin-right: 5px;" />
-                        <span [innerHTML]="getFileIcon(file)" style="margin-right: 5px;"></span>
-                        <!-- <img [src]="apiUrl + file.fileType" alt="Image" style="width: 25px; margin-right: 5px;"> -->
-                        <span class="file-name" [title]="file.name">
-                            {{ file.name.length > 50 ? (file.name | slice:0:50) + '…' : file.name }}
-                        </span>
-
-                        <!-- Context menu only on selected row -->
-                        <div *ngIf="showContextMenu && selectedIndex === i" class="context-menu dropdown-menus"
-                            [style.top.px]="contextMenuPosition.y" [style.left.px]="contextMenuPosition.x"
-                            style="position: absolute; z-index: 9999; width: 150px; min-width: 145px;">
-                            <ul>
+                        <!-- Context Menu -->
+                        <div *ngIf="showContextMenu && selectedIndex === i" class="radical-context-menu shadow-lg rounded-lg" [style.top.px]="contextMenuPosition.y" [style.left.px]="contextMenuPosition.x">
+                            <ul class="list-unstyled mb-0 py-2">
                                 <ng-container *ngIf="selectedFiles.size <= 1">
-                                    <li *ngIf="!editPermission" (click)="onItemClickMain('view')">View</li>
-                                    <li *ngIf="editPermission" (click)="onItemClickMain('view')">View/Edit</li>
-                                    <!-- <li *ngIf="esignPermission" (click)="onItemClickMain('esign')">E-Sign</li>
-                                <li *ngIf="esignPermission" (click)="onItemClickMain('signWithDocusign')">Sign with Docusign</li> -->
-                                    <li *ngIf="esignPermission" (click)="onItemClickMain('esignUnified')">E-Sign</li>
-
-                                    <li *ngIf="esignPermission" (click)="onItemClickMain('esignDetails')">E-Sign Details
-                                    </li>
-                                    <li *ngIf="viewHistoryPermission" (click)="onItemClickMain('ViewHistory')">
-                                        View/History
-                                    </li>
-                                    <li (click)="onItemClickMain('SendReminderMessage')">Send
-                                        Reminder/Message</li>
-                                    <li (click)="onItemClickMain('Rename')">Rename</li>
-                                    <li *ngIf="deletePermission" (click)="onItemClickMain('delete')">Delete</li>
-                                    <li *ngIf="downloadPermission" (click)="DownloadFile($event)">Download File</li>
-                                    <li *ngIf="viewFullNamePermission" (click)="onItemClickMain('ViewFullName')">View
-                                        FullName</li>
+                                    <li *ngIf="!editPermission" (click)="onItemClickMain('view')" class="ctx-item"><i class="fa fa-eye"></i> View</li>
+                                    <li *ngIf="editPermission" (click)="onItemClickMain('view')" class="ctx-item"><i class="fa fa-edit"></i> View/Edit</li>
+                                    <li *ngIf="esignPermission" (click)="onItemClickMain('esignUnified')" class="ctx-item"><i class="fa fa-signature"></i> E-Sign</li>
+                                    <li *ngIf="esignPermission" (click)="onItemClickMain('esignDetails')" class="ctx-item"><i class="fa fa-info-circle"></i> E-Sign Details</li>
+                                    <li *ngIf="viewHistoryPermission" (click)="onItemClickMain('ViewHistory')" class="ctx-item"><i class="fa fa-history"></i> View History</li>
+                                    <li (click)="onItemClickMain('SendReminderMessage')" class="ctx-item"><i class="fa fa-bell"></i> Send Reminder</li>
+                                    <li (click)="onItemClickMain('Rename')" class="ctx-item"><i class="fa fa-pencil-alt"></i> Rename</li>
+                                    <li *ngIf="deletePermission" (click)="onItemClickMain('delete')" class="ctx-item text-danger"><i class="fa fa-trash"></i> Delete</li>
+                                    <li *ngIf="downloadPermission" (click)="DownloadFile($event)" class="ctx-item"><i class="fa fa-download"></i> Download</li>
                                 </ng-container>
-                                <li *ngIf="downloadPermission && selectedFiles.size > 1" (click)="downloadSelected()">
-                                    Download Selected
-                                </li>
-                                <li *ngIf="deletePermission && selectedFiles.size > 1" (click)="deleteSelected()">
-                                    Delete Selected
-                                </li>
+                                <li *ngIf="downloadPermission && selectedFiles.size > 1" (click)="downloadSelected()" class="ctx-item"><i class="fa fa-download"></i> Download Selected</li>
+                                <li *ngIf="deletePermission && selectedFiles.size > 1" (click)="deleteSelected()" class="ctx-item text-danger"><i class="fa fa-trash"></i> Delete Selected</li>
                             </ul>
                         </div>
                     </td>
-                    <td>{{file.access}}</td>
-                    <td>{{file.action}}</td>
-                    <td style="width: 16%;">
-                        <div style="display: flex; align-items: center; width: 100%;">
-                            <input type="checkbox" [checked]="file.otherAction" (change)="onOtherActionChanged(file)"
-                                style="margin-right: 6px;" />
-                            <!-- <input type="checkbox" [(ngModel)]="file.otherAction" (change)="onOtherActionChanged(file)"
-                                style="margin-right: 6px;" /> -->
 
-                            <textarea [(ngModel)]="file.otherActionNote" (focus)="expandTextarea($event)"
-                                (input)="onTextareaInput($event, file)" (blur)="collapseTextarea($event, file)"
-                                placeholder="Enter note..." [attr.title]="file.otherActionNote" class="note-input"
-                                rows="1"
-                                style="flex: 1; width: 100%; font-size: 13px; padding:0 4px; line-height: 1.4; overflow: hidden;"></textarea>
-
+                    <td class="radical-td"><span class="badge badge-light-dark font-weight-bold">{{file.access}}</span></td>
+                    <td class="radical-td text-muted font-weight-bold font-size-sm">{{file.action}}</td>
+                    
+                    <td class="radical-td">
+                        <div class="d-flex align-items-center bg-light rounded px-2 py-1">
+                            <label class="radical-checkbox mr-2 mb-0">
+                                <input type="checkbox" [checked]="file.otherAction" (change)="onOtherActionChanged(file)">
+                                <span class="checkmark"></span>
+                            </label>
+                            <input type="text" [(ngModel)]="file.otherActionNote" (input)="onTextareaInput($event, file)" placeholder="Enter note..." class="border-0 bg-transparent flex-grow-1 font-size-sm dark-placeholder" style="outline: none; color: #0f172a;">
                         </div>
                     </td>
-                    <td>
-                        <div *ngIf="file.signStatus === 'Preparing...'" [attr.title]="'Preparing for sign'" style="display: flex; align-items: center; gap: 5px; color: #3699FF;">
-                            <i class="fa fa-spinner fa-spin"></i>
-                            <span style="font-size: 11px; font-weight: bold;">Preparing...</span>
-                        </div>
-                        <span *ngIf="file.signStatus !== 'Preparing...'">{{file.signStatus}}</span>
-                    </td>
-                    <td>{{file.signing}}</td>
-                    <td>{{file.updateOn}}</td>
 
+                    <td class="radical-td">
+                        <div *ngIf="file.signStatus === 'Preparing...'" class="d-flex align-items-center text-primary font-weight-bold font-size-sm">
+                            <i class="fa fa-spinner fa-spin mr-2"></i> Preparing...
+                        </div>
+                        <span *ngIf="file.signStatus !== 'Preparing...'" class="font-weight-bold text-dark font-size-sm">{{file.signStatus}}</span><br>
+                        <span class="text-muted font-size-xs">{{file.signing}}</span>
+                    </td>
+
+                    <td class="radical-td text-muted font-size-sm font-weight-bold">{{file.updateOn}}</td>
                 </tr>
             </tbody>
         </table>
     </div>
+    
+    <style>
+        .radical-btn {
+            border-radius: 8px !important;
+            padding: 8px 20px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .radical-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15);
+        }
+        .radical-table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .radical-th {
+            padding: 16px 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e2e8f0;
+            cursor: pointer;
+        }
+        .radical-td {
+            padding: 16px 20px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .radical-row {
+            transition: background-color 0.2s ease;
+        }
+        .radical-row:hover {
+            background-color: #f8fafc;
+        }
+        .radical-row:hover .radical-checkbox {
+            visibility: visible !important;
+        }
+        .radical-checkbox {
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+        }
+        .radical-checkbox input {
+            position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0;
+        }
+        .radical-checkbox .checkmark {
+            position: absolute; top: 0; left: 0; height: 20px; width: 20px;
+            background-color: #fff; border: 2px solid #cbd5e1; border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .radical-checkbox input:checked ~ .checkmark {
+            background-color: #2563eb; border-color: #2563eb;
+        }
+        .radical-checkbox .checkmark:after {
+            content: ""; position: absolute; display: none;
+            left: 6px; top: 2px; width: 5px; height: 10px;
+            border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg);
+        }
+        .radical-checkbox input:checked ~ .checkmark:after {
+            display: block;
+        }
+        .file-icon-wrapper {
+            font-size: 1.5rem;
+            color: #3b82f6;
+        }
+    </style>
 </div>

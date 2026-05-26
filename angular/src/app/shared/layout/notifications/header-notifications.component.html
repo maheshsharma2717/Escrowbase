@@ -8,7 +8,7 @@
         <i class="flaticon-alarm" *ngIf="!unreadNotificationCount"></i>
     </div>
     <div *dropdownMenu
-        class="dropdown-menu p-0 m-0 dropdown-menu-right dropdown-menu-anim-up dropdown-menu-smdropdown-menu-lg" id="inset" style="inset:none !important; width: 80%;">
+        class="dropdown-menu p-0 m-0 dropdown-menu-right dropdown-menu-anim-up dropdown-menu-smdropdown-menu-lg" id="inset" style="inset:none !important; min-width: 350px;">
         <perfect-scrollbar style="height: 80vh">
             <div class="d-flex flex-column pt-12 bgi-size-cover bgi-no-repeat rounded-top"
                 [ngStyle]="{ 'background': 'url(' + appRootUrl() + 'assets/metronic/themes/default/images/bg/bg-1.jpg)', 'background-size': 'cover'}">

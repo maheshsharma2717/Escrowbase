@@ -24,7 +24,7 @@ import { timeStamp } from 'console';
 import { LoginRoutingModule } from '@account/login/login-routing.module';
 import { WindowUtils } from 'msal';
 declare var window: Window & typeof globalThis;
-import { DefaultLayoutComponent } from '../../shared/layout/themes/default/default-layout.component'
+import { LayoutTabService } from '@app/shared/layout/layout-tab.service';
 import { CookieConsentService } from '@shared/common/session/cookie-consent.service';
 import { SharedServices } from '../../shared/common/Shared/SharedService';
 declare var chrome: any;
@@ -107,7 +107,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         private ChatSignalrService: ChatSignalrService,
         private _router: Router,
         private route: ActivatedRoute,
-        private _defaultLayoutComponent: DefaultLayoutComponent,
+        private _layoutTabService: LayoutTabService,
         private sharedServices: SharedServices,
         private _changeDetectorRef: ChangeDetectorRef
     ) {
@@ -400,7 +400,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                         isId: true
                     }
                     this.escrowList.push(customObj);
-                    //this._defaultLayoutComponent.onOpenAbout(customObj.dataNew);
+                    //this._layoutTabService.openAbout(customObj.dataNew, true);
                 }
 
                 // Check if any record corresponds to an EOX user
@@ -460,7 +460,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                                 // this.escrowList.push(data.dataNew1);
 
                                 this.onOpenFileManager(data.dataNew1, false);
-                                //this._defaultLayoutComponent.onOpenAbout(data.dataNew1);
+                                //this._layoutTabService.openAbout(data.dataNew1, true);
 
 
                                 // localStorage.removeItem('EscrowBaseWeb/abpzerotemplate_local_storage/Escrow');
@@ -501,7 +501,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                     u: list[i].u,
                 };
                 setTimeout(() => {
-                    this._defaultLayoutComponent.onOpenAbout(data, true);
+                    this._layoutTabService.openAbout(data, true);
                 }, 500);
             }
 
@@ -509,9 +509,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
             if (isReload && isDashboardRoute && (!savedTab || savedTab === 'Dashboard')) {
                 setTimeout(() => {
                     // Select the dashboard tab (first static tab) after tabs are restored
-                    if (this._defaultLayoutComponent.tabsComponent?.tabs?.first) {
-                        this._defaultLayoutComponent.tabsComponent.selectTab1(this._defaultLayoutComponent.tabsComponent.tabs.first);
-                    }
+                    this._layoutTabService.selectDashboardTab();
                 }, 1000);
             }
         }
@@ -569,7 +567,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
             }
         }
 
-        this._defaultLayoutComponent.onOpenAbout(dataNew, false);
+        this._layoutTabService.openAbout(dataNew, false);
         this.setListOfOpenTab(dataNew);
         localStorage.setItem('activeTab', atob(dataNew.e));
     }

@@ -1,77 +1,61 @@
 <div>
-  <div class="row user-type-sec" [class.fullscreen-header-fixed]="isMainFullScreen || isOtherFullScreen"
-    style="margin-right: auto; font-size: 14px;">
+  <div class="user-type-sec shadow-sm mb-4" [class.fullscreen-header-fixed]="isMainFullScreen || isOtherFullScreen"
+    style="background: #ffffff; border-radius: 12px; padding: 16px 24px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
 
-    <div class="col-md-12"
-      style="display: flex; justify-content: space-between; align-items: center; padding: 3 0 0 0;">
-
-      <!-- Escrow Info -->
-      <div class="usertypes col-md-6">
-        <div style="margin-left: 8">
-          {{'Escrow#'}} <b>{{escrowname}}</b>
-        </div>
+    <!-- Escrow Info -->
+    <div class="d-flex align-items-center">
+      <div class="symbol symbol-40 mr-3" style="background-color: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+          <i class="fa fa-folder-open text-primary font-size-h5"></i>
       </div>
-
-      <!-- Buttons & Dropdown -->
-      <div class="usertypes col-md-6" style="display: flex; gap: 12px; justify-content: flex-end; align-items: center;">
-        <!-- Username Display -->
-        <!-- <div style="margin-right: 10px;">
-          <span style="font-size: large; color: black; padding: inherit;">
-            <b>{{userName}} - {{userType}}</b>
-          </span>
-        </div> -->
-
-        <!-- Message Button -->
-        <div *ngIf="isEscrowOfficerUserExist && UsertypeModel != 'EOX'" style="text-align: center; cursor: pointer;">
-          <button type="button" class="btn btn-primary" style="height: 30px; padding: 0 10px;"
-            (click)="openMessagePopup()">
-            <i class="fa fa-envelope" aria-hidden="true"></i>
-          </button>
-          <div style="margin-top: 2px;">
-            <i style="color: black; font-weight: 400; font-size: 11px;">Message to Escrow Officer</i>
-          </div>
-        </div>
-
-        <!-- Notes Button -->
-        <div style="text-align: center; cursor: pointer;">
-          <button type="button" class="btn btn-primary" style="height: 32px; padding: 0 10px;"
-            (click)="openNotesPopup()">
-            <i class="fa fa-calendar" aria-hidden="true"></i>
-          </button>
-          <div style="margin-top: 2px;">
-            <i style="color: black; font-weight: 400; font-size: 11px;">Notes</i>
-          </div>
-        </div>
-
-        <!-- Access Level Dropdown -->
-        <div style="text-align: center;">
-          <select name="usertypes" (change)="selectChangeHandler($event)" [(ngModel)]="UsertypeModel"
-            style="height: 32px; font-size: 13px;" class="form-control form-control-solid rounded font-size-sm">
-            <option *ngFor="let item of userTypes" [ngValue]="item">{{item}}</option>
-          </select>
-          <div style="margin-top: 2px;">
-            <i style="color: black; font-weight: 600; font-size: 11px;">Access Level Type(s)</i>
-          </div>
-        </div>
-
-        <!-- Thunderbird Mode Toggle -->
-        <div style="text-align: center; margin-left: 10px; border: 1px solid #ddd; padding: 4px 8px; border-radius: 4px; background: #f8f9fa;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" id="thunderbirdToggle" [(ngModel)]="isThunderbirdMode" (change)="onThunderbirdModeChange()" style="cursor: pointer; width: 18px; height: 18px;">
-            <label for="thunderbirdToggle" style="margin-bottom: 0; cursor: pointer; font-size: 12px; font-weight: bold; color: #007bff;">
-              🕊️ Thunderbird Mode
-            </label>
-          </div>
-          <div style="font-size: 9px; color: #666; margin-top: 2px;">Clean drops for Emails</div>
-        </div>
+      <div>
+        <span class="text-muted font-weight-bold font-size-sm d-block">{{'Escrow Number'}}</span>
+        <span class="text-dark font-weight-bolder font-size-h5">{{escrowname}}</span>
       </div>
     </div>
 
-    <!-- Divider -->
-    <div
-      style="background: linear-gradient(to right, #57cbeb, #24cdd9, #25a9d1, #4e8ec6, #019da8, #03506c); height: 2px; margin-top: 6px;">
-    </div>
+    <!-- Buttons & Dropdown -->
+    <div class="d-flex align-items-center justify-content-end" style="gap: 16px;">
+      
+      <!-- Message Button -->
+      <div *ngIf="isEscrowOfficerUserExist && UsertypeModel != 'EOX'">
+        <button type="button" class="btn btn-light-primary btn-icon shadow-sm" style="height: 42px; width: 42px; border-radius: 8px;"
+          (click)="openMessagePopup()" title="Message Escrow Officer">
+          <i class="fa fa-envelope" style="font-size: 1.2rem;"></i>
+        </button>
+      </div>
 
+      <!-- Notes Button -->
+      <div>
+        <button type="button" class="btn btn-light-info btn-icon shadow-sm" style="height: 42px; width: 42px; border-radius: 8px;"
+          (click)="openNotesPopup()" title="Notes">
+          <i class="fa fa-calendar" style="font-size: 1.2rem;"></i>
+        </button>
+      </div>
+
+      <!-- Access Level Dropdown -->
+      <div class="d-flex align-items-center bg-light shadow-sm" style="height: 42px; border-radius: 8px; border: 1px solid #cbd5e1; padding: 0 16px 0 12px; background-color: #f8fafc; position: relative; overflow: hidden; cursor: pointer;">
+        <label class="text-muted font-weight-bold font-size-xs mb-0 mr-2" style="white-space: nowrap;">Access Level Type(s)</label>
+        <span class="font-weight-bold text-dark">{{UsertypeModel}}</span>
+        <i class="fa fa-chevron-down ml-3 text-muted font-size-xs"></i>
+        
+        <select name="usertypes" (change)="selectChangeHandler($event)" [(ngModel)]="UsertypeModel"
+          class="form-control" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
+          <option *ngFor="let item of userTypes" [ngValue]="item">{{item}}</option>
+        </select>
+      </div>
+
+      <!-- Thunderbird Mode Toggle -->
+      <div class="d-flex align-items-center px-4 shadow-sm" style="border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; height: 42px;" title="Clean drops for Emails">
+        <label class="d-flex align-items-center mb-0" style="cursor: pointer;">
+          <div class="radical-checkbox mr-3">
+            <input type="checkbox" id="thunderbirdToggle" [(ngModel)]="isThunderbirdMode" (change)="onThunderbirdModeChange()">
+            <span class="checkmark"></span>
+          </div>
+          <span style="font-size: 14px; font-weight: 700; color: #0f172a;">🕊️ Thunderbird Mode</span>
+        </label>
+      </div>
+
+    </div>
   </div>
 
   <div class="file-manager-area">
@@ -146,7 +130,7 @@
     </div>
     <div>
 
-      <div *ngIf="inputPerson" [hidden]="isOtherFullScreen">
+      <div *ngIf="inputPerson" [hidden]="isOtherFullScreen" style="margin-bottom: 2rem;">
         <app-file-main #fileMainComponent [inputPerson]="inputPerson" (onRefresh)="onRefresh($event)"
           (saveEvent)="handelSaveMainFile($event)" [deletePermission]="deletePermission"
           [editPermission]="editPermission" [readPermission]="readPermission"
@@ -156,12 +140,13 @@
           (onDragEnded)="resetThunderbirdMode()" [isThunderbirdMode]="isThunderbirdMode"> </app-file-main>
       </div>
 
-      <app-file-other [hidden]="isMainFullScreen" #fileOtherComponent [inputPerson]="inputPerson"
-        [deletePermission]="deletePermission" (saveEvent)="handleSave($event)"
-        (fullScreenToggled)="onOtherFullScreen($event)"
-        (onDragEnded)="resetThunderbirdMode()" [isThunderbirdMode]="isThunderbirdMode"
-        (onFileDropped)="uploadFile($event)"></app-file-other>
-     
+      <div style="margin-top: 4.5rem;">
+        <app-file-other [hidden]="isMainFullScreen" #fileOtherComponent [inputPerson]="inputPerson"
+          [deletePermission]="deletePermission" (saveEvent)="handleSave($event)"
+          (fullScreenToggled)="onOtherFullScreen($event)"
+          (onDragEnded)="resetThunderbirdMode()" [isThunderbirdMode]="isThunderbirdMode"
+          (onFileDropped)="uploadFile($event)"></app-file-other>
+      </div>
     </div>
 
     <!-- <div id="hideDiv1" style="font-size: large;" *ngIf="fullnamepopup1">{{fileFullName1}}</div> -->
@@ -169,18 +154,24 @@
       <thead>
         <tr>
 
-          <th style="display: flex; justify-content: center">
+          <th style="display: flex; justify-content: center; padding: 20px;">
             <div id="appDragDropAreaContent" tabindex="0"
-              style="height:150px;width:100%;text-align:center;padding-top:80px;background-color:gainsboro"
-              class="uploadfilecontainer" (click)="fileInput.click()" appDragDrop
+              style="width: 100%; min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; cursor: pointer; transition: all 0.2s ease;"
+              class="uploadfilecontainer hover-blue-bg" (click)="fileInput.click()" appDragDrop
               (contextmenu)="onRightClickPaste($event)" (paste)="onPaste($event)" (onFileDropped)="uploadFile($event)">
-              <div style="margin: -40px 0px 0px 0px;"><img height="50px" width="50px"
-                  src="\assets\common\images\drop.png">
-                <h5 style="text-align:Centre; color: black;">Drag And Drop Here</h5>
-                <p *ngIf="UsertypeModel =='EOX'">Press Ctrl+V to paste the file </p>
+              <div class="text-center">
+                <i class="fa fa-cloud-upload-alt text-primary mb-3" style="font-size: 48px; opacity: 0.8;"></i>
+                <h5 style="color: #0f172a; font-weight: 600; margin-bottom: 4px;">Drag & Drop files here or click to browse</h5>
+                <p class="text-muted font-size-sm" *ngIf="UsertypeModel =='EOX'">Press Ctrl+V to paste the file</p>
               </div>
               <input hidden type="file" #fileInput multiple (change)="select($event)">
             </div>
+            <style>
+              .hover-blue-bg:hover {
+                background-color: #f0f9ff !important;
+                border-color: #3b82f6 !important;
+              }
+            </style>
           </th>
 
         </tr>

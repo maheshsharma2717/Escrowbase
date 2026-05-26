@@ -387,37 +387,29 @@ export class FileOtherComponent extends AppComponentBase {
     this.selectedFile = selectedFile;
     this.selectedIndex = index;
 
-    const mouseX = event.pageX;
-    const mouseY = event.pageY;
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
 
     this.showContextMenu = mode !== 'Tags';
     this.showContextMenuTags = mode === 'Tags';
 
     setTimeout(() => {
       const menuElement = document.getElementById("contextMenu");
-      const container = document.querySelector('.table-container') as HTMLElement;
+      const menuWidth = menuElement?.offsetWidth || 150;
+      const menuHeight = menuElement?.offsetHeight || 170;
 
-      if (!menuElement || !container) return;
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
 
-      const menuWidth = menuElement.offsetWidth || 150;
-      const menuHeight = menuElement.offsetHeight || 170;
+      // Adjust X position to prevent overflow
+      const adjustedX = (mouseX + menuWidth > screenWidth)
+        ? screenWidth - menuWidth
+        : mouseX;
 
-      const containerRect = container.getBoundingClientRect();
-
-      // Calculate relative to container
-      let adjustedX = mouseX - containerRect.left + container.scrollLeft;
-      let adjustedY = mouseY - containerRect.top + container.scrollTop;
-
-      // Prevent overflow (right and bottom)
-      const maxX = container.scrollWidth - menuWidth - 10;
-      const maxY = container.scrollHeight - menuHeight - 10;
-
-      adjustedX = Math.min(adjustedX, maxX); 
-      adjustedY = Math.min(adjustedY, maxY);
-
-      // Avoid negative values
-      adjustedX = Math.max(0, adjustedX);
-      adjustedY = Math.max(0, adjustedY);
+      // Adjust Y position to prevent overflow
+      const adjustedY = (mouseY + menuHeight > screenHeight)
+        ? screenHeight - menuHeight
+        : mouseY;
 
       this.contextMenuPosition = { x: adjustedX, y: adjustedY };
     }, 50);
@@ -435,23 +427,21 @@ export class FileOtherComponent extends AppComponentBase {
     this.selectedFile = file;
     this.selectedTagIndex2 = index;
 
-    const mouseX = event.pageX;
-    const mouseY = event.pageY;
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
 
     const menuElement = document.getElementById("contextMenu");
     const menuWidth = menuElement?.offsetWidth || 150;
     const menuHeight = menuElement?.offsetHeight || 150;
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const scrollX = window.scrollX || document.documentElement.scrollLeft;
-    const scrollY = window.scrollY || document.documentElement.scrollTop;
 
-    const adjustedX = (mouseX + menuWidth > scrollX + screenWidth)
-      ? scrollX + screenWidth - menuWidth
+    const adjustedX = (mouseX + menuWidth > screenWidth)
+      ? screenWidth - menuWidth
       : mouseX;
 
-    const adjustedY = (mouseY + menuHeight > scrollY + screenHeight)
-      ? scrollY + screenHeight - menuHeight
+    const adjustedY = (mouseY + menuHeight > screenHeight)
+      ? screenHeight - menuHeight
       : mouseY;
 
     this.contextMenuPosition = { x: adjustedX, y: adjustedY };

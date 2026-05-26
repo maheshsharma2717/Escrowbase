@@ -23,7 +23,6 @@ export class Theme11LayoutComponent extends ThemesLayoutBaseComponent implements
 
     constructor(
         injector: Injector,
-        private escrowDetailsServiceProxy: EscrowDetailsServiceProxy,
         @Inject(DOCUMENT) private document: Document
     ) {
         super(injector);

@@ -1,109 +1,58 @@
-<div class="main">
-    <div class="row  row-with-margin ">
-    <div class="col-md-7 login-main" style="display: inline-flex; overflow-y: auto;">
-    
-    <div [ngClass]="{' login-form kt-grid kt-grid--ver kt-grid--root': !useFullWidthLayout(), 'kt-content': useFullWidthLayout() }" [style.text-align]="useFullWidthLayout() ? 'center' : 'center' " style="margin-left: 10%; width: 79%;height: 100%; text-align: center !important;">
-        
-        <div [ngClass]="{'kt-grid kt-grid--hor kt-grid--root  kt-login kt-login--v1': !useFullWidthLayout(), 'row':useFullWidthLayout()}" id="kt_login">
-            <div [ngClass]="{'kt-grid__item kt-grid__item--fluid kt-grid kt-grid--desktop kt-grid--ver-desktop kt-grid--hor-tablet-and-mobile': !useFullWidthLayout(), 'col-md-12': useFullWidthLayout()}" style="height: 650px;">
-       
-                 
-                <div class="kt-grid__item kt-grid__item--fluid  kt-grid__item--order-tablet-and-mobile-1  kt-login__wrapper d-block " style="height: 650px;">
-                    <div class="kt-login__head d-block mt-3 mr-auto ml-auto text-right">
-                        <language-switch></language-switch>
-                    </div>
-    
-                    <div class="kt-login__body d-block mt-3 mr-auto ml-auto">                        
-                        <router-outlet></router-outlet>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="account-container">
+    <div class="account-glass-card shadow-2xl">
+         <div class="kt-login__head text-right p-4 d-flex justify-content-end" style="position: absolute; top: 0; right: 0;">
+             <language-switch></language-switch>
+         </div>
+         <div class="kt-login__body d-block mt-3 mr-auto ml-auto px-5 pb-8" style="width: 100%; max-width: 480px; position: relative; z-index: 2;">                        
+             <router-outlet></router-outlet>
+         </div>
     </div>
-    </div>
-    <div class="col-md-5 login-image">
-        </div>
-    <div style="clear: both;" ></div>
-    
-    <div style="clear: both;" ></div>
 </div>
-    </div>
-     
-    <style>
-    .main{
-    
-        background:url('/assets/metronic/common/images/bg/EscrowBase.jpg') no-repeat !important ;
-        background-size: cover !important;
-        background-repeat:no-repeat;
-        align-items: center;
-        display: flex;
-        justify-content: center;
-        height: 100vh;
-        padding:2%;
-    /* width: 100%; */
-        
-    }
-    .login-main
-    {
-        background-color:white !important;
-        border-radius: 20px 0px 0px 20px;
-        /* position:absolute;
-        width:80%;
-       
-        
-        height: 75vh;
-        top:10%;
-        left:10%; */
-         
-    }
-   
- .row-with-margin {
-    margin-top: 5%;
-    margin-right: 20%;
-    margin-bottom: 5%;
-    margin-left: 20%;
+
+<style>
+.account-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: url('/assets/metronic/common/images/bg/login_bg_bluegreen.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    padding: 2rem;
+    font-family: 'Inter', 'Roboto', 'Segoe UI', sans-serif;
+    position: relative;
+}
+
+.account-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.4); /* Slight dark overlay for contrast */
+    z-index: 1;
+}
+
+.account-glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     width: 100%;
-    box-shadow: 4px 8px 5px #b9a8a8;
-    border-radius: 20px;
+    max-width: 500px;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    padding-top: 2rem;
 }
 
 @media (max-width: 768px) {
-    .row-with-margin {
-        margin-right: 3%;
-        margin-left: 3%;
-        box-shadow: 2px 4px 4px #b9a8a8;
-        border-radius: 15px; 
+    .account-glass-card {
+        padding: 1.5rem;
+    }
+    .account-container {
+        padding: 1rem;
     }
 }
-
-@media (max-width: 480px) {
-    .row-with-margin {
-        margin-right: 2%;
-        margin-left: 2%;
-        box-shadow: 1px 2px 3px #b9a8a8;
-        border-radius: 10px;
-    }
-}
-    .login-image
-    {
-        background:url('/assets/metronic/common/images/bg/Login.jpg') !important ;
-        border-radius: 0px 20px 20px 0px;
-        /* width:100%;
-        float:left;
-        
-        
-        background-size:contain !important;
-        background-repeat:no-repeat !important; */
-        
-        }
-       
-        .kt-pricing-1 .kt-pricing-1__items {
-    
-        padding: 0rem 0 0rem 0 !important; 
-    }
-    .kt-portlet .kt-portlet__body {
-      
-        padding: 0px !important;
-        }
-        
-    </style>
+</style>

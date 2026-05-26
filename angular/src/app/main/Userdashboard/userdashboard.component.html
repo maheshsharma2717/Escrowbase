@@ -7,39 +7,45 @@
 
 
         <div [class]="containerClass">
-            <div class="card card-custom gutter-b" style="
-            box-shadow: 0px 0px 30px 0px rgb(82 63 105);">
+            <div class="card shadow-lg border-0 bg-white" style="border-radius: 20px; overflow: hidden; margin-bottom: 30px;">
+                <!-- File View Style Header -->
+                <div class="p-4 rounded-top" style="background-color: #f0f7ff; border-left: 5px solid #0d4a8e !important; border-bottom: 1px solid #e2e8f0;">
+                    <h3 class="mb-0 font-weight-bolder" style="font-size: 1.35rem; color: #0d4a8e !important;">
+                        <i class="fas fa-chart-line mr-2" style="color: #0d4a8e;"></i> My Escrows
+                    </h3>
+                    <p class="mb-0 mt-1 font-size-sm font-weight-bold text-muted ml-1" style="color: #475569;">Manage and track your active escrow files.</p>
+                </div>
 
-                <div class="card-body" style="padding: 15px;">
-                    <div class="kt-portlet kt-portlet--mobile">
-                        <div class="kt-portlet__body">
-                            <div class="row">
-                                <div class="col-md-3" style="padding-bottom: 5px;" *ngIf="isEOXUser">
-                                    <span class="searchlable">Recent escrow</span>
-                                    <select class="form-control" [(ngModel)]="selectedEscrow"
-                                        (change)="onEscrowSelect()">
+                <div class="card-body" style="padding: 24px; background: #fafbfc;">
+                    <div>
+                            <div class="dashboard-toolbar d-flex flex-wrap align-items-center gap-3 mb-4 p-3 rounded" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
+                                <div class="form-group mb-0" style="min-width: 200px;" *ngIf="isEOXUser">
+                                    <label class="font-weight-bold small text-muted mb-1">Recent Escrow</label>
+                                    <select class="form-control modern-input" [(ngModel)]="selectedEscrow" (change)="onEscrowSelect()">
                                         <option [ngValue]="null">Select Escrow</option>
-                                        <option *ngFor="let escrow of availableEscrows" [ngValue]="escrow.value"
-                                            [disabled]="escrow.disabled">
-                                            {{escrow.label}}</option>
+                                        <option *ngFor="let escrow of availableEscrows" [ngValue]="escrow.value" [disabled]="escrow.disabled">{{escrow.label}}</option>
                                     </select>
                                 </div>
-                                <div class=" col-md-3 ml-auto" style="padding-bottom: 5px;">
-                                    <span class="searchlable">Search With</span>
-                                    <select class="form-control" [(ngModel)]="filterLabel" (change)="SearchChange()">
-                                        <option value="">Please Select</option>
+                                <div class="form-group mb-0" style="min-width: 200px;">
+                                    <label class="font-weight-bold small text-muted mb-1">Search Filter</label>
+                                    <select class="form-control modern-input" [(ngModel)]="filterLabel" (change)="SearchChange()">
+                                        <option value="">All Categories</option>
                                         <option value="subCompany">Company</option>
-                                        <option value="escrowid">EscrowNumber</option>
-                                        <option value="type">User type</option>
+                                        <option value="escrowid">Escrow Number</option>
+                                        <option value="type">User Type</option>
                                         <option value="address">Street Address</option>
                                         <option value="buyer">Buyer</option>
                                         <option value="seller">Seller</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3" style="padding-bottom: 5px;">
-                                    <span class="searchlable">Search Value</span>
-                                    <input type="tel" class="form-control" [(ngModel)]="searchText" placeholder="Search"
-                                        name="search" (keyup)="filterGrid()">
+                                <div class="form-group mb-0 flex-grow-1">
+                                    <label class="font-weight-bold small text-muted mb-1">Search Term</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text bg-white border-right-0" style="border-radius: 8px 0 0 8px; border-color: #cbd5e1;"><i class="fa fa-search text-muted"></i></span>
+                                        </div>
+                                        <input type="tel" class="form-control modern-input border-left-0" style="border-radius: 0 8px 8px 0;" [(ngModel)]="searchText" placeholder="Type to search..." name="search" (keyup)="filterGrid()">
+                                    </div>
                                 </div>
                             </div>
                             <div class="row align-items-center">
@@ -53,38 +59,39 @@
                                         <ng-template pTemplate="header">
                                             <tr>
 
-                                                <th style="width: 150px" pSortableColumn="subCompany">
-                                                    <b>{{l('Company')}}</b>
+                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="subCompany" class="text-left">
+                                                    {{'Company' | localize}}
                                                     <p-sortIcon field="subCompany"></p-sortIcon>
                                                 </th>
-                                                <th style="width: 150px" pSortableColumn="escrowid">
-                                                    {{l('EscrowNumber')}}
+                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="escrowid" class="text-left">
+                                                    {{'EscrowId' | localize}}
                                                     <p-sortIcon field="escrowid"></p-sortIcon>
                                                 </th>
-                                                <th style="width: 150px" pSortableColumn="type">
-                                                    {{l('User type')}}
+                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="type" class="text-left">
+                                                    {{'Action' | localize}}
                                                     <p-sortIcon field="type"></p-sortIcon>
-                                                    <!-- <p-sortIcon field="record.type"></p-sortIcon> -->
                                                 </th>
 
-                                                <th style="width: 150px" pSortableColumn="address">
-                                                    <b>{{l('Street Address')}}</b>
+
+                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="address" class="text-left">
+                                                    {{'StreetAddress' | localize}}
                                                     <p-sortIcon field="address"></p-sortIcon>
-                                                    <!-- <p-sortIcon field="record.address"></p-sortIcon> -->
-                                                </th>
-                                                <th style="width: 150px" pSortableColumn="buyer">
-                                                    <b>{{l('Buyer')}}</b>
-                                                    <p-sortIcon field="buyer"></p-sortIcon>
-                                                    <!-- <p-sortIcon field="record.buyer"></p-sortIcon> -->
-                                                </th>
-                                                <th style="width: 150px" pSortableColumn="seller">
-                                                    <b>{{l('Seller')}}</b>
-                                                    <p-sortIcon field="seller"></p-sortIcon>
-                                                    <!-- <p-sortIcon field="record.seller"></p-sortIcon> -->
                                                 </th>
 
-                                                <th style="width: 200px">
-                                                    {{l('Actions')}}</th>
+                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="buyer" class="text-left">
+                                                    {{'Buyer' | localize}}
+                                                    <p-sortIcon field="buyer"></p-sortIcon>
+                                                </th>
+
+                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="seller" class="text-left">
+                                                    {{'Seller' | localize}}
+                                                    <p-sortIcon field="seller"></p-sortIcon>
+                                                </th>
+
+
+                                                <th style="width: 200px; text-align: center !important;" class="text-center">
+                                                    {{'Actions' | localize}}
+                                                </th>
                                             </tr>
                                         </ng-template>
                                         <ng-template pTemplate="body" let-record>
@@ -122,8 +129,8 @@
                                                     {{record.seller}}
                                                 </td>
 
-                                                <td style="width: 200px; font-size: 80%">
-                                                    <div class="d-flex align-items-center gap-2">
+                                                <td style="width: 200px; font-size: 80%; text-align: center;">
+                                                    <div class="d-flex align-items-center justify-content-center gap-2">
                                                         <!-- <app-upload-file></app-upload-file> -->
                                                         <!-- <button class="btn btn-sm btn-primary"
                                                             (click)="onOpenFileManager(record.dataNew,true)">
@@ -131,19 +138,20 @@
                                                                     class="caret"></span>
                                                                 {{l("Go To Fileview")}}</a>
                                                         </button> -->
-                                                        <button class="btn btn-sm btn-primary"
+                                                        <button class="btn radical-dashboard-btn"
                                                             (click)="checkAndOpenFile(record.dataNew)">
-                                                            <a style="color: white; white-space: nowrap;">
-                                                                <i class="fa fa-cog"></i>
-                                                                {{ l("Go To Fileview") }}
-                                                            </a>
+                                                            <div class="d-flex align-items-center justify-content-center w-100">
+                                                                <i class="fa fa-cog mr-2 font-size-sm"></i>
+                                                                <span>{{ l("Go To Fileview") }}</span>
+                                                            </div>
                                                         </button>
-                                                        <button class="btn btn-sm btn-success"
+                                                        
+                                                        <button class="btn radical-dashboard-btn-outline"
                                                             (click)="editESignCreds(record.dataNew)">
-                                                            <a style="color: white; white-space: nowrap;">
-                                                                <i class="fa fa-pen"></i>
-                                                                {{ l("Edit") }}
-                                                            </a>
+                                                            <div class="d-flex align-items-center justify-content-center w-100">
+                                                                <i class="fa fa-pen mr-2 font-size-sm"></i>
+                                                                <span>{{ l("Edit") }}</span>
+                                                            </div>
                                                         </button>
 
                                                         <!-- <ul class="dropdown-menu" *dropdownMenu style="padding:10px">
@@ -193,8 +201,8 @@
 
     <div class="modal-overlay" *ngIf="showESignModal">
         <div class="modal-content compact">
-            <div class="modal-header">
-                <h4 class="m-0">Select E-Sign Company</h4>
+            <div class="modal-header" style="background-color: #f0f7ff; border-bottom: 1px solid #e2e8f0; border-radius: 8px 8px 0 0;">
+                <h4 class="m-0 font-weight-bolder" style="color: #0d4a8e !important;">Select E-Sign Company</h4>
                 <button class="close-btn" (click)="closeModal()">×</button>
             </div>
 
@@ -301,29 +309,17 @@
 
             <div class="modal-footer">
                 <button class="btn btn-primary w-40" (click)="saveESignAndContinue()">Save</button>
-                <button class="btn btn-primary w-40" (click)="closeModal()">Cancel</button>
+                <button class="btn btn-danger w-40" (click)="closeModal()">Cancel</button>
             </div>
         </div>
     </div>
 
     <style>
-        .background {
-            background-image: url(/assets/common/images/EscrowBase.jpg);
-            min-height: 100%;
-            min-width: 100%;
-            height: 100vh;
-        }
-
         .container-fluid {
             padding-left: 20px;
             padding-right: 20px;
             padding-top: 17px;
             min-height: 75vh;
-        }
-
-        body .ui-table .ui-table-thead>tr>th {
-            color: #fff8f8 !important;
-            background-color: #409ee7 !important;
         }
 
 
@@ -454,5 +450,68 @@
         .grid .form-group {
             width: 100%;
             /* force each field to use full width */
+        }
+
+        th {
+            text-align: center !important;
+        }
+
+        .radical-dashboard-btn {
+            background: linear-gradient(135deg, #0d4a8e, #0a3a70) !important;
+            color: #ffffff !important;
+            border: none !important;
+            border-radius: 50px !important;
+            padding: 8px 24px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 10px rgba(13, 74, 142, 0.3) !important;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            font-size: 0.85rem !important;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .radical-dashboard-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 15px rgba(13, 74, 142, 0.4) !important;
+            background: linear-gradient(135deg, #0a3a70, #082c55) !important;
+        }
+
+        .radical-dashboard-btn-outline {
+            background: transparent !important;
+            color: #0d4a8e !important;
+            border: 2px solid #0d4a8e !important;
+            border-radius: 50px !important;
+            padding: 6px 20px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.5px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            font-size: 0.85rem !important;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .radical-dashboard-btn-outline:hover {
+            border-color: #0a3a70 !important;
+            color: #ffffff !important;
+            background-color: #0d4a8e !important;
+            transform: translateY(-2px);
+        }
+
+        .radical-dashboard-btn i {
+            color: #ffffff !important;
+        }
+
+        .radical-dashboard-btn-outline i {
+            color: #0d4a8e !important;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .radical-dashboard-btn-outline:hover i {
+            color: #ffffff !important;
         }
     </style>

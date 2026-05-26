@@ -297,8 +297,8 @@ debugger;
     this.selectedIndex = index;
     this.contextMenuPosition = { x: event.clientX, y: event.clientY };
     this.showContextMenu = true;
-    const mouseX = event.pageX;
-    const mouseY = event.pageY;
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
     const menuElement = document.getElementById("contextMenu");
     const menuWidth = menuElement?.offsetWidth || 150;
     const menuHeight = menuElement?.offsetHeight || 150;
@@ -306,17 +306,15 @@ debugger;
     // Get screen dimensions
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const scrollX = window.scrollX || document.documentElement.scrollLeft;
-    const scrollY = window.scrollY || document.documentElement.scrollTop;
 
     // Adjust X position to prevent overflow
-    const adjustedX = (mouseX + menuWidth > scrollX + screenWidth)
-      ? scrollX + screenWidth - menuWidth
+    const adjustedX = (mouseX + menuWidth > screenWidth)
+      ? screenWidth - menuWidth
       : mouseX;
 
     // Adjust Y position to prevent overflow
-    const adjustedY = (mouseY + menuHeight > scrollY + screenHeight)
-      ? scrollY + screenHeight - menuHeight
+    const adjustedY = (mouseY + menuHeight > screenHeight)
+      ? screenHeight - menuHeight
       : mouseY;
 
     // Set context menu position

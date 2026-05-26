@@ -31,7 +31,7 @@
 
 <div [@routerTransition] class="d-flex flex-column flex-root">
     <div class="d-flex flex-row flex-column-fluid page">
-        <div class="aside aside-left d-flex flex-column " id="kt_aside">
+        <div class="aside aside-left d-flex flex-column " id="kt_aside" [class.d-none]="!isAdminPage">
             <div class="aside-brand d-flex flex-column align-items-center flex-column-auto pt-18 pb-10">
                 <theme6-brand></theme6-brand>
             </div>
@@ -46,7 +46,7 @@
                 <user-menu class="topbar-item" [iconOnly]="true" [togglerCssClass]="'btn btn-icon btn-hover-text-primary btn-lg mb-1'"></user-menu>
             </div>
         </div>
-        <div id="kt_wrapper" class="d-flex flex-column flex-row-fluid wrapper">
+        <div id="kt_wrapper" [style.padding-left]="!isAdminPage ? '0px' : null" [style.margin-left]="!isAdminPage ? '0px' : null" class="d-flex flex-column flex-row-fluid wrapper">
             <div id="kt_header" class="header  header-fixed ">
                 <div class="header-wrapper rounded-top-xl d-flex flex-grow-1 align-items-center">
                     <div
@@ -63,8 +63,25 @@
             <div class="mobile-subscription-warning d-print-none" *ngIf="isMobileDevice() && subscriptionStatusBarVisible()">
                 <subscription-notification-bar></subscription-notification-bar>
             </div>
+            <ng-container *ngIf="!isAdminPage">
+    <div class="header-spacing" [class.admin-header-spacing]="isAdminPage"></div>`n    <app-tabs>
+        <my-tab [tabTitle]="'Dashboard'">
             <router-outlet></router-outlet>
+        </my-tab>
+    </app-tabs>
+</ng-container>
+<ng-container *ngIf="isAdminPage">
+    <div class="admin-layout">
+        <router-outlet></router-outlet>
+    </div>
+</ng-container>
             <footer-bar></footer-bar>
         </div>
     </div>
 </div>
+<ng-template let-person="person" #about style="overflow: scroll !important;height: 100vh !important;">
+    <app-upload-file [person]="person"></app-upload-file>
+</ng-template>
+
+
+

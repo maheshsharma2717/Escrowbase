@@ -490,3 +490,264 @@ footer-bar {
   display: block;
   transition: margin-left 0.3s ease;
 }
+
+/* ==========================================================================
+   USER SIDE REDESIGN (Premium, Modern)
+   ========================================================================== */
+body:not(.admin-layout) {
+    --primary-color: #0d4a8e;
+    --primary-hover: #0a3a70;
+    --surface-color: #ffffff;
+    --background-color: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    
+    background-color: var(--background-color) !important;
+    font-family: 'Inter', 'Roboto', 'Segoe UI', sans-serif !important;
+    color: var(--text-main);
+}
+
+/* Topbar Redesign */
+body:not(.admin-layout) #kt_header {
+    background: #ffffff !important;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    padding: 10px 20px !important;
+    display: flex;
+    align-items: center;
+    z-index: 1000;
+}
+
+body:not(.admin-layout) .topbar-item i {
+    color: var(--text-muted) !important;
+    transition: color 0.2s ease;
+}
+
+body:not(.admin-layout) .topbar-item:hover i {
+    color: var(--primary-color) !important;
+}
+
+/* Tabs Container */
+body:not(.admin-layout) app-tabs {
+    display: block;
+    padding: 24px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Cards and Panels */
+body:not(.admin-layout) .card,
+body:not(.admin-layout) .portlet,
+body:not(.admin-layout) .kt-portlet {
+    background: var(--surface-color) !important;
+    border-radius: var(--radius-lg) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-sm) !important;
+    margin-bottom: 24px;
+}
+
+body:not(.admin-layout) .card-header,
+body:not(.admin-layout) .portlet__head,
+body:not(.admin-layout) .kt-portlet__head {
+    background: transparent !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 1.5rem !important;
+}
+
+body:not(.admin-layout) .card-title,
+body:not(.admin-layout) .portlet__head-title,
+body:not(.admin-layout) .kt-portlet__head-title {
+    font-weight: 600 !important;
+    color: var(--text-main) !important;
+    font-size: 1.125rem !important;
+}
+
+/* Buttons */
+body:not(.admin-layout) .btn-primary,
+body:not(.admin-layout) .btn-brand {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    padding: 10px 24px !important;
+    color: white !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+body:not(.admin-layout) .btn-secondary,
+body:not(.admin-layout) .btn-outline-primary {
+    background: transparent !important;
+    border: 1px solid var(--primary-color) !important;
+    color: var(--primary-color) !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+
+/* Sweet Alerts inside User side */
+body:not(.admin-layout) .swal2-popup {
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-lg) !important;
+    padding: 24px !important;
+}
+
+body:not(.admin-layout) .swal2-confirm {
+    border-radius: 8px !important;
+    background: var(--primary-color) !important;
+}
+
+/* ==========================================================================
+   RADICAL FILE VIEW TABLE STYLES
+   ========================================================================== */
+.radical-table-container {
+    overflow-x: auto;
+    border-radius: 12px;
+}
+.radical-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+.radical-table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 16px 24px;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+.radical-table tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.radical-table tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+.radical-table tbody tr:hover {
+    background-color: #f1f5f9;
+}
+.radical-td {
+    padding: 6px 14px !important;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+/* Custom Checkboxes inside table */
+.radical-checkbox {
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    display: inline-block;
+    height: 20px;
+    width: 20px;
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+.radical-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+.radical-checkbox .checkmark {
+    position: absolute;
+    top: 1px;
+    left: 0;
+    height: 18px;
+    width: 18px;
+    background-color: #fff;
+    border: 2px solid #cbd5e1;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+.radical-checkbox:hover input ~ .checkmark {
+    border-color: #94a3b8;
+}
+.radical-checkbox input:checked ~ .checkmark {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+.radical-checkbox .checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+.radical-checkbox input:checked ~ .checkmark:after {
+    display: block;
+}
+
+/* Dark Placeholder for light backgrounds */
+.dark-placeholder::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1;
+}
+.dark-placeholder:-ms-input-placeholder {
+    color: #94a3b8 !important;
+}
+.dark-placeholder::-ms-input-placeholder {
+    color: #94a3b8 !important;
+}
+.file-icon-wrapper {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+.radical-context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid var(--border-color);
+    min-width: 180px;
+    z-index: 9999;
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    padding: 0;
+    overflow: hidden;
+}
+.radical-context-menu ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.radical-context-menu .ctx-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    transition: background 0.15s ease;
+    display: flex;
+    align-items: center;
+}
+.radical-context-menu .ctx-item i {
+    width: 24px;
+    text-align: center;
+    margin-right: 8px;
+    color: var(--text-muted);
+}
+.radical-context-menu .ctx-item:hover {
+    background: var(--background-color);
+    color: var(--primary-color);
+}
+.radical-context-menu .ctx-item.text-danger:hover {
+    color: #dc2626;
+    background: #fef2f2;
+}
+.radical-context-menu .ctx-item.text-danger:hover i {
+    color: #dc2626;
+}
