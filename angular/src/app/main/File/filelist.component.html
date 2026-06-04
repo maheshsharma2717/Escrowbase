@@ -1,6 +1,9 @@
 <div>
   <div class="user-type-sec shadow-sm mb-4" [class.fullscreen-header-fixed]="isMainFullScreen || isOtherFullScreen"
-    style="background: #ffffff; border-radius: 12px; padding: 16px 24px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    style="background: #ffffff; border-radius: 0 !important; padding: 16px 24px; border: 1px solid #e2e8f0; border-left: 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative; overflow: hidden;">
+    
+    <!-- Gradient Left Border Line -->
+    <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: linear-gradient(to bottom, #0d4a8e, #20c997);"></div>
 
     <!-- Escrow Info -->
     <div class="d-flex align-items-center">
@@ -60,15 +63,23 @@
 
   <div class="file-manager-area">
     <!-- BACKDROP -->
-    <div *ngIf="signPopup" class="sign-popup-backdrop"></div>
+    <div *ngIf="signPopup" class="sign-popup-backdrop" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.5); z-index: 1040; backdrop-filter: blur(2px);"></div>
 
-    <div id="hideDiv" *ngIf="signPopup" class="my-special-div" style="float: inherit !important;position: absolute !important; box-shadow: 5px 5px 8px 5px #888888;margin: 20px 0px 0px 107px !important;z-index: 1 !important;background-color: #FFF;padding: 20px; top: 150px; overflow: scroll;
-      min-height: 250px;overflow-y: auto; max-height: 400px; width:85%">
-      <div class="d-flex justify-content-between w-100">
-        <h4>File Signing Status</h4>
-        <i class="fa fa-times" (click)="closeSignPopup()" style="font-size: 25px;"></i>
+    <div id="hideDiv" *ngIf="signPopup" class="my-special-div shadow-lg" style="position: fixed !important; z-index: 1050 !important; background-color: #FFF; top: 50%; left: 50%; transform: translate(-50%, -50%); overflow: hidden; width: 85%; max-width: 1000px; border-radius: 12px; max-height: 85vh; display: flex; flex-direction: column; margin: 0 !important; box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;">
+      
+      <!-- HEADER -->
+      <div class="modal-header shadow-sm" style="background: #cce5ff; border-bottom: 1px solid #e2e8f0; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; border-radius: 12px 12px 0 0; flex-shrink: 0;">
+        <h4 class="modal-title font-weight-bolder m-0" style="color: #0d4a8e; font-size: 1.15rem; letter-spacing: 0.2px;">
+          <i class="fas fa-signature mr-2 text-primary"></i> File Signing Status
+        </h4>
+        <button type="button" aria-label="Close" (click)="closeSignPopup()" style="background: #dc3545; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; outline: none; border: none; transition: all 0.2s; cursor: pointer; padding: 0;">
+          <i class="fas fa-times text-white font-size-sm"></i>
+        </button>
       </div>
-      <table id="signtable" style="border: none;background: none;width: 100%;">
+
+      <!-- BODY -->
+      <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
+        <table id="signtable" style="border: none;background: none;width: 100%;">
         <tbody>
           <tr style="background: none; font-size: smaller; background-color: none">
             <th style="padding: 12px 12px;">Sign Order</th>
@@ -100,6 +111,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <div style="display: none;">
@@ -161,7 +173,7 @@
               (contextmenu)="onRightClickPaste($event)" (paste)="onPaste($event)" (onFileDropped)="uploadFile($event)">
               <div class="text-center">
                 <i class="fa fa-cloud-upload-alt text-primary mb-3" style="font-size: 48px; opacity: 0.8;"></i>
-                <h5 style="color: #0f172a; font-weight: 600; margin-bottom: 4px;">Drag & Drop files here or click to browse</h5>
+                <h5 style="color: #0f172a; font-weight: 600; margin-bottom: 4px;">Drag & Drop files or click to browse</h5>
                 <p class="text-muted font-size-sm" *ngIf="UsertypeModel =='EOX'">Press Ctrl+V to paste the file</p>
               </div>
               <input hidden type="file" #fileInput multiple (change)="select($event)">
@@ -189,36 +201,23 @@
   <!-- <app-escrow-usertags> </app-escrow-usertags> -->
 
   <ng-template #popupesign>
-
-    <div class="modal-header">
-
-      <img *ngIf="!eSign" style="
-     position: fixed;
-     height: 35px;
-    width: 42px;
-    padding: 0px;
-    margin: 0px 0px 0px -18px;
- " src="\assets\common\images\cross.png" class="btn btn-danger" (click)="Hide()" />
-      <img *ngIf="eSign" style="
-  position: fixed;
-  height: 35px;
- width: 42px;
- padding: 0px;
- margin: 0px 0px 0px -18px;
-" src="\assets\common\images\cross.png" class="btn btn-danger" (click)="Hide();DownloadEsignedPdf()" />
-      <button *ngIf="editPermission && !docx &&  !eSign" style="
-      height: 35px;
-      width: 20vh;
-      right: 0px;
-      position: absolute;
-      margin: 0px 5px 0px 170px;
-    " type="button" class="btn btn-info" (click)="SaveChanges()">Save Changes</button>
+    <div class="modal-header border-0" style="background-color: #cce5ff; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; box-shadow: 0 2px 10px rgba(0,0,0,0.03); z-index: 10;">
+      <h4 class="modal-title font-weight-bolder text-dark mb-0" style="font-size: 1.1rem; margin-top: 0;">Document</h4>
+      <div class="d-flex align-items-center">
+        <button *ngIf="editPermission && !docx && !eSign" type="button" class="btn btn-primary radical-btn mr-3" (click)="SaveChanges()" style="border-radius: 8px; font-weight: 600; letter-spacing: 0.3px;">Save Changes</button>
+        <button *ngIf="!eSign" type="button" aria-label="Close" (click)="Hide()" style="background: #dc3545; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; outline: none; border: none; transition: all 0.2s; cursor: pointer; float: right; margin-left: auto; padding: 0;">
+          <i class="fa fa-times" style="font-size: 18px; color: white !important;"></i>
+        </button>
+        <button *ngIf="eSign" type="button" aria-label="Close" (click)="Hide();DownloadEsignedPdf()" style="background: #dc3545; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; outline: none; border: none; transition: all 0.2s; cursor: pointer; float: right; margin-left: auto; padding: 0;">
+          <i class="fa fa-times" style="font-size: 18px; color: white !important;"></i>
+        </button>
+      </div>
     </div>
 
-    <div id="modal-content" style="height:100vh;" class="modal-content">
+    <div id="modal-content" style="height: calc(100vh - 65px); overflow: hidden;" class="modal-body p-0">
 
       <app-richedit *ngIf="docx" [changing]="changingValue"></app-richedit>
-      <ngx-extended-pdf-viewer *ngIf="!docx && !eSign" [src]="source" height="88vh" [useBrowserLocale]="true"
+      <ngx-extended-pdf-viewer *ngIf="!docx && !eSign" [base64Src]="pdfBase64" height="100%" [useBrowserLocale]="true"
         [textLayer]="true" [showHandToolButton]="true" [showFindButton]="false" [showPagingButtons]="false"
         [showPresentationModeButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
         [showBookmarkButton]="false" [showSecondaryToolbarButton]="false" [showRotateButton]="false"
@@ -271,36 +270,23 @@
   </ng-template>
 
   <ng-template #popupDocuSign>
-
-    <div class="modal-header">
-
-      <img *ngIf="!docuSign" style="
-     position: fixed;
-     height: 35px;
-    width: 42px;
-    padding: 0px;
-    margin: 0px 0px 0px -18px;
- " src="\assets\common\images\cross.png" class="btn btn-danger" (click)="Hide()" />
-      <img *ngIf="docuSign" style="
-  position: fixed;
-  height: 35px;
- width: 42px;
- padding: 0px;
- margin: 0px 0px 0px -18px;
-" src="\assets\common\images\cross.png" class="btn btn-danger" (click)="Hide();DownloadDocuSignedPdf()" />
-      <button *ngIf="editPermission && !docx &&  !docuSign" style="
-      height: 35px;
-      width: 20vh;
-      right: 0px;
-      position: absolute;
-      margin: 0px 5px 0px 170px;
-    " type="button" class="btn btn-info" (click)="SaveChanges()">Save Changes</button>
+    <div class="modal-header shadow-sm" style="background: #cce5ff; border-bottom: 1px solid #e2e8f0; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; border-radius: 12px 12px 0 0;">
+      <h4 class="modal-title font-weight-bolder text-dark mb-0" style="font-size: 1.1rem; margin-top: 0;">Document</h4>
+      <div style="display: flex; align-items: center;">
+        <button *ngIf="editPermission && !docx && !docuSign" type="button" class="btn btn-info radical-btn mr-3" (click)="SaveChanges()" style="border-radius: 8px; font-weight: 600; letter-spacing: 0.3px;">Save Changes</button>
+        <button *ngIf="!docuSign" type="button" aria-label="Close" (click)="Hide()" style="background: #dc3545; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; outline: none; border: none; transition: all 0.2s; cursor: pointer; float: right; margin-left: auto; padding: 0;">
+          <i class="fa fa-times" style="font-size: 18px; color: white !important;"></i>
+        </button>
+        <button *ngIf="docuSign" type="button" aria-label="Close" (click)="Hide();DownloadDocuSignedPdf()" style="background: #dc3545; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; outline: none; border: none; transition: all 0.2s; cursor: pointer; float: right; margin-left: auto; padding: 0;">
+          <i class="fa fa-times" style="font-size: 18px; color: white !important;"></i>
+        </button>
+      </div>
     </div>
 
-    <div id="modal-content" style="height:100vh;" class="modal-content">
+    <div id="modal-content" style="height: calc(100vh - 65px); overflow: hidden;" class="modal-body p-0">
 
       <app-richedit *ngIf="docx" [changing]="changingValue"></app-richedit>
-      <ngx-extended-pdf-viewer *ngIf="!docx && !docuSign" [src]="source" height="88vh" [useBrowserLocale]="true"
+      <ngx-extended-pdf-viewer *ngIf="!docx && !docuSign" [base64Src]="pdfBase64" height="100%" [useBrowserLocale]="true"
         [textLayer]="true" [showHandToolButton]="true" [showFindButton]="false" [showPagingButtons]="false"
         [showPresentationModeButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
         [showBookmarkButton]="false" [showSecondaryToolbarButton]="false" [showRotateButton]="false"
@@ -401,18 +387,14 @@
 
 <ng-template #RenameMain>
 
-  <div class="modal-header">
-    <h4 class="modal-title" id="modal-basic-title">
-      Rename
-    </h4>
-    <button type="button" class="close" aria-label="Close">
-
-      <span style="display:block; font-size: 29px;
-      color: black;" (click)="HideRename()">
-        ×
-      </span>
-    </button>
-  </div>
+    <div class="modal-header border-0" style="background-color: #e0edfa; align-items: center; border-radius: 12px 12px 0 0; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+      <h4 class="modal-title font-weight-bolder text-dark mb-0" id="modal-basic-title" style="font-size: 1.15rem; letter-spacing: 0.3px; margin-top: 0;">
+        <i class="fa fa-pencil-alt text-primary mr-2"></i> Rename
+      </h4>
+      <button type="button" aria-label="Close" (click)="HideRename()" style="background: #dc3545; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; outline: none; border: none; transition: all 0.2s; cursor: pointer; padding: 0; float: right; margin-left: auto;">
+        <i class="fa fa-times" style="font-size: 18px; color: white !important;"></i>
+      </button>
+    </div>
   <div class="modal-body">
     <table class="table">
       <thead>
@@ -499,18 +481,14 @@
 
 <ng-template #Rename1>
 
-  <div class="modal-header">
-    <h4 class="modal-title" id="modal-basic-title">
-      Rename
-    </h4>
-    <button type="button" class="close" aria-label="Close">
-
-      <span style="display:block; font-size: 29px;
-      color: black;" (click)="HideRename()">
-        ×
-      </span>
-    </button>
-  </div>
+    <div class="modal-header border-0" style="background-color: #e0edfa; align-items: center; border-radius: 12px 12px 0 0; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+      <h4 class="modal-title font-weight-bolder text-dark mb-0" id="modal-basic-title" style="font-size: 1.15rem; letter-spacing: 0.3px; margin-top: 0;">
+        <i class="fa fa-pencil-alt text-primary mr-2"></i> Rename
+      </h4>
+      <button type="button" aria-label="Close" (click)="HideRename()" style="background: #dc3545; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; outline: none; border: none; transition: all 0.2s; cursor: pointer; padding: 0; float: right; margin-left: auto;">
+        <i class="fa fa-times" style="font-size: 18px; color: white !important;"></i>
+      </button>
+    </div>
   <div class="modal-body">
     <table class="table">
       <thead>
@@ -540,20 +518,15 @@
 </ng-template>
 
 
-<ng-template #Move>
-
-  <div class="modal-header">
-    <h4 class="modal-title" id="modal-basic-title">
-      Move To Main
-    </h4>
-    <button type="button" class="close" aria-label="Close">
-
-      <span style="display:block; font-size: 29px;
-      color: black;" (click)="HideRename()">
-        ×
-      </span>
-    </button>
-  </div>
+  <ng-template #Move>
+    <div class="modal-header border-0" style="background-color: #e0edfa; align-items: center; border-radius: 12px 12px 0 0; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+      <h4 class="modal-title font-weight-bolder text-dark mb-0" id="modal-basic-title" style="font-size: 1.15rem; letter-spacing: 0.3px; margin-top: 0;">
+        <i class="fa fa-arrow-up text-primary mr-2"></i> Move To Main
+      </h4>
+      <button type="button" aria-label="Close" (click)="HideRename()" style="background: #dc3545; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; outline: none; border: none; transition: all 0.2s; cursor: pointer; padding: 0; float: right; margin-left: auto;">
+        <i class="fa fa-times" style="font-size: 18px; color: white !important;"></i>
+      </button>
+    </div>
   <div class="modal-body">
     <table class="table">
       <thead>
@@ -619,9 +592,9 @@
 
         </tr>
         <tr>
-          <td>
-            <button [disabled]="btnstate" style="float:right;" type="button" class="btn btn-primary" aria-label="Save">
-              <span style="cursor: pointer; padding: 11px 19px; margin: -13px;" (click)="Moved()">Save</span>
+          <td class="text-right border-0 pt-4">
+            <button [disabled]="btnstate" type="button" class="btn btn-primary radical-btn" aria-label="Save" (click)="Moved()" style="border-radius: 8px; font-weight: 600; letter-spacing: 0.5px; padding: 8px 24px;">
+              <i class="fa fa-check mr-1"></i> Save Changes
             </button>
           </td>
         </tr>
@@ -897,25 +870,15 @@
 </ng-template>
 
 <ng-template #renameFileNameModel>
-  <!-- <img style="
-  position: absolute;
-    width: 32px;
-    padding: 0px;
-    right: 0;
-"src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideHistory()"/> -->
 
-  <div class="modal-header">
-    <h4 class="modal-title" id="modal-basic-title">
-      Rename File Name
-    </h4>
-    <button type="button" class="close" aria-label="Close">
-
-      <span aria-hidden="true" style="display: block; font-size: 29px;
-      color: black;">
-        ×
-      </span>
-    </button>
-  </div>
+    <div class="modal-header border-0" style="background-color: #e0edfa; align-items: center; border-radius: 12px 12px 0 0; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+      <h4 class="modal-title font-weight-bolder text-dark mb-0" id="modal-basic-title" style="font-size: 1.15rem; letter-spacing: 0.3px; margin-top: 0;">
+        <i class="fa fa-pencil-alt text-primary mr-2"></i> Rename File Name
+      </h4>
+      <button type="button" aria-label="Close" (click)="HideRename()" style="background: #dc3545; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; outline: none; border: none; transition: all 0.2s; cursor: pointer; padding: 0; float: right; margin-left: auto;">
+        <i class="fa fa-times" style="font-size: 18px; color: white !important;"></i>
+      </button>
+    </div>
   <div class="modal-body">
     <table class="table">
       <thead>
@@ -1056,29 +1019,20 @@
 
 <ng-template #otherAreaFileAction>
 
-  <div class="modal-header">
-
-    <img style="
-   position: fixed;
-   height: 35px;
-  width: 42px;
-  padding: 0px;
-  margin: 0px 0px 0px -18px;
-" src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideOtherAreaFileAction()" />
-
-    <button *ngIf="editPermissionOtherArea || editPermissionDocOtherArea" style="
-    height: 35px;
-    width: 20vh;
-    right: 0px;
-    position: absolute;
-    margin: 0px 5px 0px 170px;
-  " type="button" class="btn btn-success" (click)="SaveChangesOtherArea()">Save Changes</button>
+  <div class="modal-header border-0" style="background-color: #cce5ff; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; box-shadow: 0 2px 10px rgba(0,0,0,0.03); z-index: 10;">
+    <h4 class="modal-title font-weight-bolder text-dark mb-0" style="font-size: 1.1rem; margin-top: 0;">Document</h4>
+    <div class="d-flex align-items-center">
+      <button *ngIf="editPermissionOtherArea || editPermissionDocOtherArea" type="button" class="btn btn-primary radical-btn mr-3" (click)="SaveChangesOtherArea()" style="border-radius: 8px; font-weight: 600; letter-spacing: 0.3px;">Save Changes</button>
+      <button type="button" aria-label="Close" (click)="HideOtherAreaFileAction()" style="background: #dc3545; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; outline: none; border: none; transition: all 0.2s; cursor: pointer; float: right; margin-left: auto; padding: 0;">
+        <i class="fa fa-times" style="font-size: 18px; color: white !important;"></i>
+      </button>
+    </div>
   </div>
-  <div id="modal-content" style="height:100vh;" class="modal-content">
+  <div id="modal-content" style="height: calc(100vh - 65px); overflow: hidden;" class="modal-body p-0">
 
     <app-richedit *ngIf="docx" [changing]="changingValue"></app-richedit>
 
-    <ngx-extended-pdf-viewer *ngIf="!docx && !eSign" [src]="source" height="88vh" [useBrowserLocale]="true"
+    <ngx-extended-pdf-viewer *ngIf="!docx && !eSign" [base64Src]="pdfBase64" height="100%" [useBrowserLocale]="true"
       [textLayer]="true" [showHandToolButton]="true" [showFindButton]="false" [showPagingButtons]="false"
       [showPresentationModeButton]="false" [showOpenFileButton]="false" [showPrintButton]="false"
       [showBookmarkButton]="false" [showSecondaryToolbarButton]="false" [showRotateButton]="false"

@@ -10,6 +10,7 @@ const routes: Routes = [
         loadChildren: () => import('app/app.module').then(m => m.AppModule), //Lazy load app module
         data: { preload: true }
     },
+    { path: 'esign-complete', redirectTo: '/app/esign-complete', pathMatch: 'full' },
     { path: '**', redirectTo: '/app/main/dashboard' }
 ];
 

@@ -19,9 +19,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common'
 import { DomSanitizer } from '@angular/platform-browser';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { NgxExtendedPdfViewerService, IPDFViewerApplication, NgxExtendedPdfViewerComponent } from 'ngx-extended-pdf-viewer';
+import { NgxExtendedPdfViewerService, IPDFViewerApplication, NgxExtendedPdfViewerComponent, pdfDefaultOptions } from 'ngx-extended-pdf-viewer';
 import { ChatSignalrService } from '../../shared/layout/chat/chat-signalr.service';
 import { Subscription, Subject } from 'rxjs';
+
+pdfDefaultOptions.assetsFolder = 'assets';
+
 declare var jQuery: any;
 import { SignalRHelper } from '../../../shared/helpers/SignalRHelper';
 import { SharedService } from './UserTypeChangeService';
@@ -42,7 +45,7 @@ import { RicheditComponent } from '../../richedit/richedit.component';
 })
 
 export class FileViewComponent extends AppComponentBase {
-
+  pdfBase64: any;
   changingValue: Subject<boolean> = new Subject();
   @ViewChild(NgxExtendedPdfViewerComponent) private pdfComponent: NgxExtendedPdfViewerComponent;
   @ViewChild(DxFileManagerComponent, { static: false }) fileManager: DxFileManagerComponent;
@@ -1198,11 +1201,6 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   displayImagePopupFromMain(file) {
-
-    const mainContainer = document.querySelector('.page');
-    if (mainContainer) {
-      (mainContainer as HTMLElement).style.backgroundColor = 'black';
-    }
     if (file.name && !file.name.includes(this.myurl)) {
       this.Sign = [];
       const source = this.myurl + "/Common/Paperless/" + file.name;
@@ -1407,15 +1405,23 @@ export class FileViewComponent extends AppComponentBase {
 
       // Make the HTTP request to update document status (if needed)
       this.http.get(this.folderPath + "DocUpdate?message=Read&filename=" + this.fileNamestrng + "&userId=" + this.appSession.userId).subscribe((response: any) => {
-        debugger
+        
         let data = response['result'];
 
-        // Construct the file source URL with cache-busting
-        this.source = url + "/docs/Paperless/" + this.sourcepathwithname + "?" + salt;
-        localStorage.setItem("SourcePath", this.source); // Store source path in localStorage for use in the modal
-
-        // Show the modal with the viewer
-        this.modalReff = this.modalService.show(popupview, config);
+        let strng = this.completeEnterprisePathMain.replace(/#/g, "%23");
+        let strng1 = this.fileNamestrng.replace(/#/g, "%23");
+        console.log("--- FETCHING PDF (MAIN) ---");
+        console.log("Path:", strng, "Key:", strng1);
+        console.log("Current AppBaseUrl:", AppConsts.appBaseUrl);
+        console.log("Assets Folder Config:", pdfDefaultOptions.assetsFolder);
+        this.http.get(this.folderPath + "ConvertFileToBase64" + "?path=" + strng + "&key=" + strng1).subscribe((base64Res: any) => {
+          console.log("--- BASE64 SUCCESS (MAIN) ---");
+          console.log("Base64 Length:", base64Res.result?.base64?.length);
+          this.pdfBase64 = base64Res.result.base64;
+          this.modalReff = this.modalService.show(popupview, config);
+        }, error => {
+          console.error("--- BASE64 ERROR (MAIN) ---", error);
+        });
       });
     }
     this.replacedstring = "";
@@ -1441,16 +1447,20 @@ export class FileViewComponent extends AppComponentBase {
         }
         else if (item['key'].includes(".pdf")) {
           this.docx = false;
-          this.msgShow = true;
-          this.sourcepathwithname = item['parentPath'] + "/" + item['key'];
-          let strng = this.sourcepathwithname.replace(/#/g, "%23");
-          const salt = (new Date()).getTime();
-          let url = AppConsts.appBaseUrl;
-          this.source = url + "/docs/Paperless/" + strng + "?" + salt;
-          localStorage.setItem("SourcePath", this.source)
-          this.modalReff = this.modalService.show(
-            temp, config
-          );
+          this.msgShow = false;
+          let pathStrng = item['parentPath'].replace(/#/g, "%23");
+          let keyStrng = item['key'].replace(/#/g, "%23");
+          console.log("--- FETCHING PDF (VIEWFILE) ---");
+          console.log("Path:", pathStrng, "Key:", keyStrng);
+          console.log("Assets Folder Config:", pdfDefaultOptions.assetsFolder);
+          this.http.get(this.folderPath + "ConvertFileToBase64" + "?path=" + pathStrng + "&key=" + keyStrng).subscribe((base64Res: any) => {
+            console.log("--- BASE64 SUCCESS (VIEWFILE) ---");
+            console.log("Base64 Length:", base64Res.result?.base64?.length);
+            this.pdfBase64 = base64Res.result.base64;
+            this.modalReff = this.modalService.show(temp, config);
+          }, error => {
+            console.error("--- BASE64 ERROR (VIEWFILE) ---", error);
+          });
         } else if (item['key'].includes(".msg")) {
           this.msgShow = true;
           this.docx = false;
@@ -1508,11 +1518,19 @@ export class FileViewComponent extends AppComponentBase {
         this.msgShow = true;
         this.sourcepathwithname = this.completeEnterprisePathOther + selectedfile['key'];
         let strng = this.sourcepathwithname.replace(/#/g, "%23");
-        const salt = (new Date()).getTime();
-        let url = AppConsts.appBaseUrl;
-        this.source = url + "/docs/Paperless/" + strng + "?" + salt;
-        localStorage.setItem("SourcePath", this.source);
-        this.modalReff = this.modalService.show(this.otherAreaFileActionTemplate, config);
+        let pathStrng = this.completeEnterprisePathOther.replace(/#/g, "%23");
+        let keyStrng = selectedfile['key'].replace(/#/g, "%23");
+        console.log("--- FETCHING PDF (OTHER) ---");
+        console.log("Path:", pathStrng, "Key:", keyStrng);
+        console.log("Assets Folder Config:", pdfDefaultOptions.assetsFolder);
+        this.http.get(this.folderPath + "ConvertFileToBase64" + "?path=" + pathStrng + "&key=" + keyStrng).subscribe((base64Res: any) => {
+          console.log("--- BASE64 SUCCESS (OTHER) ---");
+          console.log("Base64 Length:", base64Res.result?.base64?.length);
+          this.pdfBase64 = base64Res.result.base64;
+          this.modalReff = this.modalService.show(this.otherAreaFileActionTemplate, config);
+        }, error => {
+          console.error("--- BASE64 ERROR (OTHER) ---", error);
+        });
       } else if (selectedfile['key'].includes(".msg")) {
         this.msgShow = true;
         this.docx = false;
@@ -1715,8 +1733,7 @@ export class FileViewComponent extends AppComponentBase {
             this.modalReff = this.modalService.show(this.viewMsgFileTemplate, config);
           }
           else if (fileRes.result.fileType === "pdf") {
-            const decodedContent = atob(fileRes.result.base64);
-            this.emailContent = this.sanitizer.bypassSecurityTrustHtml(decodedContent);
+            this.pdfBase64 = fileRes.result.base64;
             const config = { class: 'gray modal-lg', backdrop: true, ignoreBackdropClick: true };
             this.modalReff = this.modalService.show(this.otherAreaFileActionTemplate, config);
           }
@@ -2375,6 +2392,7 @@ export class FileViewComponent extends AppComponentBase {
             }
           },
           error: () => {
+            this.isSigningReady = false;
             abp.notify.error('Failed to prepare file for signing.', 'Error');
           },
           complete: () => {
@@ -2781,7 +2799,7 @@ export class FileViewComponent extends AppComponentBase {
       this.msgShow = false;
 
       // Handle a single file instead of multiple items
-      let strng = file.key.replace(/#/g, "%23");
+      let strng = encodeURIComponent(file.key);
 
       var zohoKey = 2001;
       if (zohoKey != 2001) {
@@ -2863,7 +2881,7 @@ export class FileViewComponent extends AppComponentBase {
       this.docx = false;
       this.msgShow = false;
 
-      let strng = file.key.replace(/#/g, "%23");
+      let strng = encodeURIComponent(file.key);
       let srId = selectedFile.srAssignedFileId;
       let escrow = localStorage.getItem("activeTab");
       let userType = localStorage.getItem("accessTYpe" + escrow);
@@ -2924,7 +2942,7 @@ export class FileViewComponent extends AppComponentBase {
       this.docx = false;
       this.msgShow = false;
 
-      let strng = file.key.replace(/#/g, "%23");
+      let strng = encodeURIComponent(file.key);
       let srId = selectedFile.srAssignedFileId;
       let escrow = localStorage.getItem("activeTab");
       let userType = localStorage.getItem("accessTYpe" + escrow);
@@ -4124,7 +4142,6 @@ export class FileViewComponent extends AppComponentBase {
 
   closeSignPopup() {
     this.signPopup = false;
-    this.renderer.removeStyle(document.body, 'background-color');
   }
 
 }

@@ -1903,6 +1903,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                     // Fetch a single record for the logged-in user and file
                                     var st = _srAssignedFilesDetailRepository
                                         .GetAll()
+                                        .OrderByDescending(x => x.Id)
                                         .FirstOrDefault(x => x.FileName == lst.name.TrimEnd() && x.UserId == usrdetail.Id);
 
                                     // If there's no record for this user, you can initialize default values here

@@ -89,7 +89,7 @@ export class smsModalComponent extends AppComponentBase {
 
     close(): void {
         this.active = false;
-        this.SMSprefrences=[];
+        this.SMSprefrences.forEach(x => x.Ichecked = false);
         this.modal.hide();
     }
 

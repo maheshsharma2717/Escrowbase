@@ -2540,6 +2540,29 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     await _hub.Clients.All.SendAsync("getFileUploadMessage", "URGENT: PDF.co processing tokens are exhausted. Please renew the token to continue processing files.");
                 }
+                else
+                {
+                    await _hub.Clients.All.SendAsync("getFileUploadMessage", "E-Sign Preparation Error: " + ex.Message);
+                }
+
+                try
+                {
+                    var master = await _srEscrowFileMasterRepository.GetAsync(fileMasterId);
+                    var destPath = master.FileFullName;
+                    var fileName = Path.GetFileName(destPath);
+                    var records = _srAssignedFilesDetailRepository.GetAll()
+                        .Where(x => x.FileName == fileName && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..."))
+                        .ToList();
+                    foreach (var rec in records)
+                    {
+                        if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "Error";
+                        if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Error";
+                        rec.UpdatedOn = DateTime.UtcNow;
+                        _srAssignedFilesDetailRepository.Update(rec);
+                    }
+                }
+                catch { } // Ignore DB errors during rollback
+
                 LogAutoUpdateError("ESign", ex); 
             }
         }
@@ -4413,7 +4436,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
         {
             SrAssignedFilesDetail srAssign = new SrAssignedFilesDetail();
-            var temp = _srAssignedFilesDetailRepository.GetAll().Where(x => x.FileName == filename && x.UserId == userId).FirstOrDefault();
+            var temp = _srAssignedFilesDetailRepository.GetAll().OrderByDescending(x => x.Id).Where(x => x.FileName == filename && x.UserId == userId).FirstOrDefault();
             if (temp != null)
             {
                 if (type == "Read")

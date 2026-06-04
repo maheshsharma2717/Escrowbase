@@ -77,10 +77,21 @@ export class FileMainComponent extends AppComponentBase {
     this.apiUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
   }
 
+  private globalScrollListener = () => {
+    if (this.showContextMenu) {
+      this.showContextMenu = false;
+    }
+  };
+
   ngOnInit(): void {
+    window.addEventListener('scroll', this.globalScrollListener, true);
     this.getAllFiles();
     this.updatePaginatedData();
     this.generatePageNumbers();
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('scroll', this.globalScrollListener, true);
   }
 
   getAllFiles(): void {
@@ -273,6 +284,7 @@ debugger;
   }
 
   @HostListener("document:click")
+  @HostListener("document:contextmenu")
   onDocumentClick() {
     this.showContextMenu = false;
   }
@@ -299,27 +311,39 @@ debugger;
     this.showContextMenu = true;
     const mouseX = event.clientX;
     const mouseY = event.clientY;
-    const menuElement = document.getElementById("contextMenu");
-    const menuWidth = menuElement?.offsetWidth || 150;
-    const menuHeight = menuElement?.offsetHeight || 150;
+    
+    setTimeout(() => {
+      // 1. Render at mouse position first (after document:contextmenu has closed others)
+      this.contextMenuPosition = { x: mouseX, y: mouseY };
+      this.showContextMenu = true;
 
-    // Get screen dimensions
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
+      // 2. Wait for Angular to update the DOM, then measure and adjust
+      setTimeout(() => {
+        const menus = document.getElementsByClassName("radical-context-menu");
+        if (menus.length > 0) {
+          const menuElement = menus[0] as HTMLElement;
+          const menuWidth = menuElement.offsetWidth || 200;
+          const menuHeight = menuElement.offsetHeight || 350;
 
-    // Adjust X position to prevent overflow
-    const adjustedX = (mouseX + menuWidth > screenWidth)
-      ? screenWidth - menuWidth
-      : mouseX;
+          const screenWidth = window.innerWidth;
+          const screenHeight = window.innerHeight;
 
-    // Adjust Y position to prevent overflow
-    const adjustedY = (mouseY + menuHeight > screenHeight)
-      ? screenHeight - menuHeight
-      : mouseY;
+          let adjustedX = mouseX;
+          if (mouseX + menuWidth > screenWidth) {
+            adjustedX = screenWidth - menuWidth;
+          }
 
-    // Set context menu position
-    this.contextMenuPosition = { x: adjustedX, y: adjustedY };
-    this.showContextMenu = true;
+          let adjustedY = mouseY;
+          if (mouseY + menuHeight > screenHeight) {
+            // Open upwards from the mouse
+            adjustedY = mouseY - menuHeight;
+            if (adjustedY < 0) adjustedY = 10;
+          }
+
+          this.contextMenuPosition = { x: adjustedX, y: adjustedY };
+        }
+      }, 10);
+    }, 0);
   }
 
   DownloadFile(event) {

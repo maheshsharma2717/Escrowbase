@@ -85,9 +85,21 @@ export class FileOtherComponent extends AppComponentBase {
     this.apiUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
   }
 
+  private globalScrollListener = () => {
+    if (this.showContextMenu || this.showContextMenuTags) {
+      this.showContextMenu = false;
+      this.showContextMenuTags = false;
+    }
+  };
+
   ngOnInit(): void {
+    window.addEventListener('scroll', this.globalScrollListener, true);
     this.getAllFiles();
     this.getAllFileTags();
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('scroll', this.globalScrollListener, true);
   }
 
   getAllFiles(person?: any): void {
@@ -390,29 +402,37 @@ export class FileOtherComponent extends AppComponentBase {
     const mouseX = event.clientX;
     const mouseY = event.clientY;
 
-    this.showContextMenu = mode !== 'Tags';
-    this.showContextMenuTags = mode === 'Tags';
-
     setTimeout(() => {
-      const menuElement = document.getElementById("contextMenu");
-      const menuWidth = menuElement?.offsetWidth || 150;
-      const menuHeight = menuElement?.offsetHeight || 170;
+      this.contextMenuPosition = { x: mouseX, y: mouseY };
+      this.showContextMenu = mode !== 'Tags';
+      this.showContextMenuTags = mode === 'Tags';
 
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
+      setTimeout(() => {
+        const menus = document.getElementsByClassName("radical-context-menu");
+        if (menus.length > 0) {
+          const menuElement = menus[0] as HTMLElement;
+          const menuWidth = menuElement.offsetWidth || 200;
+          const menuHeight = menuElement.offsetHeight || 350;
 
-      // Adjust X position to prevent overflow
-      const adjustedX = (mouseX + menuWidth > screenWidth)
-        ? screenWidth - menuWidth
-        : mouseX;
+          const screenWidth = window.innerWidth;
+          const screenHeight = window.innerHeight;
 
-      // Adjust Y position to prevent overflow
-      const adjustedY = (mouseY + menuHeight > screenHeight)
-        ? screenHeight - menuHeight
-        : mouseY;
+          let adjustedX = mouseX;
+          if (mouseX + menuWidth > screenWidth) {
+            adjustedX = screenWidth - menuWidth;
+          }
 
-      this.contextMenuPosition = { x: adjustedX, y: adjustedY };
-    }, 50);
+          let adjustedY = mouseY;
+          if (mouseY + menuHeight > screenHeight) {
+            // Open upwards from the mouse
+            adjustedY = mouseY - menuHeight;
+            if (adjustedY < 0) adjustedY = 10;
+          }
+
+          this.contextMenuPosition = { x: adjustedX, y: adjustedY };
+        }
+      }, 10);
+    }, 0);
   }
 
   onRightClick2(event: MouseEvent, index: number | null, file: any | null, type: string): void {
@@ -430,32 +450,46 @@ export class FileOtherComponent extends AppComponentBase {
     const mouseX = event.clientX;
     const mouseY = event.clientY;
 
-    const menuElement = document.getElementById("contextMenu");
-    const menuWidth = menuElement?.offsetWidth || 150;
-    const menuHeight = menuElement?.offsetHeight || 150;
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
+    setTimeout(() => {
+      this.contextMenuPosition = { x: mouseX, y: mouseY };
+      
+      if (type === "Tags") {
+        this.showContextMenu = false;
+        this.showContextMenuTags = true;
+      } else {
+        this.showContextMenuTags = false;
+        this.showContextMenu = true;
+      }
 
-    const adjustedX = (mouseX + menuWidth > screenWidth)
-      ? screenWidth - menuWidth
-      : mouseX;
+      setTimeout(() => {
+        const menus = document.getElementsByClassName("radical-context-menu");
+        if (menus.length > 0) {
+          const menuElement = menus[0] as HTMLElement;
+          const menuWidth = menuElement.offsetWidth || 200;
+          const menuHeight = menuElement.offsetHeight || 350;
+          const screenWidth = window.innerWidth;
+          const screenHeight = window.innerHeight;
 
-    const adjustedY = (mouseY + menuHeight > screenHeight)
-      ? screenHeight - menuHeight
-      : mouseY;
+          let adjustedX = mouseX;
+          if (mouseX + menuWidth > screenWidth) {
+            adjustedX = screenWidth - menuWidth;
+          }
 
-    this.contextMenuPosition = { x: adjustedX, y: adjustedY };
+          let adjustedY = mouseY;
+          if (mouseY + menuHeight > screenHeight) {
+            // Open upwards from the mouse
+            adjustedY = mouseY - menuHeight;
+            if (adjustedY < 0) adjustedY = 10;
+          }
 
-    if (type === "Tags") {
-      this.showContextMenu = false;
-      this.showContextMenuTags = true;
-    } else {
-      this.showContextMenuTags = false;
-      this.showContextMenu = true;
-    }
+          this.contextMenuPosition = { x: adjustedX, y: adjustedY };
+        }
+      }, 10);
+    }, 0);
   }
 
   @HostListener('document:click', ['$event'])
+  @HostListener('document:contextmenu', ['$event'])
   onClickOutside(event: Event) {
     const targetElement = event.target as HTMLElement;
     if (targetElement && !targetElement.closest('.context-menu')) {

@@ -1,6 +1,7 @@
 <div [class]="currentTheme.baseSettings.subHeader.containerStyle">
-    <div [class]="containerClass + ' d-flex align-items-center justify-content-between flex-wrap flex-sm-nowrap'">
-        <div class="d-flex align-items-center flex-wrap mr-2">
+    <div [class]="containerClass + ' d-flex align-items-center justify-content-between flex-wrap flex-sm-nowrap'" style="padding-left: 0 !important;">
+        <div style="width: 5px; min-height: 45px; background: linear-gradient(to bottom, #0d4a8e, #00a651); border-radius: 4px; margin-right: 15px;"></div>
+        <div class="d-flex align-items-center flex-wrap mr-2 w-100">
             <h1 *ngIf="currentTheme.baseSettings.subHeader.subheaderSize == 1"
                 [class]="currentTheme.baseSettings.subHeader.titleStlye">{{title}}</h1>
             <h2 *ngIf="currentTheme.baseSettings.subHeader.subheaderSize == 2"
@@ -16,9 +17,15 @@
                     {{title}}
                 </ng-container>
                 <ng-container *ngIf="!title && !isAdmin">
-                    This is your landing page, this is where you will see the escrow(s) and the Escrow Companie(s)
-                    that you have been given access to. <br><b>Click on the blue button to the right of the escrow you want
-                        to work on to gain access and begin your Web Portal Process.</b>
+                    <div class="d-flex align-items-center mt-1 w-100" style="padding: 0.5rem 0; font-family: 'Inter', sans-serif;">
+                        <div class="mr-3" style="color: #0ea5e9;">
+                            <i class="fas fa-info-circle" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <div style="color: #475569; font-size: 1rem; line-height: 1.5;">
+                            <span style="font-weight: 700;">This is your landing page, this is where you will see the escrow(s) and the Escrow Companie(s) that you have been given access to.</span><br>
+                            <span style="color: #0284c7; font-weight: 700;">Click on the blue button to the right of the escrow you want to work on to gain access and begin your Web Portal Process.</span>
+                        </div>
+                    </div>
                 </ng-container>
             </h5>
 

@@ -35,7 +35,7 @@ interface Escrow {
 @Component({
   selector: 'app-tabs',
   template: `
-  <div class="d-flex w-100 align-items-center header-container justify-content-between">
+  <div class="d-flex w-100 align-items-center header-container justify-content-between" style="padding-left: 0 !important;">
   <ul class="nav nav-tabs tab-bar-custom" role="tablist">
     <li *ngFor="let tab of tabs"
         (click)="selectTab(tab); UpdateLocalStorage(tab)"

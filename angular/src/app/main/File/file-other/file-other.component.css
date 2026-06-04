@@ -88,8 +88,9 @@ th {
     left: 20px;
     width: calc(100vw - 40px);
     height: calc(100vh - 162px);
-    z-index: 9999;
+    z-index: 99999;
     overflow: auto;
+    background-color: #ffffff;
 }
 
 
@@ -253,13 +254,13 @@ tbody tr:nth-child(even) {
 }
 
 .btn-xs-custom {
-    padding: 1px 6px !important;
-    font-size: 11px !important;
+    padding: 3px 10px !important;
+    font-size: 13px !important;
     line-height: normal !important;
-    height: 24px !important;
+    height: 28px !important;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
 }
 
 .fade-btn {
@@ -310,4 +311,15 @@ tbody tr:nth-child(even) {
 .search-container input::placeholder {
     color: #7E8299 !important;
     opacity: 1;
+}
+
+.radical-btn {
+    border-radius: 8px !important;
+    transition: all 0.3s ease-in-out;
+}
+
+.radical-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    filter: brightness(1.1);
 }
