@@ -9,6 +9,7 @@ import { OffcanvasOptions } from '@metronic/app/core/_base/layout/directives/off
 import { ActivatedRoute , Router} from '@angular/router';
 import { AppConsts } from '@shared/AppConsts';
 import { HttpClient } from '@angular/common/http';
+import { LayoutTabService } from '@app/shared/layout/layout-tab.service';
 
 @Component({
     selector: 'user-menu',
@@ -24,6 +25,7 @@ export class UserMenuComponent extends ThemesLayoutBaseComponent implements OnIn
     @Input() symbolTextCssClass = 'symbol-label font-size-h5 font-weight-bold';
 
     usernameFirstLetter = '';
+    hasProfilePicture = false;
 
     profilePicture = AppConsts.appBaseUrl + '/assets/common/images/default-profile-picture.png';
     shownLoginName = '';
@@ -49,6 +51,7 @@ export class UserMenuComponent extends ThemesLayoutBaseComponent implements OnIn
     constructor(
         injector: Injector,
         private http: HttpClient,
+        private layoutTabService: LayoutTabService,
         private _linkedAccountService: LinkedAccountService,
         private _abpMultiTenancyService: AbpMultiTenancyService,
         private _profileServiceProxy: ProfileServiceProxy,
@@ -58,7 +61,7 @@ export class UserMenuComponent extends ThemesLayoutBaseComponent implements OnIn
         private _abpSessionService: AbpSessionService,
         private _SrFileMappingsServiceProxy: SrFileMappingsServiceProxy,
         private _router: Router,
-        //private _UserTypeDto: UserTypeDto
+        private route: ActivatedRoute
     ) {
         super(injector);
       if(abp.session.userId == 1)
@@ -80,7 +83,6 @@ export class UserMenuComponent extends ThemesLayoutBaseComponent implements OnIn
     }
 
     ngOnInit(): void {
-        
         this.isImpersonatedLogin = this._abpSessionService.impersonatorUserId > 0;
         this.isMultiTenancyEnabled = this._abpMultiTenancyService.isEnabled;
         this.setCurrentLoginInformations();
@@ -93,6 +95,10 @@ export class UserMenuComponent extends ThemesLayoutBaseComponent implements OnIn
         //if(this._router.url == "/app/main/Userdashboard"){
             this.showLogout = true;
       //  }
+    }
+
+    requestEdit() {
+        this.layoutTabService.requestEditESignCreds();
     }
 
     setCurrentLoginInformations(): void {                  
@@ -132,6 +138,10 @@ export class UserMenuComponent extends ThemesLayoutBaseComponent implements OnIn
         this._profileServiceProxy.getProfilePicture().subscribe(result => {
             if (result && result.profilePicture) {
                 this.profilePicture = 'data:image/jpeg;base64,' + result.profilePicture;
+                this.hasProfilePicture = true;
+            } else {
+                this.hasProfilePicture = false;
+                this.profilePicture = AppConsts.appBaseUrl + '/assets/common/images/default-profile-picture.png';
             }
         });
     }

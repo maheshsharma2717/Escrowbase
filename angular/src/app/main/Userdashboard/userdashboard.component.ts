@@ -31,8 +31,12 @@ declare var chrome: any;
 declare var abp: any;
 import Swal from 'sweetalert2/dist/sweetalert2.js';
 @Component({
-
-    templateUrl: './userdashboard.component.html'
+    templateUrl: './userdashboard.component.html',
+    styles: [`
+        :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+            padding: 4px 8px !important;
+        }
+    `]
 })
 
 
@@ -171,7 +175,57 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         });
 
         this.getEscrowClients(null, true);
+
+        // Subscribe to global Edit E-Sign request
+        this._layoutTabService.requestEditESignCreds$.subscribe(() => {
+            const activeTab = localStorage.getItem('activeTab');
+            
+            let targetEscrowId = activeTab;
+
+            // If we're on the dashboard, use the selected checkbox escrow
+            if (!activeTab || activeTab === 'Dashboard') {
+                targetEscrowId = localStorage.getItem('selectedDashboardEscrow');
+                if (!targetEscrowId) {
+                    abp.message.warn('Please select an Escrow using the checkbox in the grid first to edit its settings.', 'No Escrow Selected');
+                    return;
+                }
+            }
+
+            // Find the escrow in our list matching the targetEscrowId (which is the escrowid)
+            const escrow = this.escrowList.find(x => x.escrowid === targetEscrowId);
+            if (escrow) {
+                // Ensure dataNew format is passed
+                const dataNew = escrow.dataNew || {
+                    c: btoa(this.validFileName(escrow.company) || ''),
+                    e: btoa(escrow.escrowid || ''),
+                    sc: btoa(escrow.subCompany || ''),
+                    u: btoa(escrow.type || ''),
+                    isId: true
+                };
+                this.editESignCreds(dataNew);
+            } else {
+                abp.message.warn('Could not find the details for the selected escrow.', 'Error');
+            }
+        });
     }
+
+    selectedDashboardEscrow: string = '';
+
+    selectEscrowForEdit(record: any, isChecked: boolean) {
+        if (isChecked) {
+            this.selectedDashboardEscrow = record.escrowid;
+            localStorage.setItem('selectedDashboardEscrow', record.escrowid);
+        } else {
+            this.selectedDashboardEscrow = '';
+            localStorage.removeItem('selectedDashboardEscrow');
+        }
+    }
+
+    isEscrowSelectedForEdit(escrowid: string): boolean {
+        return this.selectedDashboardEscrow === escrowid;
+    }
+
+    ngAfterViewInit(): void { }
 
     private setIsEntityHistoryEnabled(): boolean {
         let customSettings = (abp as any).custom;
@@ -683,6 +737,8 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                         enterpriseId: result?.enterpriseId,
                         enterpriseName: result?.enterpriseName
                     };
+                    this.selectedESignCompany = 'admin-suggested';
+                    this.onESignCompanyChange();
                     this.showESignModal = true;
                 }
             },
@@ -703,7 +759,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                     const creds = res.result.result;
 
                     // Fill dropdown & credentials
-                    this.selectedESignCompany = creds.eSignProviderCode;
+                    this.selectedESignCompany = creds.isAdminAssigned ? 'admin-suggested' : creds.eSignProviderCode;
                     this.eSignCreds = {
                         clientId: creds.eSignClientId,
                         clientSecret: creds.eSignClientSecret,

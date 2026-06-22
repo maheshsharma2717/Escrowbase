@@ -236,7 +236,9 @@ namespace SR.EscrowBaseWeb.Authorization.Users.Profile
 
                 using (var stream = new MemoryStream())
                 {
-                    bmCrop.Save(stream, bmpImage.RawFormat);
+                    var isMemoryBmp = bmpImage.RawFormat.Equals(System.Drawing.Imaging.ImageFormat.MemoryBmp);
+                    var imageFormat = isMemoryBmp ? System.Drawing.Imaging.ImageFormat.Jpeg : bmpImage.RawFormat;
+                    bmCrop.Save(stream, imageFormat);
                     byteArray = stream.ToArray();
                 }
             }

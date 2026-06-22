@@ -2,26 +2,43 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 80vh;
-  background-color: #f5f7fa;
+  min-height: 100vh;
+  height: 100%;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+  margin: 0;
+  padding: 0;
 }
 
 .esign-box {
   text-align: center;
-  padding: 40px;
+  padding: 50px 40px;
   background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  max-width: 500px;
+  width: 90%;
+  border-top: 5px solid #28a745;
 }
 
 .esign-box h1 {
-  font-size: 28px;
-  color: #28a745;
-  margin-bottom: 20px;
+  font-size: 32px;
+  font-weight: 700;
+  color: #1e1e2d;
+  margin-bottom: 15px;
 }
 
 .success-message {
   font-size: 18px;
-  color: #333;
+  color: #5e6278;
   margin-bottom: 15px;
+  line-height: 1.6;
+}
+
+.success-icon-wrapper i {
+  animation: scale-up-center 0.5s cubic-bezier(0.390, 0.575, 0.565, 1.000) both;
+}
+
+@keyframes scale-up-center {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }

@@ -22,6 +22,7 @@ import { AppSessionService } from '@shared/common/session/app-session.service';
 import { AppConsts } from '@shared/AppConsts';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { UserDashboardComponent } from '../main/Userdashboard/userdashboard.component';
+import { AppRouteGuard } from '../shared/common/auth/auth-route-guard';
 import { SharedServices } from '../shared/common/Shared/SharedService';
 import { SignalRHelper } from '../../shared/helpers/SignalRHelper';
 import { ChatSignalrService } from '@app/shared/layout/chat/chat-signalr.service';
@@ -39,22 +40,30 @@ interface Escrow {
   <ul class="nav nav-tabs tab-bar-custom" role="tablist">
     <li *ngFor="let tab of tabs"
         (click)="selectTab(tab); UpdateLocalStorage(tab)"
-        class="nav-item"
+        class="nav-item dashboard-tab"
+        [class.sweep-ltr]="tab.sweepDirection === 'ltr'"
+        [class.sweep-rtl]="tab.sweepDirection === 'rtl'"
         [class.active]="tab.active">
-      <a class="nav-link tabs" [class.active]="tab.active">
-        {{ tab.title }}
+      <a class="nav-link tabs d-flex align-items-center" [class.active]="tab.active">
+        <i class="fas fa-home mr-2" style="font-size: 14px; margin-right: 6px;"></i>
+        <span>{{ tab.title }}</span>
       </a>
     </li>
 
     <li *ngFor="let tab of dynamicTabs"
+        [hidden]="isNotificationsPage()"
         (click)="selectTab(tab); UpdateLocalStorage(tab)"
         class="nav-item"
+        [class.sweep-ltr]="tab.sweepDirection === 'ltr'"
+        [class.sweep-rtl]="tab.sweepDirection === 'rtl'"
         [class.active]="tab.active">
       <a class="nav-link tabs d-flex align-items-center" [class.active]="tab.active">
         <span>{{ tab.title }}</span>
         <span class="tab-close ms-2"
               *ngIf="tab.isCloseable"
-              (click)="closeTab(tab); $event.stopPropagation()">×</span>
+              (click)="closeTab(tab); $event.stopPropagation()">
+              <i class="fas fa-times"></i>
+        </span>
       </a>
     </li>
   </ul>
@@ -77,10 +86,27 @@ interface Escrow {
     }
 
     .tab-close {
-      color : #000;
-      text-align : right;
-      cursor : pointer;
-      padding-left : 4px;
+      background-color: #ef4444;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 50px;
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 8px;
+      transition: all 0.2s ease;
+    }
+    
+    .tab-close i {
+      color: #ffffff !important;
+      font-size: 10px !important;
+    }
+    
+    .tab-close:hover {
+      background-color: #dc2626;
+      transform: scale(1.1);
     }
    `
   ],
@@ -121,12 +147,17 @@ export class TabsComponent implements AfterContentInit, OnInit {
     private _chatSignalrService: ChatSignalrService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
-    private router: Router) {
+    private router: Router,
+    private _appRouteGuard: AppRouteGuard) {
 
   }
   get canShowCurrentEscrowBtn(): boolean {
 
     return !!(this.escrows && this.getEOXuser && this.getEOXENo);
+  }
+
+  isNotificationsPage(): boolean {
+    return window.location.pathname.includes('/notifications');
   }
 
   ngAfterContentInit() {
@@ -288,9 +319,22 @@ export class TabsComponent implements AfterContentInit, OnInit {
   }
 
 
+  getTabIndex(tab: TabComponent): number {
+    let index = this.tabs.toArray().indexOf(tab);
+    if (index !== -1) return index;
+    return this.tabs.length + this.dynamicTabs.indexOf(tab);
+  }
+
   selectTab(tab: TabComponent) {
-    this.tabs.toArray().forEach(t => (t.active = false));
-    this.dynamicTabs.forEach(t => (t.active = false));
+    const allTabs = [...this.tabs.toArray(), ...this.dynamicTabs];
+    const currentActive = allTabs.find(t => t.active);
+    const oldIndex = currentActive ? this.getTabIndex(currentActive) : -1;
+    const newIndex = this.getTabIndex(tab);
+
+    const direction = oldIndex > -1 && newIndex < oldIndex ? 'rtl' : 'ltr';
+
+    allTabs.forEach(t => (t.active = false));
+    tab.sweepDirection = direction;
     tab.active = true;
     this.activeTabTitle = tab.title;
     if (tab.dataContext) {

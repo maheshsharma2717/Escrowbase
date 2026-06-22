@@ -1,0 +1,2 @@
+Email, User Name, Company, Invitee, Esc#, Access Types
+"manojOffbeats@yopmail.com","Narender","Hitachi","JEANNIE MILLER","Escrowforsecondhitachi","{BR2}"

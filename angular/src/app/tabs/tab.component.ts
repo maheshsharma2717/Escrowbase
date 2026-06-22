@@ -26,6 +26,7 @@ export class TabComponent {
     
   @Input('tabTitle') title: string;
   @Input() active = false;
+  @Input() sweepDirection: 'ltr' | 'rtl' = 'ltr';
   @Input() isCloseable = false;
   @Input() template;
   @Input() dataContext;

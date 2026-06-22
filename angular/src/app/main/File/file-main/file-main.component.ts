@@ -77,7 +77,12 @@ export class FileMainComponent extends AppComponentBase {
     this.apiUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
   }
 
-  private globalScrollListener = () => {
+  private globalScrollListener = (event: Event) => {
+    const targetElement = event.target as HTMLElement;
+    if (targetElement && targetElement.closest && targetElement.closest('.radical-context-menu')) {
+      return;
+    }
+
     if (this.showContextMenu) {
       this.showContextMenu = false;
     }

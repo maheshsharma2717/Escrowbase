@@ -127,6 +127,7 @@ export class FileViewComponent extends AppComponentBase {
   userpermissionsall: any = [];
   myuser: any = ["BRX", "SRX", "BR1", "BR2", "BR3", "BR4", "BR5", "BR6", "BR7", "BR8", "BR9", "BR10", "SR1", "SR2", "SR3", "SR4", "SR5", "SR6", "SR7", "SR8", "SR9", "SR10", "RAL", "RBL", "RAS", "RBS", "RAO", "RBO", "LR1", "LR2", "LR3", "LP1", "LP2", "LP3", "TCX", "TCA", "LBX", "LBP", "EO1", "EA1", "EOX", "EAX", "TC1", "TC2", "TC3", "TC4", "TC5", "TC6", "TC7", "TC8", "TC9", "TC10", "LTC", "STC", "OTC"];
   tempcompany;
+  companyNameDecoded: string;
   static newusertype;
   static escrowno;
   static currentpathh;
@@ -430,6 +431,7 @@ export class FileViewComponent extends AppComponentBase {
 
     let subCompanyName = this.validFileName(atob(queryParams['sc']))
     let companyName = this.validFileName(atob(queryParams['c']))
+    this.companyNameDecoded = atob(queryParams['c']);
     let EscrowTab = localStorage.getItem("activeTab")
     let escrowUserType = localStorage.getItem("accessTYpe" + EscrowTab);
     this.completeEnterprisePathOther = `${companyName}/${subCompanyName}/${EscrowTab}/Other/`
@@ -467,6 +469,9 @@ export class FileViewComponent extends AppComponentBase {
       this.Name = this.appSession.user.name + " " + this.appSession.user.surname;
       this.tempsubcompany = queryParams['sc'];
       this.tempcompany = queryParams['c'];
+      if(this.tempcompany) {
+          this.companyNameDecoded = atob(this.tempcompany);
+      }
       if (test1 == undefined) {
         FileViewComponent.pathname = AppConsts.appBaseUrl + "/app/main/File?u=" + queryParams['u'] + "&e=" + queryParams['e'] + "&c=" + queryParams['sc'] + "";
       }

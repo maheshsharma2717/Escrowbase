@@ -49,122 +49,99 @@
                             <div class="row align-items-center">
                                 <!--<Primeng-Datatable-Start>-->
                                 <div class="primeng-datatable-container col-12" [busyIf]="primengTableHelper.isLoading">
-                                    <p-table (onLazyLoad)="getEscrowClients($event)"
-                                        [value]="primengTableHelper?.records" [lazy]="false"
-                                        [globalFilterFields]="['subCompany', 'escrowid', 'type', 'address', 'buyer', 'seller']"
-                                        styleClass="p-datatable-sm">
-
+                                    <p-table #dataTable (onLazyLoad)="getEscrowClients($event)" [value]="escrowList"
+                                        rows="{{primengTableHelper.defaultRecordsCountPerPage}}" [paginator]="false"
+                                        [lazy]="true"
+                                        [responsive]="primengTableHelper.isResponsive"
+                                        [resizableColumns]="primengTableHelper.resizableColumns">
                                         <ng-template pTemplate="header">
                                             <tr>
-
-                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="subCompany" class="text-left">
-                                                    {{'Company' | localize}}
-                                                    <p-sortIcon field="subCompany"></p-sortIcon>
+                                                <th style="width: 40px; text-align: center; padding-left: 8px !important; padding-right: 8px !important;">
+                                                    <span class="p-column-title"></span>
                                                 </th>
-                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="escrowid" class="text-left">
-                                                    {{'EscrowId' | localize}}
-                                                    <p-sortIcon field="escrowid"></p-sortIcon>
+                                                <th style="width: 350px; padding-left: 8px !important; padding-right: 8px !important;" pSortableColumn="subCompany">
+                                                    <div class="d-flex align-items-center justify-content-start w-100">
+                                                        <span>{{l('Company')}}</span>
+                                                        <p-sortIcon field="subCompany" class="ml-1"></p-sortIcon>
+                                                    </div>
                                                 </th>
-                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="type" class="text-left">
-                                                    {{'Action' | localize}}
-                                                    <p-sortIcon field="type"></p-sortIcon>
+                                                <th style="width: 200px; padding-left: 8px !important; padding-right: 8px !important;" pSortableColumn="escrowid">
+                                                    <div class="d-flex align-items-center justify-content-start w-100">
+                                                        <span>{{l('EscrowId')}}</span>
+                                                        <p-sortIcon field="escrowid" class="ml-1"></p-sortIcon>
+                                                    </div>
                                                 </th>
-
-
-                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="address" class="text-left">
-                                                    {{'StreetAddress' | localize}}
-                                                    <p-sortIcon field="address"></p-sortIcon>
+                                                <th style="width: 120px; padding-left: 8px !important; padding-right: 8px !important;" pSortableColumn="type">
+                                                    <div class="d-flex align-items-center justify-content-start w-100">
+                                                        <span>{{l('Action')}}</span>
+                                                        <p-sortIcon field="type" class="ml-1"></p-sortIcon>
+                                                    </div>
                                                 </th>
-
-                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="buyer" class="text-left">
-                                                    {{'Buyer' | localize}}
-                                                    <p-sortIcon field="buyer"></p-sortIcon>
+                                                <th style="width: 250px; padding-left: 8px !important; padding-right: 8px !important;" pSortableColumn="address">
+                                                    <div class="d-flex align-items-center justify-content-start w-100">
+                                                        <span>{{l('StreetAddress')}}</span>
+                                                        <p-sortIcon field="address" class="ml-1"></p-sortIcon>
+                                                    </div>
                                                 </th>
-
-                                                <th style="width: 150px; text-align: left !important;" pSortableColumn="seller" class="text-left">
-                                                    {{'Seller' | localize}}
-                                                    <p-sortIcon field="seller"></p-sortIcon>
+                                                <th style="width: 150px; padding-left: 8px !important; padding-right: 8px !important;" pSortableColumn="buyer">
+                                                    <div class="d-flex align-items-center justify-content-start w-100">
+                                                        <span>{{l('Buyer')}}</span>
+                                                        <p-sortIcon field="buyer" class="ml-1"></p-sortIcon>
+                                                    </div>
                                                 </th>
-
-
-                                                <th style="width: 200px; text-align: center !important;" class="text-center">
-                                                    {{'Actions' | localize}}
+                                                <th style="width: 150px; padding-left: 8px !important; padding-right: 8px !important;" pSortableColumn="seller">
+                                                    <div class="d-flex align-items-center justify-content-start w-100">
+                                                        <span>{{l('Seller')}}</span>
+                                                        <p-sortIcon field="seller" class="ml-1"></p-sortIcon>
+                                                    </div>
+                                                </th>
+                                                <th style="width: 150px; padding-left: 8px !important; padding-right: 8px !important;">
+                                                    <div class="d-flex align-items-center justify-content-start w-100">
+                                                        <span>Actions</span>
+                                                    </div>
                                                 </th>
                                             </tr>
                                         </ng-template>
                                         <ng-template pTemplate="body" let-record>
                                             <tr>
-
-                                                <td style="width:150px; font-size:80%">
-                                                    <!-- <span class="ui-column-title"> {{l('Company')}}</span> -->
+                                                <td style="width: 40px; text-align: center;">
+                                                    <div class="custom-control custom-checkbox d-inline-block">
+                                                        <input type="checkbox" class="custom-control-input" [id]="'check_' + record.escrowid" (change)="selectEscrowForEdit(record, $event.target.checked)" [checked]="isEscrowSelectedForEdit(record.escrowid)">
+                                                        <label class="custom-control-label" [for]="'check_' + record.escrowid"></label>
+                                                    </div>
+                                                </td>
+                                                <td style="width: 350px; font-size: 90%; text-align: left;">
                                                     <span class="p-column-title"> subCompany </span>
                                                     <b>{{record.subCompany}}</b>
                                                 </td>
-                                                <td style="width:150px; font-size: 80%">
-                                                    <!-- <span class="ui-column-title"> {{l('EscrowId')}}</span> -->
+                                                <td style="width: 200px; font-size: 80%; text-align: left;">
                                                     <span class="p-column-title"> escrowid </span>
                                                     {{record.escrowid}}
                                                 </td>
-                                                <td style="width:150px; font-size: 80%">
-                                                    <!-- <span class="ui-column-title"> {{l('Action')}}</span> -->
+                                                <td style="width: 120px; font-size: 80%; text-align: left;">
                                                     <span class="p-column-title"> type </span>
                                                     {{record.type}}
                                                 </td>
 
-                                                <td style="width:150px; font-size: 80%">
-                                                    <!-- <span class="ui-column-title"> {{l('StreetAddress')}}</span> -->
+                                                <td style="width: 250px; font-size: 80%; text-align: left;">
                                                     <span tooltip="{{record.address}}" placement="top">
-                                                        {{ record.address.length > 20 ? (record.address | slice:0:20) +
-                                                        '…' : record.address }}
+                                                        {{ record.address.length > 30 ? (record.address | slice:0:30) + '…' : record.address }}
                                                     </span>
                                                 </td>
-                                                <td style="width:150px; font-size: 80%">
-                                                    <!-- <span class="ui-column-title"> {{l('Buyer')}}</span> -->
+                                                <td style="width: 150px; font-size: 80%; text-align: left;">
                                                     {{record.buyer}}
                                                 </td>
-                                                <td style="width:150px; font-size: 80%">
-                                                    <!-- <span class="ui-column-title"> {{l('Seller')}}</span> -->
+                                                <td style="width: 150px; font-size: 80%; text-align: left;">
                                                     {{record.seller}}
                                                 </td>
 
-                                                <td style="width: 200px; font-size: 80%; text-align: center;">
-                                                    <div class="d-flex align-items-center justify-content-center gap-2">
-                                                        <!-- <app-upload-file></app-upload-file> -->
-                                                        <!-- <button class="btn btn-sm btn-primary"
-                                                            (click)="onOpenFileManager(record.dataNew,true)">
-                                                            <a style="color: white;"><i class="fa fa-cog"></i><span
-                                                                    class="caret"></span>
-                                                                {{l("Go To Fileview")}}</a>
-                                                        </button> -->
-                                                        <button class="btn radical-dashboard-btn"
-                                                            (click)="checkAndOpenFile(record.dataNew)">
+                                                <td style="width: 150px; font-size: 80%; text-align: left;">
+                                                    <div class="d-flex align-items-center justify-content-start">
+                                                        <button class="btn radical-dashboard-btn" (click)="checkAndOpenFile(record.dataNew)">
                                                             <div class="d-flex align-items-center justify-content-center w-100">
-                                                                <i class="fa fa-cog mr-2 font-size-sm"></i>
-                                                                <span>{{ l("Go To Fileview") }}</span>
+                                                                <span>{{ l("View File") }}</span>
                                                             </div>
                                                         </button>
-                                                        
-                                                        <button class="btn radical-dashboard-btn-outline"
-                                                            (click)="editESignCreds(record.dataNew)">
-                                                            <div class="d-flex align-items-center justify-content-center w-100">
-                                                                <i class="fa fa-pen mr-2 font-size-sm"></i>
-                                                                <span>{{ l("Edit") }}</span>
-                                                            </div>
-                                                        </button>
-
-                                                        <!-- <ul class="dropdown-menu" *dropdownMenu style="padding:10px">
-                                                        <li  class="line-hight">
-                                                            <a href="javascript:;"
-                                                                (click)="viewEscrowClientModal.show(record)">{{l('View')}}</a>
-                                                        </li>
-                                                        <li  class="line-hight">
-                                                            <a href="javascript:;"
-                                                                *ngIf="permission.isGranted('Pages.EscrowClients.Edit')"
-                                                                (click)="createOrEditEscrowClientModal.show(record.escrowClient.id)">{{l('Edit')}}</a>
-                                                        </li>
-                                                        
-                                                        
-                                                    </ul> -->
                                                     </div>
                                                 </td>
                                             </tr>
@@ -500,7 +477,7 @@
             background: linear-gradient(135deg, #0d4a8e, #0a3a70) !important;
             color: #ffffff !important;
             border: none !important;
-            border-radius: 50px !important;
+            border-radius: 6px !important;
             padding: 8px 24px !important;
             font-weight: 700 !important;
             letter-spacing: 0.5px;
@@ -523,7 +500,7 @@
             background: transparent !important;
             color: #0d4a8e !important;
             border: 2px solid #0d4a8e !important;
-            border-radius: 50px !important;
+            border-radius: 6px !important;
             padding: 6px 20px !important;
             font-weight: 700 !important;
             letter-spacing: 0.5px;

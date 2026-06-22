@@ -10,7 +10,7 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="max-height: 65vh; overflow-y: auto; overflow-x: hidden;">
                     <div class="form-group">
                         <label for="Profile_UseGravatarProfilePicture" class="checkbox">
                             <input id="Profile_UseGravatarProfilePicture" type="checkbox" name="UseGravatarProfilePicture"
@@ -19,9 +19,11 @@
                             <span></span>
                         </label>
                     </div>
-                    <div class="form-group">
-                        <input type="file" (change)="fileChangeEvent($event)" [disabled]="useGravatarProfilePicture" />
-                        <span class="help-block m-b-none" [hidden]="useGravatarProfilePicture">{{"ProfilePicture_Change_Info" | localize:maxProfilPictureBytesUserFriendlyValue}}</span>
+                    <div class="form-group" [hidden]="useGravatarProfilePicture" style="border: 2px dashed #cbd5e1; padding: 25px; border-radius: 12px; text-align: center; background-color: #f8fafc; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6'; this.style.backgroundColor='#eff6ff';" onmouseout="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';" onclick="document.getElementById('profilePictureFileInput').click()">
+                        <i class="fa fa-cloud-upload-alt text-primary mb-3" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                        <h5 class="font-weight-bold text-dark mb-1">Click to upload image</h5>
+                        <span class="text-muted d-block mt-2 font-size-sm">{{"ProfilePicture_Change_Info" | localize:maxProfilPictureBytesUserFriendlyValue}}</span>
+                        <input id="profilePictureFileInput" type="file" (change)="fileChangeEvent($event)" [disabled]="useGravatarProfilePicture" style="display: none;" accept="image/png, image/jpeg, image/jpg, image/gif" />
                     </div>
                     <image-cropper
                         [imageChangedEvent]="imageChangedEvent"

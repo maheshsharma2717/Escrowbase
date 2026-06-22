@@ -30,10 +30,10 @@
 }
 
 .nav-tabs .nav-link {
-    border: none !important; /* No borders */
-    border-radius: 50px !important; /* PILL RADIUS */
-    padding: 5px 16px !important; /* Extra sleek, much shorter height */
-    color: #0d4a8e !important; /* Deep Blue Text */
+    border: none !important; 
+    border-radius: 50px !important; 
+    padding: 2px 14px !important; /* 2px top/bottom padding for a sleek but cushioned height */
+    color: #0d4a8e !important; 
     font-weight: 600 !important;
     font-size: 0.85rem; /* Smaller, sleeker text */
     transition: all 0.4s ease !important;
@@ -45,27 +45,79 @@
     margin: 0 !important;
 }
 
-.nav-tabs .nav-link:hover {
-    background-color: rgba(13, 74, 142, 0.08) !important; /* Pill-shaped hover effect */
-}
-
-/* Active Tab Styling - Rounded Animated Gradient Pill */
+/* Active Tab Styling - Sweeping Animated Gradient Pill */
 .nav-tabs .nav-item.active .nav-link,
 .nav-tabs .nav-link.active {
-    background: linear-gradient(to right, #0d4a8e, #20c997, #0d4a8e) !important; 
-    background-size: 200% auto !important; 
+    background: transparent !important; 
     color: #ffffff !important; 
     font-weight: 700 !important;
     border: none !important;
-    border-radius: 50px !important; /* ROUNDED PILL FOR SELECTED TAB */
-    box-shadow: 0 2px 8px rgba(13, 74, 142, 0.2) !important;
+    border-radius: 50px !important; 
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
 }
 
-/* Transition right to left on hover */
-.nav-tabs .nav-item.active .nav-link:hover,
-.nav-tabs .nav-link.active:hover {
-    background-position: right center !important; 
+.nav-tabs .nav-item.active .nav-link::before,
+.nav-tabs .nav-link.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 0%;
+    z-index: -1;
+    border-radius: 50px;
+    animation: tabSweep 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    box-shadow: 0 2px 4px rgba(13, 74, 142, 0.15);
+}
+
+.nav-tabs .sweep-ltr .nav-link.active::before,
+.nav-tabs .nav-item:not(.sweep-rtl).active .nav-link::before {
+    left: 0;
+    right: auto;
+    background: linear-gradient(to right, #0d4a8e, #20c997) !important; 
+}
+
+.nav-tabs .sweep-rtl .nav-link.active::before {
+    right: 0;
+    left: auto;
+    background: linear-gradient(to left, #0d4a8e, #20c997) !important; 
+}
+
+/* Dashboard Specific Styling - Always Colored */
+.nav-tabs .dashboard-tab .nav-link,
+.nav-tabs .dashboard-tab.active .nav-link,
+.nav-tabs .dashboard-tab .nav-link.active {
+    border: none !important; 
+    background: linear-gradient(135deg, #f43f5e, #fb7185) !important; /* Always vibrant coral/red */
+    color: #ffffff !important; /* Always white text */
+    box-shadow: none !important; 
+    padding: 2px 18px !important;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+}
+
+/* Ensure the icon is always white */
+.nav-tabs .dashboard-tab .nav-link i,
+.nav-tabs .dashboard-tab.active .nav-link i {
     color: #ffffff !important;
+}
+
+/* Hover State - Slight lift and shadow */
+.nav-tabs .dashboard-tab:hover .nav-link {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3) !important;
+}
+
+/* Disable the sweep animation for dashboard since it's permanently colored */
+.nav-tabs .dashboard-tab .nav-link::before,
+.nav-tabs .dashboard-tab.active .nav-link::before {
+    display: none !important;
+}
+
+@keyframes tabSweep {
+    0% { width: 0%; opacity: 0; }
+    100% { width: 100%; opacity: 1; }
 }
 
 /* Close Button Styling */
@@ -77,7 +129,6 @@
     margin-left: 8px; /* Slightly tighter margin */
     padding: 0;
     border-radius: 50px !important; /* Rounded close button */
-    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -85,21 +136,9 @@
     width: 16px;
 }
 
-.tab-close:hover {
-    opacity: 1;
-    color: #ffffff !important;
-    background-color: rgba(255, 255, 255, 0.25) !important;
-}
-
 .active a .tab-close {
     opacity: 0.8;
-    color: #ffffff;
-}
-
-.active a .tab-close:hover {
-    opacity: 1;
-    color: #ffffff !important;
-    background-color: rgba(255, 255, 255, 0.25) !important;
+    color: #0d4a8e;
 }
 
 /* Cleanup old utility classes */

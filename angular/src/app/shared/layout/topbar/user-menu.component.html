@@ -1,10 +1,11 @@
 <div *ngIf="iconOnly" class="topbar-item">
     <a href="javascript:;" [class]="togglerCssClass" id="kt_quick_user_toggle" data-toggle="tooltip"
         data-placement="right" data-container="body" data-boundary="window" title="" data-original-title="User Profile">
-        <span class="symbol symbol-40 symbol-lg-50">
-            <span class="symbol-label font-size-h5 font-weight-bold" style="background-color: #f1f5f9; color: #0f172a;">
+        <span class="symbol symbol-40 symbol-lg-50 symbol-circle">
+            <span *ngIf="!hasProfilePicture" class="symbol-label font-size-h5 font-weight-bold" style="background-color: #f1f5f9; color: #0f172a;">
                 {{usernameFirstLetter}}
             </span>
+            <img *ngIf="hasProfilePicture" [src]="profilePicture" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />
         </span>
     </a>
 </div>
@@ -22,14 +23,30 @@
         </div>
 
         <span class="symbol symbol-35 symbol-circle" style="box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 35px; height: 35px;">
-            <span class="symbol-label font-size-h5 font-weight-bold text-white" style="background-color: #2563eb; width: 100%; height: 100%;">
+            <span *ngIf="!hasProfilePicture" class="symbol-label font-size-h5 font-weight-bold text-white" style="background-color: #2563eb; width: 100%; height: 100%;">
                 {{usernameFirstLetter}}
             </span>
+            <img *ngIf="hasProfilePicture" [src]="profilePicture" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />
         </span>
          
     </div>
 </div>
 
+<div class="topbar-item ml-3 d-flex align-items-center">
+    <div class="btn-group dropdown" dropdown container="body">
+        <button class="btn btn-icon btn-clean btn-lg" dropdownToggle style="background: transparent; border: none; padding: 0; outline: none; box-shadow: none;" id="escrowGlobalEditBtn">
+            <style>#escrowGlobalEditBtn::after { display: none !important; }</style>
+            <i class="fa fa-ellipsis-v" style="font-size: 1.25rem; color: #64748b;"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-right" *dropdownMenu style="text-align: center;">
+            <li>
+                <a href="javascript:;" class="dropdown-item d-flex justify-content-center align-items-center" (click)="requestEdit()">
+                    <i class="fa fa-cog mr-2"></i> {{ "Edit E-Sign Settings" | localize }}
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
 
 <div id="kt_quick_user" [perfectScrollbar]="{wheelPropagation: true, suppressScrollX: true}"
     class="offcanvas offcanvas-right p-10" ktOffcanvas [options]="offcanvasOptions">
@@ -282,7 +299,7 @@
                     </div>
                 </div>
             </a>
-            <a *ngIf="!('Pages.Administration.UiCustomization' | permission)" routerLink="admin/ui-customization"
+            <a *ngIf="('Pages.Administration.UiCustomization' | permission)" routerLink="admin/ui-customization"
                 class="navi-item" id="UserProfileVisualSettingsLink">
                 <div class="navi-link">
                     <div class="symbol symbol-40 bg-light mr-3">

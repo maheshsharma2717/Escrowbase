@@ -751,3 +751,83 @@ body:not(.admin-layout) .swal2-confirm {
 .radical-context-menu .ctx-item.text-danger:hover i {
     color: #dc2626;
 }
+
+/* --- Standardized Modal Popup Styling --- */
+.modal-header {
+    background-color: #e0edfa !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 12px 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    border-radius: 8px 8px 0 0 !important;
+    min-height: 60px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03) !important;
+    border: none;
+}
+
+.modal-header .modal-title,
+.modal-header h4 {
+    color: #0d4a8e !important;
+    font-size: 1.15rem !important;
+    letter-spacing: 0.2px !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+}
+
+.modal-header .close,
+.standard-close-btn {
+    background: #dc3545 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    outline: none !important;
+    border: none !important;
+    transition: all 0.2s !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex-shrink: 0;
+    opacity: 1 !important;
+    text-shadow: none !important;
+    float: none !important;
+}
+
+.modal-header .close:hover,
+.standard-close-btn:hover {
+    background: #c82333 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.12) !important;
+    opacity: 1 !important;
+}
+
+/* Hide any existing icons or text inside to prevent duplicates */
+.modal-header .close span,
+.modal-header .close i,
+.standard-close-btn i,
+.standard-close-btn span {
+    display: none !important;
+}
+
+/* Inject a perfect, uniform white 'X' into all close buttons */
+.modal-header .close::before,
+.standard-close-btn::before {
+    content: '\00d7'; /* Unicode for multiplication sign (X) */
+    color: #ffffff !important;
+    font-size: 26px !important;
+    line-height: 1 !important;
+    font-weight: bold !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100%;
+    height: 100%;
+    padding-bottom: 2px; /* slight visual optical alignment */
+}

@@ -11,8 +11,8 @@
           <i class="fa fa-folder-open text-primary font-size-h5"></i>
       </div>
       <div>
-        <span class="text-muted font-weight-bold font-size-sm d-block">{{'Escrow Number'}}</span>
-        <span class="text-dark font-weight-bolder font-size-h5">{{escrowname}}</span>
+        <span class="text-muted font-weight-bold font-size-sm d-block">{{'Company / Escrow Number'}}</span>
+        <span class="text-dark font-weight-bolder font-size-h5">{{companyNameDecoded}} - {{escrowname}}</span>
       </div>
     </div>
 
@@ -762,14 +762,8 @@
 <ng-template #ViewEmlFile>
 
   <div class="modal-header">
-
-    <img style="
-    position: fixed;
-    height: 35px;
-   width: 42px;
-   padding: 0px;
-   margin: 0px 0px 0px -18px;
- " src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideOtherAreaFileAction()" />
+    <h4 class="modal-title font-weight-bolder m-0">View EML File</h4>
+    <button type="button" class="close" (click)="HideOtherAreaFileAction()" aria-label="Close"><i class="fa fa-times"></i></button>
   </div>
   <div id="modal-content" style="height:80vh;" class="modal-content d-flex align-items-center">
     <div *ngIf="emailContent">
@@ -784,13 +778,8 @@
 
 <ng-template #ViewMsgFile>
   <div class="modal-header d-flex align-items-center justify-content-between">
-    <img style="
-    position: fixed;
-    height: 35px;
-   width: 42px;
-   padding: 0px;
-   margin: 0px 0px 0px -18px;
- " src="\assets\common\images\cross.png" class="btn btn-danger" (click)="HideOtherAreaFileAction()" />
+    <h4 class="modal-title font-weight-bolder m-0">View MSG File</h4>
+    <button type="button" class="close" (click)="HideOtherAreaFileAction()" aria-label="Close"><i class="fa fa-times"></i></button>
   </div>
 
   <div id="modal-content" class="modal-body" style="max-height: calc(100vh - 60px); overflow-y: auto;">
@@ -847,7 +836,7 @@
 
   <div class="modal-header">
     <h4 class="modal-title">Create Sticky Note</h4>
-    <button type="button" class="btn-close" (click)="closeModal()"></button>
+    <button type="button" class="close" (click)="closeModal()" aria-label="Close"><i class="fa fa-times"></i></button>
   </div>
   <div class="modal-body">
     <!-- <textarea rows="4" class="form-control" placeholder="Write your note here..."></textarea> -->

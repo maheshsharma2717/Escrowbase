@@ -1099,7 +1099,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                         while ((linex = filex.ReadLine()) != null)
                         {
-                            System.Console.WriteLine(linex);
+                           // System.Console.WriteLine(linex);
                             allLinesText = System.IO.File.ReadAllLines(textfile).ToList();
                             if (!linex.Contains("Email, User Name, Company, Invitee, Esc#, Access Types"))
                             {
@@ -1166,6 +1166,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                             }
 
                         }
+                        filex.Close();
                     }
                     #region
 
@@ -1720,7 +1721,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 System.IO.StreamReader file = new System.IO.StreamReader(path);
                 while ((line = file.ReadLine()) != null)
                 {
-                    System.Console.WriteLine(line);
+                    // System.Console.WriteLine(line);
                     if (!line.Contains("Email, User Name, Company, Invitee, Esc#, Access Types"))
                     {
                         var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
@@ -1750,13 +1751,13 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                             if (CheckValidateEmail == "true")
                             {
                                 var client = new RestClient("https://api.apilayer.com/email_verification/check?email=" + myemail);
-                                client.Timeout = -1;
+                                client.Timeout = 10000;
                                 var request = new RestRequest(Method.GET);
                                 request.AddHeader("apikey", "iXb3be6bKcC7GfWoAQeLm6Ar1Q9d4Tzs");
                                 request.AddHeader("apikey", "iXb3be6bKcC7GfWoAQeLm6Ar1Q9d4Tzs");
                                 IRestResponse response = client.Execute(request);
                                 dynamic datasmtp = JsonConvert.DeserializeObject(response.Content);
-                                Console.WriteLine(response.Content);
+                                // Console.WriteLine(response.Content);
                                 if (datasmtp.smtp_check != true)
                                 {
                                     isValidEmail = true;
@@ -1946,9 +1947,9 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 StreamWriter writer = new StreamWriter(logs, true);
                 writer.WriteLine("Error in ReadTextFile method for -: error=" + ex.ToString() + DateTime.Now.ToString());
                 writer.Close();
-                System.Console.WriteLine("There were {0} lines.", counter);
+                // System.Console.WriteLine("There were {0} lines.", counter);
                 // Suspend the screen.  
-                System.Console.ReadLine();
+                // System.Console.ReadLine();
                 status = "Error While Sending email";
                 return status;
             }

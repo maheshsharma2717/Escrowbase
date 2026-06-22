@@ -6,6 +6,7 @@ import * as _ from 'lodash';
 import { UrlHelper } from '@shared/helpers/UrlHelper';
 import { DateTime } from 'luxon';
 import { DateTimeService } from '@app/shared/common/timing/date-time.service';
+import { LayoutTabService } from '@app/shared/layout/layout-tab.service';
 
 @Component({
     templateUrl: './header-notifications.component.html',
@@ -24,7 +25,8 @@ export class HeaderNotificationsComponent extends AppComponentBase implements On
         private _notificationService: NotificationServiceProxy,
         private _userNotificationHelper: UserNotificationHelper,
         public _zone: NgZone,
-        private _dateTimeService: DateTimeService
+        private _dateTimeService: DateTimeService,
+        private _layoutTabService: LayoutTabService
     ) {
         super(injector);
     }
@@ -78,13 +80,20 @@ export class HeaderNotificationsComponent extends AppComponentBase implements On
         });
 
         function onNotificationsRead(userNotificationId) {
+            let foundUnread = false;
             for (let i = 0; i < self.notifications.length; i++) {
                 if (self.notifications[i].userNotificationId === userNotificationId) {
+                    if (self.notifications[i].state !== 'READ') {
+                        foundUnread = true;
+                    }
                     self.notifications[i].state = 'READ';
+                    self.notifications[i].isUnread = false;
                 }
             }
 
-            self.unreadNotificationCount -= 1;
+            if (foundUnread && self.unreadNotificationCount > 0) {
+                self.unreadNotificationCount -= 1;
+            }
         }
 
         abp.event.on('app.notifications.read', userNotificationId => {
@@ -116,4 +125,7 @@ export class HeaderNotificationsComponent extends AppComponentBase implements On
         return this._dateTimeService.fromNowCustom(date);
     }
 
+    onSeeAllNotificationsClick(): void {
+        this._layoutTabService.selectDashboardTab();
+    }
 }

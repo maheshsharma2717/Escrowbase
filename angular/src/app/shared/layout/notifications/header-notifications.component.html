@@ -68,7 +68,8 @@
                 </div>
                 <hr *ngIf="notifications.length" />
                 <div class="m-4" *ngIf="notifications.length">
-                    <div class="text-center"><a routerLink="notifications">{{"SeeAllNotifications" | localize}}</a>
+                    <div class="text-center"><a routerLink="notifications" (click)="onSeeAllNotificationsClick()">{{"SeeAllNotifications" | localize}}</a>
+
                     </div>
                 </div>
             </div>

@@ -22,6 +22,10 @@ export class ChangePasswordModalComponent extends AppComponentBase {
     saving = false;
     active = false;
 
+    showCurrentPassword = false;
+    showNewPassword = false;
+    showNewPasswordRepeat = false;
+
     constructor(
         injector: Injector,
         private _profileService: ProfileServiceProxy
@@ -34,6 +38,9 @@ export class ChangePasswordModalComponent extends AppComponentBase {
         this.currentPassword = '';
         this.password = '';
         this.confirmPassword = '';
+        this.showCurrentPassword = false;
+        this.showNewPassword = false;
+        this.showNewPasswordRepeat = false;
 
         this._profileService.getPasswordComplexitySetting().subscribe(result => {
             this.passwordComplexitySetting = result.setting;
