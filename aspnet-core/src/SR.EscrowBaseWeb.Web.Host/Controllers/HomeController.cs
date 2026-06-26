@@ -2142,7 +2142,17 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     }
 
                     // Signal the UI to refresh the file list immediately
-                    await _hub.Clients.All.SendAsync("getFileUploadMessage", "File upload detected. Processing...");
+                    try {
+                        var mappedUserIds = _srfilemapRepository.GetAll()
+                            .Where(x => x.SrEscrowFileMasterId == fileMasterId)
+                            .Select(x => x.UserId.ToString())
+                            .Distinct()
+                            .ToList();
+                        
+                        if (mappedUserIds.Any()) {
+                            await _hub.Clients.Users(mappedUserIds).SendAsync("getFileUploadMessage", "File upload detected. Processing...");
+                        }
+                    } catch { }
 
                     // Offload heavy processing to a fully detached background task.
                     // Task.Run is used instead of Response.OnCompleted because on IIS/server,
@@ -2294,7 +2304,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 }
             }
 
-            string masterPath = Path.Combine(destDir, fileUpdateName);
+            string masterPath = Path.Combine(destDir, fileNewName);
             var dbMaster = _srEscrowFileMasterRepository.GetAll().FirstOrDefault(x => x.FileFullName == masterPath);
             long masterId = 0;
             if (dbMaster == null)
@@ -2338,7 +2348,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                            (targetCode == "EAX" && userTypeUpp.StartsWith("EA")))
                         {
                             // Create specific mapping for the matched user
-                            _ISrFileMappingsAppService.CreateOrEdit(new CreateOrEditSrFileMappingDto {
+                            await _ISrFileMappingsAppService.CreateOrEdit(new CreateOrEditSrFileMappingDto {
                                 FileName = destPath, UserId = (int)usr.UserId, Action = m.Value, EscrowiId = escrowId, IsActive = true, SrEscrowFileMasterId = masterId
                             });
 
@@ -2358,16 +2368,16 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 else
                 {
                     // Fallback: If no tokens are present, give READ permission to all users
-                    CreateGenericReadMapping(usr, destPath, fileNewName, escrowId, masterId);
+                    await CreateGenericReadMappingAsync(usr, destPath, fileNewName, escrowId, masterId);
                 }
             }
 
             return masterId;
         }
 
-        private void CreateGenericReadMapping(EscrowDetail usr, string destPath, string fileShortName, string escrowId, long masterId)
+        private async Task CreateGenericReadMappingAsync(EscrowDetail usr, string destPath, string fileShortName, string escrowId, long masterId)
         {
-            _ISrFileMappingsAppService.CreateOrEdit(new CreateOrEditSrFileMappingDto {
+            await _ISrFileMappingsAppService.CreateOrEdit(new CreateOrEditSrFileMappingDto {
                 FileName = destPath, UserId = (int)usr.UserId, Action = "READ", EscrowiId = escrowId, IsActive = true, SrEscrowFileMasterId = masterId
             });
             DocumentRecord(fileShortName, "Read", (long)usr.UserId, masterId);
@@ -2457,8 +2467,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     string notificationMessage = $"File '{fileName}' is ready for your attention in escrow {escrowId}.";
                     
-                    // Publish transient toast via SignalR (Removed per user request - too many notifications)
-                    // await _hub.Clients.All.SendAsync("getFileUploadMessage", notificationMessage);
+                    // Publish transient toast via SignalR to specific user
+                    await _hub.Clients.User(dbUser.Id.ToString()).SendAsync("getFileUploadMessage", notificationMessage);
 
                     // Existing Email Notification
                     if (dbUser.IsEmailConfirmed)
@@ -2479,8 +2489,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 if (dbUser != null)
                 {
                     string message = $"File '{fileName}' is now ready to sign in escrow {escrowId}.";
-                    // Publish transient toast via SignalR
-                    await _hub.Clients.All.SendAsync("getFileUploadMessage", message);
+                    // Publish transient toast via SignalR to specific user
+                    await _hub.Clients.User(dbUser.Id.ToString()).SendAsync("getFileUploadMessage", message);
                 }
             } catch (Exception ex) { LogAutoUpdateError("SignNotification", ex); }
         }
@@ -2496,14 +2506,20 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 
                 // Rate-limit external E-Sign API calls (PDF.co, DocuSign, Zoho, SutiSoft)
                 await _eSignSemaphore.WaitAsync();
+                responseBack esignRes = null;
                 try {
                     switch (creds.SystemCode) {
-                        case 2001: await ZohoESignCreateDocument(esignPath, fileName, escrowId, creds); break;
-                        case 3001: await DocuSiginESignCreateDocument(esignPath, fileName, escrowId, creds); break;
+                        case 2001: esignRes = await ZohoESignCreateDocument(esignPath, fileName, escrowId, creds); break;
+                        case 3001: esignRes = await DocuSiginESignCreateDocument(esignPath, fileName, escrowId, creds); break;
                         case 4001: await SendSutiSignRequest(esignPath, fileName, escrowId, creds); break;
                     }
                 } finally {
                     _eSignSemaphore.Release();
+                }
+
+                if (esignRes != null && !esignRes.Success)
+                {
+                    throw new Exception(esignRes.message ?? "Failed to create E-Sign document");
                 }
 
                 // Notify signers and mark files as ready
@@ -2533,27 +2549,40 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     _srAssignedFilesDetailRepository.Update(rec);
                 }
 
-                // await _hub.Clients.All.SendAsync("getFileUploadMessage", "File processing and E-Sign preparation complete.");
+                var mappedUserIdsSuccess = _srfilemapRepository.GetAll()
+                    .Where(x => x.SrEscrowFileMasterId == fileMasterId)
+                    .Select(x => x.UserId.ToString())
+                    .Distinct()
+                    .ToList();
+                if (mappedUserIdsSuccess.Any()) {
+                    await _hub.Clients.Users(mappedUserIdsSuccess).SendAsync("getFileUploadMessage", new { refreshOnly = true });
+                }
             } 
             catch (Exception ex) 
             { 
-                if (ex.Message.Contains("credit", StringComparison.OrdinalIgnoreCase))
+                try
                 {
-                    await _hub.Clients.All.SendAsync("getFileUploadMessage", "URGENT: PDF.co processing tokens are exhausted. Please renew the token to continue processing files.");
-                }
-                else
-                {
-                    await _hub.Clients.All.SendAsync("getFileUploadMessage", "E-Sign Preparation Error: " + ex.Message);
-                }
+                    var mappedUserIds = _srfilemapRepository.GetAll()
+                        .Where(x => x.SrEscrowFileMasterId == fileMasterId)
+                        .Select(x => x.UserId.ToString())
+                        .Distinct()
+                        .ToList();
+                    
+                    string errMsg = ex.Message.Contains("credit", StringComparison.OrdinalIgnoreCase) 
+                        ? "URGENT: PDF.co processing tokens are exhausted. Please renew the token to continue processing files." 
+                        : "E-Sign Preparation Error: " + ex.Message;
+
+                    if (mappedUserIds.Any()) {
+                        await _hub.Clients.Users(mappedUserIds).SendAsync("getFileUploadMessage", errMsg);
+                    }
+                } catch { }
 
                 try
                 {
-                    var master = await _srEscrowFileMasterRepository.GetAsync(fileMasterId);
-                    var destPath = master.FileFullName;
-                    var fileName = Path.GetFileName(destPath);
                     var records = _srAssignedFilesDetailRepository.GetAll()
-                        .Where(x => x.FileName == fileName && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..."))
+                        .Where(x => x.SrEscrowFileMasterId == fileMasterId && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..."))
                         .ToList();
+                    
                     foreach (var rec in records)
                     {
                         if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "Error";
@@ -2561,6 +2590,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         rec.UpdatedOn = DateTime.UtcNow;
                         _srAssignedFilesDetailRepository.Update(rec);
                     }
+                    await _unitOfWorkManager.Current.SaveChangesAsync();
                 }
                 catch { } // Ignore DB errors during rollback
 
@@ -3214,7 +3244,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     writer101.WriteLine("Program Executed Successfully" + message + " " + DateTime.Now.ToString());
                     writer101.Close();
 
-                    await _hub.Clients.All.SendAsync("getFileUploadMessage", isUploaded ? "File uploaded successfully." : "File upload failed.");
+                    // Removed global toaster notification for AutoUpdate
+                    // await _hub.Clients.All.SendAsync("getFileUploadMessage", isUploaded ? "File uploaded successfully." : "File upload failed.");
 
                     message += "(Program Executed Successfully)";
                     string logs1 = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\Logs.txt");
@@ -3642,6 +3673,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         }
 
 
+        [UnitOfWork]
         public async Task<responseBack> SignRename(string EscrowId)
         {
             var parentPath = Request.Headers["parentpath"].ToString();
@@ -3649,6 +3681,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
             string esignPath = parentPath.Replace("Other", "");
             string esignKey = shortFileName;
+
+            Console.WriteLine($"[SignRename] START - EscrowId={EscrowId}, esignKey={esignKey}, parentPath={parentPath}");
 
             try
             {
@@ -3660,7 +3694,11 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     signResult = await DocuSiginESignCreateDocument(esignPath, esignKey, EscrowId, creds);
                     if (!signResult.Success)
+                    {
+                        Console.WriteLine($"[SignRename] DocuSign FAILED: {signResult.message}. Rolling back...");
+                        await RollbackPreparingStatusAsync(esignKey, EscrowId);
                         return signResult;
+                    }
                 }
                 else if (creds.SystemCode == 2001)
                 {
@@ -3670,12 +3708,10 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 else if (creds.SystemCode == 4001)
                 {
                     await SendSutiSignRequest(esignPath, esignKey, EscrowId, creds);
-                    // signResult = await SendSutiSignRequest(esignPath, esignKey, EscrowId, creds);
-                    //if (!signResult.Success)
-                    //    return signResult;
                 }
                 else
                 {
+                    await RollbackPreparingStatusAsync(esignKey, EscrowId);
                     return new responseBack
                     {
                         Success = false,
@@ -3691,11 +3727,102 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[SignRename] EXCEPTION: {ex.Message}. Rolling back...");
+                await RollbackPreparingStatusAsync(esignKey, EscrowId);
                 return new responseBack
                 {
                     Success = false,
                     message = $"Error during signing: {ex.Message}"
                 };
+            }
+        }
+
+        private async Task RollbackPreparingStatusAsync(string shortFileName, string escrowId = null)
+        {
+            try
+            {
+                Console.WriteLine($"[RollbackPreparing] Input shortFileName='{shortFileName}', escrowId='{escrowId}'");
+
+                if (!string.IsNullOrEmpty(shortFileName))
+                {
+                    shortFileName = shortFileName.Replace("%23", "#");
+                }
+
+                // Strategy 1: Exact FileName match
+                var records = _srAssignedFilesDetailRepository.GetAll()
+                    .Where(x => x.FileName == shortFileName && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..." || x.InputStatus == "Preparing..."))
+                    .ToList();
+
+                Console.WriteLine($"[RollbackPreparing] Strategy 1 (exact match): Found {records.Count} records");
+
+                // Strategy 2: Contains match (if exact match found nothing)
+                if (!records.Any() && !string.IsNullOrEmpty(shortFileName))
+                {
+                    // Try with just the base filename (before the ~ delimiter)
+                    string baseFileName = shortFileName;
+                    if (baseFileName.Contains("~"))
+                    {
+                        baseFileName = baseFileName.Substring(0, baseFileName.IndexOf("~"));
+                    }
+
+                    records = _srAssignedFilesDetailRepository.GetAll()
+                        .Where(x => x.FileName.Contains(baseFileName) && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..." || x.InputStatus == "Preparing..."))
+                        .ToList();
+
+                    Console.WriteLine($"[RollbackPreparing] Strategy 2 (contains baseFileName='{baseFileName}'): Found {records.Count} records");
+                }
+
+                // Strategy 3: Look up via SrEscrowFileMaster table to get the fileMasterId
+                if (!records.Any() && !string.IsNullOrEmpty(shortFileName))
+                {
+                    var master = _srEscrowFileMasterRepository.GetAll()
+                        .FirstOrDefault(x => x.FileShortName.Contains(shortFileName) || shortFileName.Contains(x.FileShortName));
+
+                    if (master != null)
+                    {
+                        records = _srAssignedFilesDetailRepository.GetAll()
+                            .Where(x => x.SrEscrowFileMasterId == master.Id && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..." || x.InputStatus == "Preparing..."))
+                            .ToList();
+
+                        Console.WriteLine($"[RollbackPreparing] Strategy 3 (via FileMaster id={master.Id}): Found {records.Count} records");
+                    }
+                }
+
+                // Strategy 4: Use EscrowId from the query parameter to find the escrow file master
+                if (!records.Any() && !string.IsNullOrEmpty(escrowId))
+                {
+                    // Find all file masters for this escrow and check their assigned files
+                    var allPreparingRecords = _srAssignedFilesDetailRepository.GetAll()
+                        .Where(x => x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..." || x.InputStatus == "Preparing...")
+                        .ToList();
+
+                    Console.WriteLine($"[RollbackPreparing] Strategy 4 (all Preparing records): Found {allPreparingRecords.Count} records");
+                    records = allPreparingRecords;
+                }
+
+                // Apply the rollback
+                if (records.Any())
+                {
+                    foreach (var rec in records)
+                    {
+                        Console.WriteLine($"[RollbackPreparing] Rolling back record Id={rec.Id}, FileName='{rec.FileName}', SigningStatus='{rec.SigningStatus}', ReadStatus='{rec.ReadStatus}', InputStatus='{rec.InputStatus}'");
+                        if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "Error";
+                        if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Error";
+                        if (rec.InputStatus == "Preparing...") rec.InputStatus = "Error";
+                        rec.UpdatedOn = DateTime.UtcNow;
+                        _srAssignedFilesDetailRepository.Update(rec);
+                    }
+                    await _unitOfWorkManager.Current.SaveChangesAsync();
+                    Console.WriteLine($"[RollbackPreparing] Successfully rolled back {records.Count} records");
+                }
+                else
+                {
+                    Console.WriteLine("[RollbackPreparing] WARNING: No records found to rollback with any strategy!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RollbackPreparing] ERROR: {ex.Message}\n{ex.StackTrace}");
             }
         }
 
@@ -4832,8 +4959,15 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 string referer = conf["App:ClientRootAddress"].ToString();
                 var enterprises = _enterpriseRepository.GetAll().Where(x => x.EnterpriseName == userData.company || x.Subcompany == userData.company).FirstOrDefault();
                 var escrowdata = _ISrEscrowRepository.GetAll().Where(x => x.EscrowNo == userData.escro && x.SubCompanyName == userData.company).FirstOrDefault();
-                var token = await _tokenAuthControler.AuthenticateByEmail(userData.fromEmail, userData.password);
-                string resetcode = token != null ? token.resetpasswordtoken : "";
+                var user = _userRepository.GetAll().FirstOrDefault(x => x.EmailAddress == userData.fromEmail);
+                string resetcode = "";
+                long generatedUserId = 0;
+                if (user != null)
+                {
+                    user.SetNewPasswordResetCode();
+                    resetcode = user.PasswordResetCode;
+                    generatedUserId = user.Id;
+                }
                 string esmail = "", esaddress = "", esphone = "", escellphone = "", esname = "", ext = "", companyh = "", link = "", Fulltype = "";
                 if (escrowdata != null)
                 {
@@ -5097,7 +5231,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         }
                     }
                 }
-                byte[] b = System.Text.ASCIIEncoding.ASCII.GetBytes(Convert.ToString(token.userid));
+                byte[] b = System.Text.ASCIIEncoding.ASCII.GetBytes(Convert.ToString(generatedUserId));
                 string encryptedUserID = Convert.ToBase64String(b);
                 var userid = encryptedUserID;
                 byte[] uu = System.Text.ASCIIEncoding.ASCII.GetBytes(Convert.ToString(userData.fromEmail));
@@ -5141,7 +5275,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 StreamWriter writer = new StreamWriter(logs, true);
                 writer.WriteLine("Error occured in SendMailEscrow method for -: " + userData.fromEmail + " error-:" + ex.ToString() + DateTime.Now.ToString());
                 writer.Close();
-                res.message = $"Mail Not Sent { userData.fromEmail}";
+                res.message = $"Mail Not Sent { userData.fromEmail} - Error: {ex.Message}";
                 return res;
             }
         }
@@ -5627,7 +5761,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 StreamWriter writer = new StreamWriter(logs, true);
                 writer.WriteLine("Error in SendMailUpdate method for -: " + userData.fromEmail + " error=" + ex.ToString() + DateTime.Now.ToString());
                 writer.Close();
-                res.message = "Update Mail Not Sent";
+                res.message = $"Update Mail Not Sent {userData.fromEmail} - Error: {ex.Message}";
             }
             return res;
         }
@@ -10900,4 +11034,3 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         public float PageHeight { get; set; }
     }
 }
-

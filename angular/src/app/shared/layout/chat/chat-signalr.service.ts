@@ -117,7 +117,11 @@ export class ChatSignalrService extends AppComponentBase {
                 if (data) {
                     if (typeof data === 'string') {
                         console.log('Displaying toast:', data);
-                        abp.notify.info(data, 'System Update');
+                        try {
+                            abp.notify.info(data, 'System Update');
+                        } catch (e) {
+                            console.warn('Toast notification failed:', e);
+                        }
                     }
                     this.callComponentMethod();
                 }

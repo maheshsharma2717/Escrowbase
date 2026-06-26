@@ -22,6 +22,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgxExtendedPdfViewerService, IPDFViewerApplication, NgxExtendedPdfViewerComponent, pdfDefaultOptions } from 'ngx-extended-pdf-viewer';
 import { ChatSignalrService } from '../../shared/layout/chat/chat-signalr.service';
 import { Subscription, Subject } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 pdfDefaultOptions.assetsFolder = 'assets';
 
@@ -2339,7 +2340,8 @@ export class FileViewComponent extends AppComponentBase {
     const headers = new HttpHeaders({ 'filenameold': filenameold, 'filenamenew': filenamenew, 'userType': this.datachanges, 'userId': userId, 'escrowNewId': escrowNewId, 'fileExtension': fileExt, 'typeExist': typeExist, 'oldName': oldName });
     headers.append('Content-Type', 'application/json');
 
-    this.http.get<any>(this.path1 + "/Home/Move", { headers: headers }).subscribe((response: any) => {
+    this.http.get<any>(this.path1 + "/Home/Move", { headers: headers }).subscribe(
+      (response: any) => {
 
       if (response != null && response.result.statusCode == 409) {
         abp.notify.success(response.result.message, 'Success');
@@ -2377,34 +2379,73 @@ export class FileViewComponent extends AppComponentBase {
       this.isSigningReady = true;
 
       setTimeout(() => {
-        abp.notify.info('File is being prepared for signing, please wait...', 'Processing');
+        try { abp.notify.info('File is being prepared for signing, please wait...', 'Processing'); } catch(e) {}
       }, 2000);
 
-      let headers = new HttpHeaders({ 'parentpath': this.parentpath, 'shortfilename': this.shortfilename });
-      headers = headers.append('Content-Type', 'application/json');
+      let headers2 = new HttpHeaders({ 'parentpath': this.parentpath, 'shortfilename': this.shortfilename });
+      headers2 = headers2.append('Content-Type', 'application/json');
 
-      this.http.get<any>(this.path1 + "/Home/SignRename?EscrowId=" + escrowNewId, { headers })
+      this.http.get<any>(this.path1 + "/Home/SignRename?EscrowId=" + escrowNewId, { headers: headers2 })
+        .pipe(
+          finalize(() => {
+            // This ALWAYS runs - whether success, error, or unsubscribe
+            this.isSigningReady = false;
+          })
+        )
         .subscribe({
           next: (response: any) => {
+            console.log('SignRename response:', JSON.stringify(response));
 
-            if (response.result?.success) {
-              abp.notify.success(response.result.message || "File is ready to sign", 'Success');
-              if (this.scrollContainer?.nativeElement) {
-                this.scrollContainer.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
+            // ABP wraps: { result: { success: false, message: "..." }, success: true }
+            // After camelCase serialization, C# 'Success' becomes 'success'
+            let innerResult = response?.result || response;
+            let isSuccess = innerResult?.success === true;
+
+            try {
+              if (isSuccess) {
+                let msg = innerResult?.message || "File is ready to sign";
+                abp.notify.success(msg, 'Success');
+                if (this.scrollContainer?.nativeElement) {
+                  this.scrollContainer.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              } else {
+                let errorMsg = innerResult?.message || 'Something went wrong during signing preparation.';
+                abp.notify.error(errorMsg, 'Error');
               }
-            } else {
-              abp.notify.error(response.result?.message || 'Something went wrong', 'Error');
+            } catch (e) {
+              console.error("Toast notification error:", e);
             }
+            this.fileMainComponent?.getAllFiles();
+            this.fileOtherComponent?.getAllFiles();
           },
-          error: () => {
-            this.isSigningReady = false;
-            abp.notify.error('Failed to prepare file for signing.', 'Error');
-          },
-          complete: () => {
-            this.isSigningReady = false;
-
+          error: (err) => {
+            console.error('SignRename error:', err);
+            let errorMsg = 'Failed to prepare file for signing.';
+            try {
+              errorMsg = err?.error?.error?.message || err?.error?.result?.message || err?.error?.message || err?.message || errorMsg;
+              abp.notify.error(errorMsg, 'Error');
+            } catch (e) {
+              console.error("Toast notification error:", e);
+            }
+            this.fileMainComponent?.getAllFiles();
+            this.fileOtherComponent?.getAllFiles();
           }
         });
+    },
+    (moveError) => {
+      // Error handler for the outer Move call
+      console.error('Move error:', moveError);
+      this.isSigningReady = false;
+      this.HideMove();
+      this.btnstate = false;
+      try {
+        let errorMsg = moveError?.error?.error?.message || moveError?.error?.message || moveError?.message || 'Failed to move file.';
+        abp.notify.error(errorMsg, 'Error');
+      } catch (e) {
+        console.error("Toast notification error:", e);
+      }
+      this.fileMainComponent?.getAllFiles();
+      this.fileOtherComponent?.getAllFiles();
     });
     this.fileMainComponent.getAllFiles();
   }
@@ -2429,20 +2470,19 @@ export class FileViewComponent extends AppComponentBase {
       }).then((result) => {
         if (result.isConfirmed) {
           this.items.forEach(element => {
-            this.show(this.items[0].name);
-
-            let path = element.path;
+            this.show(element.name);
+            let path = this.folderPath;
             let key = element.key;
-            let strng = path.replace(/#/g, "%23");
-            let strng1 = key.replace(/#/g, "%23");
+            let strng1 = encodeURIComponent(key);
+            let path1 = encodeURIComponent(path + "/" + key);
             const token = 'my JWT';
             const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
 
-            this.http.get(this.folderPath + "DeleteFile" + "?path=" + strng + "&key=" + strng1, {
+            this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
               headers,
               observe: 'response'
             }).subscribe((response: any) => {
-              let path = this.folderPath + "DeleteFile" + "?path=" + strng + "&key=" + strng1;
+              // path variable removed
 
               this.fileMainComponent.getAllFiles();
               this.fileOtherComponent.getAllFiles();
@@ -2504,11 +2544,10 @@ export class FileViewComponent extends AppComponentBase {
     }).then((result) => {
       if (result.isConfirmed) {
         this.show(item.name);
-        let path = event.folderPath;
+        let path = event.folderPath || this.folderPath;
         let key = event.selectedFile.key;
-        let strng = path.replace(/#/g, "%23");
-        let strng1 = key.replace(/#/g, "%23");
-        let path1 = strng + "/" + event.selectedFile.name.replace(/#/g, "%23");
+        let strng1 = encodeURIComponent(key);
+        let path1 = encodeURIComponent(path + "/" + key);
         const token = 'my JWT';
         const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
         this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
@@ -2583,12 +2622,11 @@ export class FileViewComponent extends AppComponentBase {
 
         files.forEach(file => {
           let path = folderPath;
-          let key = file.key || file.srAssignedFileId;
-          let name = file.name;
+          let key = file.key;
+          let name = file.key;
 
-          let strng = path.replace(/#/g, "%23");
-          let strng1 = key.replace(/#/g, "%23");
-          let path1 = strng + "/" + name.replace(/#/g, "%23");
+          let strng1 = encodeURIComponent(key);
+          let path1 = encodeURIComponent(path + "/" + name);
           const token = 'my JWT';
           const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
 
@@ -2627,7 +2665,7 @@ export class FileViewComponent extends AppComponentBase {
           if (completed === files.length) {
             this.fileMainComponent.getAllFiles();
             this.fileOtherComponent.getAllFiles();
-            this.fileManager.instance.refresh();
+            // this.fileManager.instance.refresh();
             if (errors === 0) {
               Swal.fire('Deleted!', 'Files deleted successfully', 'success');
             } else {
@@ -2638,12 +2676,11 @@ export class FileViewComponent extends AppComponentBase {
 
         files.forEach(file => {
           let path = folderPath;
-          let key = file.key || file.srAssignedFileId;
-          let name = file.name;
+          let key = file.key;
+          let name = file.key;
 
-          let strng = path.replace(/#/g, "%23");
-          let strng1 = key.replace(/#/g, "%23");
-          let path1 = strng + "/" + name;
+          let strng1 = encodeURIComponent(key);
+          let path1 = encodeURIComponent(path + "/" + name);
           const token = 'my JWT';
           const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
 
@@ -2681,15 +2718,13 @@ export class FileViewComponent extends AppComponentBase {
       if (result.isConfirmed) {
         this.show(item.name);
 
-        let path = event.folderPath;
+        let path = event.folderPath || this.folderPath;
         let key = item.key;
-        let strng = path.replace(/#/g, "%23");
-        let strng1 = key.replace(/#/g, "%23");
-        let path1 = strng + "/" + item.name.replace(/#/g, "%23");
-
+        let strng1 = encodeURIComponent(key);
+        let path1 = encodeURIComponent(path + "/" + key);
         const token = 'my JWT';
         const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
-
+        
         this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
           headers,
           observe: 'response'

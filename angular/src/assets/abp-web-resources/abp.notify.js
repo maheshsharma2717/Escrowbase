@@ -6,7 +6,7 @@ var abp = abp || {};
     var defaultOptions = {
         position: 'bottom-end',
         showConfirmButton: false,
-        timer: 3000,
+        timer: 5000,
         padding: 0,
         toast: true,
     };
@@ -27,15 +27,21 @@ var abp = abp || {};
         const { imageClass, ...combinedOptionsSafe } = combinedOptions;
 
         Swal.fire( combinedOptionsSafe);
-        Push.create("New Message", {
-            body: message,
-            icon: '/icon.png',
-            timeout: 4000,
-            onClick: function () {
-                window.focus();
-                this.close();
-            }
-        });
+        try {
+            Push.create("New Message", {
+                body: message,
+                icon: '/icon.png',
+                timeout: 4000,
+                onClick: function () {
+                    window.focus();
+                    this.close();
+                }
+            }).catch(function(e) {
+                // Silently ignore push notification errors (e.g. permission declined)
+            });
+        } catch (e) {
+            // Silently ignore push notification errors
+        }
     };
 
     abp.notify.success = function (message, title, options) {

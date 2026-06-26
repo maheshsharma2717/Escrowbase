@@ -8,37 +8,7 @@
             <div class="card card-custom">
                 <div class="card-body">
                     <div class="form">
-                        <div class="row align-items-center mb-4">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label for="LoginAttemptsFilter" class="control-label">{{'Filter' | localize}}</label>
-                                    <div class="input-group">
-                                        <input type="text" id="LoginAttemptsFilter" [(ngModel)]="filter" class="form-control" [attr.placeholder]="l('SearchWithThreeDot')" value="">
-                                        <span class="input-group-append">
-                                            <button id="GetLoginAttemptsButton" class="btn btn-primary" (click)="getLoginAttempts()">
-                                                <i class="flaticon-search-1" [attr.aria-label]="l('Search')"></i>
-                                            </button>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row align-items-center mb-4">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="StartEndRange">{{"DateRange" | localize}}</label>
-                                    <input class="form-control" id="StartEndRange" name="StartEndRange"
-                                        #drp="bsDaterangepicker" readonly="readonly" bsDaterangepicker
-                                        dateRangePickerLuxonModifier [(date)]="dateRange" />
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="LoginResultFilter" class="control-label">{{'Result' | localize}}</label>
-                                    <login-result-type-combo [(ngModel)]="loginResultFilter"></login-result-type-combo>
-                                </div>
-                            </div>
-                        </div>
+
                         <div class="row">
                             <div class="col-xl-12 text-right">
                                 <button name="RefreshButton" class="btn btn-primary" (click)="getLoginAttempts()">
@@ -53,11 +23,10 @@
                         <div class="col primeng-datatable-container"
                             [busyIf]="primengTableHelper.isLoading">
                             <p-table #dataTable sortMode="multiple"
-                                (onLazyLoad)="getLoginAttempts($event)"
                                 [value]="primengTableHelper.records"
                                 rows="{{primengTableHelper.defaultRecordsCountPerPage}}"
                                 [paginator]="false"
-                                [lazy]="true"
+                                [lazy]="false"
                                 [responsive]="primengTableHelper.isResponsive">
 
                                 <ng-template pTemplate="header">
@@ -116,16 +85,7 @@
                                 *ngIf="primengTableHelper.totalRecordsCount == 0">
                                 {{'NoData' | localize}}
                             </div>
-                            <div class="primeng-paging-container">
-                                <p-paginator [rows]="primengTableHelper.defaultRecordsCountPerPage"
-                                    #paginator
-                                    (onPageChange)="getLoginAttempts($event)"
-                                    [totalRecords]="primengTableHelper.totalRecordsCount"
-                                    [rowsPerPageOptions]="primengTableHelper.predefinedRecordsCountPerPage"
-                                    [showCurrentPageReport]="true"
-                                    [currentPageReportTemplate]="'TotalRecordsCount' | localize:primengTableHelper.totalRecordsCount">
-                                </p-paginator>
-                            </div>
+
                         </div>
                         <!--<Primeng-TurboTable-End>-->
                     </div>

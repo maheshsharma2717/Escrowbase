@@ -194,6 +194,15 @@
                     <span class="text-danger small"
                         *ngIf="isFormSubmitted && !selectedESignCompany?.trim()">Required</span>
                 </div>
+                
+                <div class="mt-2 mb-3 p-3" style="background-color: #f4f8fb; border-left: 4px solid #0d4a8e; color: #3f4254; font-size: 13.5px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: flex-start;">
+                        <i class="fa fa-info-circle mt-1 mr-2" style="color: #0d4a8e; font-size: 16px;"></i>
+                        <div>
+                            Please add your credentials (like client secret, etc.) for your chosen vendor (Zoho, DocuSign, or SutiSoft). If you do not have any, select <strong style="color: #0d4a8e;">Admin Suggested</strong> and save.
+                        </div>
+                    </div>
+                </div>
 
                 <div *ngIf="selectedESignCompany !== 'admin-suggested'">
                     <div class="grid">

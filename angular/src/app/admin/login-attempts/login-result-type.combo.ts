@@ -1,6 +1,19 @@
 import { Component, forwardRef, Injector, Input, OnInit } from '@angular/core';
 import { AppComponentBase } from '@shared/common/app-component-base';
-import { SettingScopes, NameValueDto, AbpLoginResultType } from '@shared/service-proxies/service-proxies';
+import { SettingScopes, NameValueDto } from '@shared/service-proxies/service-proxies';
+
+export enum AbpLoginResultType {
+    Success = 1,
+    InvalidUserNameOrEmailAddress = 2,
+    InvalidPassword = 3,
+    UserIsNotActive = 4,
+    InvalidTenancyName = 5,
+    TenantIsNotActive = 6,
+    UserEmailIsNotConfirmed = 7,
+    UnknownExternalLogin = 8,
+    LockedOut = 9,
+    UserPhoneNumberIsNotConfirmed = 10
+}
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({

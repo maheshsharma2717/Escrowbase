@@ -588,30 +588,45 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     string newpath = folderName.Replace("/", "\\");
                     string file = Path.Combine(_hostingEnvironment.WebRootPath, newpath);
+                    
+                    var filed = _srfilemapRepository.GetAll().Where(x => x.FileName == file).ToList();
+
+                    if (filed != null)
+                    {
+                        foreach (var id in filed)
+                        {
+                            _srfilemapRepository.Delete(id);
+                        }
+                    }
+
+                    var esignFile = _esignRepository.GetAll().Where(x => file.Contains(x.FullFilePath)).ToList();
+                    if (esignFile.Count > 0)
+                    {
+                        foreach (var item in esignFile)
+                        {
+                            _esignRepository.Delete(item);
+                        }
+                    }
+
+                    string shortFileName = Path.GetFileName(file);
+                    var assignedFiles = _srAssignedFilesDetailRepository.GetAll().Where(x => x.FileName == shortFileName).ToList();
+                    foreach (var assignedFile in assignedFiles)
+                    {
+                        _srAssignedFilesDetailRepository.Delete(assignedFile);
+                    }
+
+                    var masterFiles = _srEscrowFileMasterRepository.GetAll().Where(x => x.FileShortName == shortFileName).ToList();
+                    foreach (var masterFile in masterFiles)
+                    {
+                        _srEscrowFileMasterRepository.Delete(masterFile);
+                    }
+
                     if (System.IO.File.Exists(file))
                     {
-                        var filed = _srfilemapRepository.GetAll().Where(x => x.FileName == file).ToList();
-                        if (filed != null)
-                        {
-                            foreach (var id in filed)
-                            {
-                                _srfilemapRepository.Delete(id);
-                            }
-                            System.IO.File.Delete(file);
-                        }
-                        // Deleting from EsignMapping table files
-
-                        var esignFile = _esignRepository.GetAll().Where(x => file.Contains(x.FullFilePath)).ToList();
-                        if (esignFile.Count > 0)
-                        {
-                            foreach (var item in esignFile)
-                            {
-                                _esignRepository.Delete(item);
-                            }
-                        }
-
-                        res.message = "File deleted successfully";
+                        System.IO.File.Delete(file);
                     }
+
+                    res.message = "File deleted successfully";
                 }
                 return res;
             }
