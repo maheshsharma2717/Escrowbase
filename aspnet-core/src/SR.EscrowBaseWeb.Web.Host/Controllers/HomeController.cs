@@ -3806,9 +3806,9 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     foreach (var rec in records)
                     {
                         Console.WriteLine($"[RollbackPreparing] Rolling back record Id={rec.Id}, FileName='{rec.FileName}', SigningStatus='{rec.SigningStatus}', ReadStatus='{rec.ReadStatus}', InputStatus='{rec.InputStatus}'");
-                        if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "Error";
-                        if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Error";
-                        if (rec.InputStatus == "Preparing...") rec.InputStatus = "Error";
+                        if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "Setup Failed";
+                        if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Setup Failed";
+                        if (rec.InputStatus == "Preparing...") rec.InputStatus = "Setup Failed";
                         rec.UpdatedOn = DateTime.UtcNow;
                         _srAssignedFilesDetailRepository.Update(rec);
                     }
