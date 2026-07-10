@@ -221,7 +221,8 @@ export class EscrowUsertagsComponent extends AppComponentBase {
     const tag = this.manageTagList.find(item => item.escrowFileTags.id === id);
     if (tag) {
       this.noteMessage = tag.escrowFileTags.tagDescription;
-      const [bgColor, fontColor] = tag.escrowFileTags.tagColor.split(',').map(c => c.trim());
+      const colorStr = tag.escrowFileTags.tagColor || '#6c757d,white';
+      const [bgColor, fontColor] = colorStr.split(',').map(c => c.trim());
       this.selectedColor = {
         bgColor,
         fontColor

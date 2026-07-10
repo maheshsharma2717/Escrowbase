@@ -103,7 +103,7 @@
                                                 class="px-4 py-2 cursor-pointer d-flex align-items-center tag-filter-item"
                                                 [ngClass]="{'bg-light-primary': selectedFilterTagIds.has(item.id)}">
                                                 <i class="far mr-3 font-size-h5" [ngClass]="selectedFilterTagIds.has(item.id) ? 'fa-check-square text-primary' : 'fa-square text-muted'"></i>
-                                                <i class="fas fa-tag mr-2" [ngStyle]="{'color': item.tagColor.split(',')[0].trim()}"></i>
+                                                <i class="fas fa-tag mr-2" [ngStyle]="{'color': (item.tagColor || '#6c757d').split(',')[0].trim()}"></i>
                                                 <span class="font-weight-bold text-dark font-size-sm">
                                                     {{ item.tagDescription }}
                                                     <span class="text-muted ml-1">({{getTagCount(item.id)}})</span>
@@ -136,8 +136,8 @@
                                 <span class="checkmark"></span>
                             </label>
                             <span class="file-icon-wrapper mr-3" [innerHTML]="getFileIcon(file.name)"></span>
-                            <span class="font-weight-bold text-dark text-truncate" style="max-width: 350px;" [title]="file.name">
-                                {{ file.name }}
+                            <span class="font-weight-bold text-dark text-truncate" style="max-width: 350px;" [title]="file.name + getAssignedUsersText(file.key)">
+                                {{ file.name }}<span [innerHTML]="getAssignedUsers(file.key)"></span>
                             </span>
                         </div>
 
@@ -147,6 +147,7 @@
                                 <ng-container *ngIf="selectedFiles.size <= 1">
                                     <li *ngIf="readPermissionOtherArea" (click)="onItemClickMain('view1')" class="ctx-item"><i class="fa fa-eye"></i> View</li>
                                     <li *ngIf="editPermissionOtherArea" (click)="onItemClickMain('view1')" class="ctx-item"><i class="fa fa-edit"></i> View/Edit</li>
+                                    <li *ngIf="(userTypeFromStorage?.startsWith('EO') || userTypeFromStorage?.startsWith('EA'))" (click)="assignUsersToOther()" class="ctx-item"><i class="fa fa-user-plus"></i> Assign Users</li>
                                     <li (click)="onItemClickMain('renameFile')" class="ctx-item"><i class="fa fa-pencil-alt"></i> Rename</li>
                                     <li (click)="onItemClickMain('deleteFile')" class="ctx-item text-danger"><i class="fa fa-trash"></i> Delete</li>
                                     <li *ngIf="downloadPermission" (click)="DownloadFile(file)" class="ctx-item"><i class="fa fa-download"></i> Download File</li>
@@ -164,8 +165,8 @@
                             <span *ngFor="let item of file.escrowFileTags; let index = index; trackBy: trackByTagId"
                                 (click)="selectTag3(item); $event.stopPropagation()"
                                 [ngStyle]="{
-                                  'background-color': item.tagColor.split(',')[0],
-                                  'color': item.tagColor.includes(',') ? item.tagColor.split(',')[1] : 'white'
+                                  'background-color': (item.tagColor || '#6c757d').split(',')[0],
+                                  'color': (item.tagColor || '').includes(',') ? (item.tagColor || '').split(',')[1] : 'white'
                                 }" 
                                 class="badge cursor-pointer px-4 py-2 font-size-sm d-flex align-items-center shadow-sm" style="border-radius: 20px;">
                                 {{ item.tagDescription }}
@@ -185,8 +186,10 @@
                             <div style="max-height: 180px; overflow-y: auto;">
                                 <ul class="list-unstyled mb-0">
                                     <li *ngFor="let item of filteredItems" (click)="selectTag2(item)" class="ctx-item d-flex align-items-center">
-                                        <i class="fas fa-tag mr-3" [ngStyle]="{'color': item.tagColor}"></i>
-                                        <span class="font-weight-bold font-size-sm">{{ item.tagDescription }}</span>
+                                        <div class="d-flex align-items-center mb-1">
+                                            <i class="fas fa-tag mr-2" [ngStyle]="{'color': (item.tagColor || '#6c757d').split(',')[0].trim()}"></i>
+                                            <span class="font-weight-bold font-size-sm" style="color: #495057;">{{ item.tagDescription }}</span>
+                                        </div>
                                     </li>
                                 </ul>
                             </div>

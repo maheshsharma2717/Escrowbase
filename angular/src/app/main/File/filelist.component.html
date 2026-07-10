@@ -607,6 +607,74 @@
   </div>
 </ng-template>
 
+<ng-template #AssignOther>
+  <div class="modal-header border-0" style="background-color: #e0edfa; align-items: center; border-radius: 12px 12px 0 0; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+    <h4 class="modal-title font-weight-bolder text-dark mb-0" id="modal-basic-title" style="font-size: 1.15rem; letter-spacing: 0.3px; margin-top: 0;">
+      <i class="fa fa-user-plus text-primary mr-2"></i> Assign Users (Other Documents)
+    </h4>
+    <button type="button" aria-label="Close" (click)="HideRename()" style="background: #dc3545; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; outline: none; border: none; transition: all 0.2s; cursor: pointer; padding: 0; float: right; margin-left: auto;">
+      <i class="fa fa-times" style="font-size: 18px; color: white !important;"></i>
+    </button>
+  </div>
+<div class="modal-body">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">File Name</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input style="width:100%; height:35px;" type="text" required="required" name="Rename"
+            [(ngModel)]="filenames" readonly /></td>
+      </tr>
+      <tr>
+
+        <table style="width:80%;">
+          <thead>
+            <th colspan="2">User Type</th>
+            <th>Action</th>
+          </thead>
+          <tbody>
+
+              <tr class="indec" *ngFor="let item of userpermissionsall; let i = index">
+              <td colspan="2">
+                <select #mySelect (change)="ddldata(mySelect.value, i, 'empty')"
+                  style="PADDING: 8PX 0PX; WIDTH: 100%;" [disabled]="item.first && item.first === uploaderRole">
+                  <option [value]="">Please Select</option>
+                  <option *ngIf="item.first && item.isChanged != true" selected [value]="item.first">{{item.first}}
+                  </option>
+
+                  <option *ngFor="let itemq of myuser;" [value]="itemq.usertype" [hidden]="isAlreadyAssigned(itemq.usertype)">{{itemq.usertype}} - {{itemq.name}}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <button *ngIf="i > 0 && item.first !== uploaderRole" class="btn btn-danger mr-2" (click)="deleteItem(i)">Delete</button>
+                <button *ngIf="i == (userpermissionsall.length-1)" class="btn btn-success" (click)="addItem(i)">Add Row</button>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+
+      </tr>
+      <tr>
+        <td class="text-right border-0 pt-4">
+          <button [disabled]="btnstate" type="button" class="btn btn-primary radical-btn" aria-label="Save" (click)="AssignOtherSave()" style="border-radius: 8px; font-weight: 600; letter-spacing: 0.5px; padding: 8px 24px;">
+            <i class="fa fa-check mr-1"></i> Save Changes
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+<div class="modal-footer">
+
+</div>
+</ng-template>
+
 <div *ngIf="isSigningReady" class="signing-overlay">
   <div class="signing-center">
     <!-- <div class="modern-spinner">
@@ -730,10 +798,10 @@
     <h4 class="modal-title" id="modal-basic-title">
       View Full Name
     </h4>
-    <button type="button" class="close" aria-label="Close">
+    <button type="button" class="close" aria-label="Close" (click)="HideHistory()">
 
       <span aria-hidden="true" style="display: block; font-size: 29px;
-      color: black;" (click)="HideHistory()">
+      color: black;">
         ×
       </span>
     </button>
@@ -805,10 +873,10 @@
     <h4 class="modal-title" id="modal-basic-title">
       View Full Name
     </h4>
-    <button type="button" class="close" aria-label="Close">
+    <button type="button" class="close" aria-label="Close" (click)="HideHistory()">
 
       <span aria-hidden="true" style="display: block; font-size: 29px;
-      color: black;" (click)="HideHistory()">
+      color: black;">
         ×
       </span>
     </button>
@@ -1091,10 +1159,10 @@
     <h4 class="modal-title" id="modal-basic-title">
       View Full Name
     </h4>
-    <button type="button" class="close" aria-label="Close">
+    <button type="button" class="close" aria-label="Close" (click)="HideHistory()">
 
       <span aria-hidden="true" style="display: block; font-size: 29px;
-      color: black;" (click)="HideHistory()">
+      color: black;">
         ×
       </span>
     </button>

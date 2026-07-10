@@ -8,6 +8,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.VisualBasic;
 using MimeKit;
 using MySqlConnector;
+using Microsoft.AspNetCore.SignalR;
+using SR.EscrowBaseWeb.Web.Chat.SignalR;
 using Newtonsoft.Json;
 using Spire.Doc;
 using SR.EscrowBaseWeb.Authorization.Users;
@@ -104,6 +106,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///</Summary>
         public readonly ISrFileMappingsAppService _ISrFileMappingsAppService;
         private readonly INotificationPublisher _notificationPublisher;
+        private readonly IHubContext<ChatHub> _chatHub;
         static IConfiguration conf = (new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json").Build());
 
         Regex regexx = new Regex(@"\{.*?\}");
@@ -138,9 +141,11 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             IRepository<EscrowFileHistory, long> escrowFileHistoryRepository,
             IRepository<SREscrowFileMaster, long> srEscrowFileMasterRepository,
             IRepository<EscrowFileTags> escrowFileTagsRepository,
-            IRepository<TagsAndFileMappings> tagsAndFileMappingsRepository
+            IRepository<TagsAndFileMappings> tagsAndFileMappingsRepository,
+            IHubContext<ChatHub> chatHub
             )
         {
+            _chatHub = chatHub;
             _ISrFileMappingsAppService = ISrFileMappingsAppService;
             _enterpriseRepository = enterpriseRepository;
             _srfilemapRepository = srfilemapRepository;
@@ -550,7 +555,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///<Summary>
         /// Delete files
         ///</Summary>
-        public responseBack DeleteFile(string path, string key)
+        public responseBack DeleteFile(string path, string key, string userType = null)
         {
             try
             {
@@ -589,44 +594,458 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     string newpath = folderName.Replace("/", "\\");
                     string file = Path.Combine(_hostingEnvironment.WebRootPath, newpath);
                     
-                    var filed = _srfilemapRepository.GetAll().Where(x => x.FileName == file).ToList();
-
-                    if (filed != null)
-                    {
-                        foreach (var id in filed)
-                        {
-                            _srfilemapRepository.Delete(id);
-                        }
-                    }
-
-                    var esignFile = _esignRepository.GetAll().Where(x => file.Contains(x.FullFilePath)).ToList();
-                    if (esignFile.Count > 0)
-                    {
-                        foreach (var item in esignFile)
-                        {
-                            _esignRepository.Delete(item);
-                        }
-                    }
-
                     string shortFileName = Path.GetFileName(file);
+                    
+                    // ── CRITICAL FIX: Resolve the actual physical file path ──
+                    // The frontend often sends a full URL (e.g., https://host/FileManager/filename.pdf)
+                    // as the 'path' parameter, making the constructed 'file' path completely wrong.
+                    // We MUST resolve the real path from the database using the short filename.
+                    var master = _srEscrowFileMasterRepository.GetAll().FirstOrDefault(x => x.FileShortName == shortFileName);
+                    if (master == null && !string.IsNullOrEmpty(shortFileName))
+                    {
+                        // The frontend might send a stale filename without tags (e.g., 'file.txt' instead of 'file~{EOX}.txt').
+                        // 'Contains(shortFileName)' fails because the tag is inserted before the extension.
+                        // We must search using the base filename without the extension.
+                        string baseFileName = Path.GetFileNameWithoutExtension(shortFileName);
+                        master = _srEscrowFileMasterRepository.GetAll().FirstOrDefault(x => x.FileShortName.StartsWith(baseFileName) || x.FileFullName.Contains(baseFileName));
+                    }
+                    
+                    if (master != null && !string.IsNullOrEmpty(master.FileFullName))
+                    {
+                        // Use the database-stored physical path instead of the garbage URL-based path
+                        file = master.FileFullName;
+                        
+                        // Wait! The master record might have an OUTDATED FileFullName if the file was assigned to users
+                        // and renamed (e.g. ~{BR1-READ}.pdf) but the master record wasn't updated.
+                        // We must check if the file actually exists at master.FileFullName.
+                        if (!System.IO.File.Exists(file))
+                        {
+                            // It doesn't exist! Let's check SrFileMappings to see if we have a more recent physical path
+                            var latestMapping = _srfilemapRepository.GetAll()
+                                .Where(x => x.SrEscrowFileMasterId == master.Id && !string.IsNullOrEmpty(x.FileName))
+                                .OrderByDescending(x => x.Id)
+                                .FirstOrDefault();
+                                
+                            if (latestMapping != null && System.IO.File.Exists(latestMapping.FileName))
+                            {
+                                file = latestMapping.FileName;
+                            }
+                        }
+                        
+                        shortFileName = Path.GetFileName(file);
+                    }
+                    else if (!System.IO.File.Exists(file))
+                    {
+                        // Last resort: search the filesystem for this filename under the escrow folders
+                        try
+                        {
+                            string rootPath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless");
+                            if (Directory.Exists(rootPath))
+                            {
+                                string[] matchedFiles = Directory.GetFiles(rootPath, shortFileName, SearchOption.AllDirectories);
+                                if (matchedFiles.Length == 1)
+                                {
+                                    file = matchedFiles[0];
+                                    shortFileName = Path.GetFileName(file);
+                                }
+                                else if (matchedFiles.Length > 1)
+                                {
+                                    // If multiple matches, try to pick the one in an "Other" folder
+                                    var otherMatch = matchedFiles.FirstOrDefault(f => f.IndexOf("\\Other\\", StringComparison.OrdinalIgnoreCase) >= 0);
+                                    if (otherMatch != null)
+                                    {
+                                        file = otherMatch;
+                                        shortFileName = Path.GetFileName(file);
+                                    }
+                                    else
+                                    {
+                                        file = matchedFiles[0];
+                                        shortFileName = Path.GetFileName(file);
+                                    }
+                                }
+                            }
+                        }
+                        catch { /* Filesystem search failed, continue with original path */ }
+                    }
+                    // ── END CRITICAL FIX ──
+                    
+                    // Reconstruct folderName from the resolved file path for downstream logic
+                    string webRoot = _hostingEnvironment.WebRootPath;
+                    if (file.StartsWith(webRoot, StringComparison.OrdinalIgnoreCase))
+                    {
+                        folderName = file.Substring(webRoot.Length).Replace("\\", "/");
+                        if (folderName.StartsWith("/")) folderName = folderName.Substring(1);
+                    }
+                    
                     var assignedFiles = _srAssignedFilesDetailRepository.GetAll().Where(x => x.FileName == shortFileName).ToList();
-                    foreach (var assignedFile in assignedFiles)
-                    {
-                        _srAssignedFilesDetailRepository.Delete(assignedFile);
+                    bool isGlobalAdmin = AbpSession.UserId.HasValue && AbpSession.UserId.Value == 1;
+                    
+                    bool isOtherArea = file.IndexOf("\\Other\\", StringComparison.OrdinalIgnoreCase) >= 0 || file.IndexOf("/Other/", StringComparison.OrdinalIgnoreCase) >= 0;
+                    bool hasTilde = shortFileName.IndexOf("~") > 0;
+
+                    long currentUserId = AbpSession.UserId ?? 0;
+                    if (string.IsNullOrEmpty(userType)) {
+                        string[] parts = folderName.Split('/');
+                        if (parts.Length >= 5) {
+                            string company = parts[2];
+                            string escrow = parts[4];
+                            var userMap = _srfilemapRepository.GetAll().FirstOrDefault(x => x.UserId == currentUserId && x.FileName.Contains(company) && x.FileName.Contains(escrow) && x.Action != "READ");
+                            if (userMap != null) {
+                                userType = userMap.Action.Replace("{", "").Replace("}", "");
+                                int dashIdx = userType.IndexOf("-");
+                                if (dashIdx > 0) userType = userType.Substring(0, dashIdx);
+                            }
+                        }
+                        // Fallback: if userType is still empty, try to get it from any mapping for this user
+                        if (string.IsNullOrEmpty(userType)) {
+                            var anyUserMap = _srfilemapRepository.GetAll().FirstOrDefault(x => x.UserId == currentUserId && x.Action != "READ");
+                            if (anyUserMap != null) {
+                                userType = anyUserMap.Action.Replace("{", "").Replace("}", "");
+                                int dashIdx = userType.IndexOf("-");
+                                if (dashIdx > 0) userType = userType.Substring(0, dashIdx);
+                            }
+                        }
                     }
 
-                    var masterFiles = _srEscrowFileMasterRepository.GetAll().Where(x => x.FileShortName == shortFileName).ToList();
-                    foreach (var masterFile in masterFiles)
+                    bool isEscrowOfficer = !string.IsNullOrEmpty(userType) && (userType.StartsWith("EO", StringComparison.OrdinalIgnoreCase) || userType.StartsWith("EA", StringComparison.OrdinalIgnoreCase));
+                    
+                    SrFileMapping trueUploaderMapping = null;
+                    if (master != null) 
                     {
-                        _srEscrowFileMasterRepository.Delete(masterFile);
+                        var allMappings = _srfilemapRepository.GetAll().Where(x => x.SrEscrowFileMasterId == master.Id && x.Action == "READ").ToList();
+                        // The original uploader's mapping is always created first, so it has the lowest Id.
+                        trueUploaderMapping = allMappings.OrderBy(x => x.Id).FirstOrDefault();
+                    }
+                    if (trueUploaderMapping == null) 
+                    {
+                        // Fallback: try matching by the resolved file path
+                        trueUploaderMapping = _srfilemapRepository.GetAll().FirstOrDefault(x => x.FileName == file && x.Action == "READ");
+                    }
+                    if (trueUploaderMapping == null && !string.IsNullOrEmpty(shortFileName))
+                    {
+                        // Fallback: try matching by short filename
+                        trueUploaderMapping = _srfilemapRepository.GetAll().Where(x => x.FileName.Contains(shortFileName) && x.Action == "READ").OrderBy(x => x.Id).FirstOrDefault();
                     }
 
+                    var uploaderMapping = trueUploaderMapping;
+                    bool isUploader = uploaderMapping != null && uploaderMapping.UserId == AbpSession.UserId;
+
+                    bool isAssigned = isOtherArea ? hasTilde : assignedFiles.Count > 0;
+                    
+                    // ── SIMPLIFIED DELETE LOGIC ──
+                    // Rule 1: Admin can always delete
+                    // Rule 2: EOX deleting someone else's upload → strip assignments, preserve for uploader
+                    // Rule 3: Assigned user (SR1, etc.) deleting → strip THEIR tag only
+                    // Rule 4: Everyone else (including uploader) → physically delete the file
+                    
+                    // Fetch the uploader's role early to determine if they are an EOX
+                    string uploaderRole = "";
+                    if (uploaderMapping != null) {
+                        var uploaderRoleMap = _srfilemapRepository.GetAll().FirstOrDefault(x => x.UserId == uploaderMapping.UserId && x.Action != "READ");
+                        if (uploaderRoleMap != null) {
+                            uploaderRole = uploaderRoleMap.Action.Replace("{", "").Replace("}", "");
+                            int uDash = uploaderRole.IndexOf("-");
+                            if (uDash > 0) uploaderRole = uploaderRole.Substring(0, uDash);
+                        }
+                    }
+                    bool uploaderIsEox = !string.IsNullOrEmpty(uploaderRole) && (uploaderRole.StartsWith("EO", StringComparison.OrdinalIgnoreCase) || uploaderRole.StartsWith("EA", StringComparison.OrdinalIgnoreCase));
+
+                    if (isEscrowOfficer && uploaderMapping != null && uploaderMapping.UserId != AbpSession.UserId && isOtherArea && !isGlobalAdmin && !uploaderIsEox)
+                    {
+                        // EOX is deleting a file uploaded by a REGULAR user (BR/SR) → preserve for uploader
+                        foreach (var assignedFile in assignedFiles)
+                        {
+                            _srAssignedFilesDetailRepository.Delete(assignedFile);
+                        }
+                        
+                        int tildeIdx = shortFileName.IndexOf("~");
+                        if (tildeIdx > 0) 
+                        {
+                            string ext = Path.GetExtension(shortFileName);
+                            string baseName = shortFileName.Substring(0, tildeIdx);
+                            string tags = shortFileName.Substring(tildeIdx + 1).Replace(ext, "");
+                            
+                            string newTags = "";
+                            
+                            int i = 0;
+                            while (i < tags.Length) {
+                                int start = tags.IndexOf('{', i);
+                                if (start == -1) break;
+                                int end = tags.IndexOf('}', start);
+                                if (end == -1) break;
+                                string tag = tags.Substring(start, end - start + 1);
+                                
+                                if (!string.IsNullOrEmpty(uploaderRole) && tag.StartsWith("{" + uploaderRole)) {
+                                    newTags += tag;
+                                }
+                                
+                                i = end + 1;
+                            }
+
+                            string newShortName = baseName + (string.IsNullOrEmpty(newTags) ? "" : "~" + newTags) + ext;
+                            string newFileFullPath = Path.Combine(Path.GetDirectoryName(file), newShortName);
+                            
+                            if (System.IO.File.Exists(file) && file != newFileFullPath) 
+                            {
+                                System.IO.File.Move(file, newFileFullPath);
+                            }
+                            
+                            if (uploaderMapping != null) 
+                            {
+                                uploaderMapping.FileName = newFileFullPath;
+                                _srfilemapRepository.Update(uploaderMapping);
+                            }
+                            
+                            // Update master record
+                            if (master != null) 
+                            {
+                                master.FileFullName = newFileFullPath;
+                                master.FileShortName = newShortName;
+                                _srEscrowFileMasterRepository.Update(master);
+                            }
+                        }
+                        
+                        res.message = "File assignments cleared and returned to uploader.";
+                        res.Success = true;
+                        try { _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true }).Wait(); } catch {}
+                        return res;
+                    }
+                    else if (!isEscrowOfficer && !isGlobalAdmin)
+                    {
+                        // Any non-EOX, non-Admin user (BR1, SR1, etc.) deleting a file
+                        // First, check if ANYONE ELSE has access to this file (via DB assignments or filename tags).
+                        bool hasOtherAssignments = assignedFiles.Any(x => x.UserId != currentUserId);
+                        bool hasOtherTags = false;
+                        
+                        int tildeIdx = shortFileName.IndexOf("~");
+                        if (tildeIdx > 0) 
+                        {
+                            string ext = Path.GetExtension(shortFileName);
+                            string tags = shortFileName.Substring(tildeIdx + 1).Replace(ext, "");
+                            string userTag = "{" + userType;
+                            int i = 0;
+                            while (i < tags.Length) {
+                                int start = tags.IndexOf('{', i);
+                                if (start == -1) break;
+                                int end = tags.IndexOf('}', start);
+                                if (end == -1) break;
+                                string tag = tags.Substring(start, end - start + 1);
+                                if (!tag.StartsWith(userTag)) {
+                                    hasOtherTags = true;
+                                    break;
+                                }
+                                i = end + 1;
+                            }
+                        }
+                        
+                        bool othersHaveAccess = hasOtherAssignments || hasOtherTags;
+                        
+                        if (othersHaveAccess)
+                        {
+                            // OTHERS have access. We cannot physically delete. We must HIDE it from this user.
+                            string newShortName = shortFileName;
+                            string newFileFullPath = file;
+                            
+                            if (tildeIdx > 0) 
+                            {
+                                string ext = Path.GetExtension(shortFileName);
+                                string baseName = shortFileName.Substring(0, tildeIdx);
+                                string tags = shortFileName.Substring(tildeIdx + 1).Replace(ext, "");
+                                
+                                string newTags = "";
+                                int i = 0;
+                                while (i < tags.Length) {
+                                    int start = tags.IndexOf('{', i);
+                                    if (start == -1) break;
+                                    int end = tags.IndexOf('}', start);
+                                    if (end == -1) break;
+                                    string tag = tags.Substring(start, end - start + 1);
+                                    if (!tag.StartsWith("{" + userType)) {
+                                        newTags += tag;
+                                    }
+                                    i = end + 1;
+                                }
+    
+                                newShortName = baseName + (string.IsNullOrEmpty(newTags) ? "" : "~" + newTags) + ext;
+                                newFileFullPath = Path.Combine(Path.GetDirectoryName(file), newShortName);
+                            }
+                            
+                            // CRITICAL FIX: If the uploader is deleting, the file is likely in their personal folder.
+                            // FileSystem1 grants access to anything in a personal folder, so stripping the tag isn't enough.
+                            // We MUST move the file to the shared 'Other' folder so it completely vanishes from their view.
+                            if (isUploader) 
+                            {
+                                string[] parts = folderName.Split('/');
+                                if (parts.Length >= 5) 
+                                {
+                                    string companyStr = parts[2];
+                                    string subCompanyStr = parts[3];
+                                    string escrowStr = parts[4];
+                                    string rootPath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless");
+                                    string sharedOtherDir = Path.Combine(rootPath, companyStr, subCompanyStr, escrowStr, "Other");
+                                    
+                                    if (!Directory.Exists(sharedOtherDir)) 
+                                    {
+                                        Directory.CreateDirectory(sharedOtherDir);
+                                    }
+                                    newFileFullPath = Path.Combine(sharedOtherDir, newShortName);
+                                }
+                            }
+                            
+                            // Try to rename/move the physical file
+                            try {
+                                if (System.IO.File.Exists(file) && file != newFileFullPath) 
+                                {
+                                    System.IO.File.Move(file, newFileFullPath);
+                                    
+                                    // Update ALL remaining assignment records to point to the new filename
+                                    var otherAssigned = assignedFiles.Where(x => x.UserId != currentUserId).ToList();
+                                    foreach(var a in otherAssigned) {
+                                        a.FileName = newShortName;
+                                        _srAssignedFilesDetailRepository.Update(a);
+                                    }
+                                    
+                                    // Update uploader mapping and master to new filename
+                                    if (uploaderMapping != null && uploaderMapping.UserId != currentUserId) 
+                                    {
+                                        uploaderMapping.FileName = newFileFullPath;
+                                        _srfilemapRepository.Update(uploaderMapping);
+                                    }
+                                    if (master != null) 
+                                    {
+                                        master.FileFullName = newFileFullPath;
+                                        master.FileShortName = newShortName;
+                                        _srEscrowFileMasterRepository.Update(master);
+                                    }
+                                }
+                            } catch { /* File rename/move failed, but we still clean up DB below */ }
+                            
+                            // Clean up DB records for THIS user
+                            var myAssignments = assignedFiles.Where(x => x.UserId == currentUserId).ToList();
+                            foreach (var a in myAssignments)
+                            {
+                                _srAssignedFilesDetailRepository.Delete(a);
+                            }
+                            
+                            var myReadMappings = _srfilemapRepository.GetAll()
+                                .Where(x => x.UserId == currentUserId && x.Action == "READ" && 
+                                       (x.FileName.Contains(shortFileName) || (master != null && x.SrEscrowFileMasterId == master.Id)))
+                                .ToList();
+                            foreach (var m in myReadMappings) {
+                                _srfilemapRepository.Delete(m);
+                            }
+                            
+                            if (isUploader && uploaderMapping != null) {
+                                _srfilemapRepository.Delete(uploaderMapping);
+                            }
+    
+                            res.message = "File removed from your view successfully.";
+                            res.Success = true;
+                            try { _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true }).Wait(); } catch {}
+                            return res;
+                        }
+                        
+                        // If NO ONE ELSE has access, DO NOT return here. 
+                        // Let it fall through to the DEFAULT physical delete below!
+                    }
+                    
+                    // DEFAULT: For all other cases (uploader, EOX who uploaded, main area, unassigned files, etc.)
+                    // → Physically delete the file
+
+                    bool deletedPhysical = false;
                     if (System.IO.File.Exists(file))
                     {
                         System.IO.File.Delete(file);
+                        res.message = "File deleted successfully. Path was: " + file; 
+                        res.Success = true;
+                        deletedPhysical = true;
+                    } 
+                    else 
+                    {
+                        if (file.IndexOf("\\Other\\", StringComparison.OrdinalIgnoreCase) > 0 || file.IndexOf("/Other/", StringComparison.OrdinalIgnoreCase) > 0)
+                        {
+                            try 
+                            {
+                                string rootPath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless");
+                                string[] parts = path.Replace("\\", "/").Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                                if (parts.Length >= 3)
+                                {
+                                    string escrowPath = Path.Combine(rootPath, parts[0], parts[1], parts[2]);
+                                    if (Directory.Exists(escrowPath))
+                                    {
+                                        string[] matchedFiles = Directory.GetFiles(escrowPath, key, SearchOption.AllDirectories);
+                                        if (matchedFiles.Length == 1)
+                                        {
+                                            System.IO.File.Delete(matchedFiles[0]);
+                                            res.message = "File deleted successfully via fallback search. Path was: " + matchedFiles[0];
+                                            res.Success = true;
+                                            deletedPhysical = true;
+                                        }
+                                        else if (matchedFiles.Length > 1)
+                                        {
+                                            res.message = "File NOT FOUND at: " + file + " (Multiple files found with the same name during fallback search)";
+                                            res.Success = false;
+                                        }
+                                        else 
+                                        {
+                                            res.message = "File NOT FOUND at: " + file;
+                                            res.Success = false;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    res.message = "File NOT FOUND at: " + file;
+                                    res.Success = false;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                res.message = "File NOT FOUND at: " + file + ". Fallback search failed: " + ex.Message;
+                                res.Success = false;
+                            }
+                        }
+                        else 
+                        {
+                            res.message = "File NOT FOUND at: " + file; 
+                            res.Success = false;
+                        }
                     }
 
-                    res.message = "File deleted successfully";
+                    if (deletedPhysical)
+                    {
+                        var filed = _srfilemapRepository.GetAll().Where(x => x.FileName == file).ToList();
+                        if (filed != null)
+                        {
+                            foreach (var id in filed)
+                            {
+                                _srfilemapRepository.Delete(id);
+                            }
+                        }
+
+                        var esignFile = _esignRepository.GetAll().Where(x => file.Contains(x.FullFilePath)).ToList();
+                        if (esignFile.Count > 0)
+                        {
+                            foreach (var item in esignFile)
+                            {
+                                _esignRepository.Delete(item);
+                            }
+                        }
+
+                        foreach (var assignedFile in assignedFiles)
+                        {
+                            _srAssignedFilesDetailRepository.Delete(assignedFile);
+                        }
+
+                        var masterFiles = _srEscrowFileMasterRepository.GetAll().Where(x => x.FileShortName == shortFileName).ToList();
+                        foreach (var masterFile in masterFiles)
+                        {
+                            _srEscrowFileMasterRepository.Delete(masterFile);
+                        }
+                    }
+                }
+                if (res.Success) {
+                    try { _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true }).Wait(); } catch {}
                 }
                 return res;
             }
@@ -1546,7 +1965,22 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     return res;
                 }
 
-                using (var stream = new FileStream(fullFilePath, FileMode.Create))
+                if (userId != "1")
+                {
+                    // Reject non-PDF files if they are not being uploaded to the Other directory
+                    if (!path.Contains("\\Other") && !path.Contains("/Other"))
+                    {
+                        var uploadExt = Path.GetExtension(fullFilePath).ToLowerInvariant();
+                        if (uploadExt != ".pdf")
+                        {
+                            res.message = "Only PDF files are allowed in this section.";
+                            res.statusCode = 400;
+                            return res;
+                        }
+                    }
+                }
+
+                using (Stream stream = new FileStream(fullFilePath, FileMode.Create))
                 {
                     file.CopyTo(stream);
                 }
@@ -1555,7 +1989,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     // Path format expected: Company/SubCompany/EscrowId/Other
                     var splitPath = path.Replace("/", "\\").Split("\\");
-                    if (splitPath.Length < 4)
+
+                    if (splitPath.Length < 3)
                     {
                         res.message = "Invalid path format. Expected: Company/SubCompany/EscrowId/Other";
                         res.statusCode = 400;
@@ -1625,7 +2060,37 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     {
                          _ISrFileMappingsAppService.CreateOrEdit(coesfm).Wait();
                     }
+                    
+                    // Assign General tag if uploading to Other
+                    if (path.Contains("\\Other") || path.Contains("/Other"))
+                    {
+                        var generalTag = _escrowFileTagsRepository.GetAll().FirstOrDefault(x => x.TagDescription.ToLower() == "general");
+                        if (generalTag != null)
+                        {
+                            var cleanName = fileName;
+                            int tildeIdx = fileName.IndexOf("~");
+                            if (tildeIdx > 0)
+                            {
+                                string extPart = Path.GetExtension(fileName);
+                                cleanName = fileName.Substring(0, tildeIdx) + extPart;
+                            }
+
+                            var existingTag = _tagsAndFileMappingsRepository.GetAll()
+                                .FirstOrDefault(x => x.FileName == cleanName && x.TagId == generalTag.Id);
+
+                            if (existingTag == null)
+                            {
+                                _tagsAndFileMappingsRepository.Insert(new TagsAndFileMappings
+                                {
+                                    FileName = cleanName,
+                                    TagId = generalTag.Id
+                                });
+                            }
+                        }
+                    }
                 }
+
+                _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { fileFullName = fileName }).Wait();
 
                 res.statusCode = 200;
                 res.message = "File uploaded successfully.";
@@ -1727,6 +2192,10 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                     foreach (var lst in results)
                     {
+                        if (lst.isDirectory)
+                        {
+                            continue;
+                        }
                         if (lst.key.Contains("\\Other"))
                         {
                             continue;
@@ -1915,40 +2384,43 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                                     // new  code 
 
-                                    // Fetch a single record for the logged-in user and file
                                     var st = _srAssignedFilesDetailRepository
                                         .GetAll()
                                         .OrderByDescending(x => x.Id)
                                         .FirstOrDefault(x => x.FileName == lst.name.TrimEnd() && x.UserId == usrdetail.Id);
 
-                                    // If there's no record for this user, you can initialize default values here
+                                    var filefound = _srfilemapRepository.GetAll().ToList();
+                                    string fileNameToSearch = st != null ? st.FileName : lst.name.TrimEnd();
+                                    var selectedfile = filefound.Where(x => x.FileName.Contains(fileNameToSearch)).FirstOrDefault();
+                                    var SRFileMasterId = _srEscrowFileMasterRepository.GetAll().Where(x => x.FileShortName == fileNameToSearch).FirstOrDefault();
+                                    
                                     if (st == null)
                                     {
-                                        // Set default or empty values when no record exists
                                         res.srAssignedFileId = 0;
-                                        res.signing = "No record found";
+                                        res.signing = "Unsigned";
                                         res.status = "Not applicable";
-                                        continue; // or continue based on your logic
-                                    }
-                                    var filefound = _srfilemapRepository.GetAll().ToList();
-                                    var selectedfile = filefound.Where(x => x.FileName.Contains(st.FileName)).FirstOrDefault();
-                                    var SRFileMasterId = _srEscrowFileMasterRepository.GetAll().Where(x => x.FileShortName == st.FileName).FirstOrDefault();
-                                    res.OtherAction = SRFileMasterId.OtherAction == true ? true : false;
-                                    res.OtherActionNote = SRFileMasterId?.OtherActionNote;
-                                    res.srAssignedFileId = SRFileMasterId.Id;
-                                    res.signStatus = st.SigningStatus;
-
-                                    var lastUpdated = _escrowFileHistoryRepository.GetAll().Where(x => x.SrEscrowFileMasterId == SRFileMasterId.Id && x.ActionType != FileConstantAction.Download_File).OrderByDescending(x => x.CreatedAt).FirstOrDefault();
-                                    if (lastUpdated != null)
-                                    {
-                                        // res.updateOn = Convert.ToString(lastUpdated.CreatedAt);
-                                        res.updateOn = lastUpdated.CreatedAt.ToString("MM/dd/yy HH:mm");
+                                        res.OtherAction = false;
+                                        res.OtherActionNote = "";
+                                        res.signStatus = "Unsigned";
+                                        res.updateOn = "";
                                     }
                                     else
                                     {
+                                        res.OtherAction = SRFileMasterId?.OtherAction == true ? true : false;
+                                        res.OtherActionNote = SRFileMasterId?.OtherActionNote;
+                                        res.srAssignedFileId = SRFileMasterId?.Id ?? 0;
+                                        res.signStatus = st.SigningStatus;
                                         res.updateOn = st.UpdatedOn.ToString("MM/dd/yy HH:mm");
                                     }
 
+                                    if (SRFileMasterId != null)
+                                    {
+                                        var lastUpdated = _escrowFileHistoryRepository.GetAll().Where(x => x.SrEscrowFileMasterId == SRFileMasterId.Id && x.ActionType != FileConstantAction.Download_File).OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                                        if (lastUpdated != null)
+                                        {
+                                            res.updateOn = lastUpdated.CreatedAt.ToString("MM/dd/yy HH:mm");
+                                        }
+                                    }
 
                                     // Get signing details based on email and file name
                                     var data = GetSignDetailsFile(usrdetail.EmailAddress, lst.name.TrimEnd());
@@ -1957,8 +2429,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                                     if (data.Any())
                                     {
-                                        signed = data.Any(d => d.Status == "Signed");
-                                        signed = data.Any(d => d.Status == "success");
+                                        signed = data.Any(d => d.Status == "Signed" || d.Status == "success");
                                         unsigned = data.Any(d => d.Status == "Unsigned");
                                         partialSigned = data.Any(d => d.Status == "Partially Signed");
                                         sent = data.Any(d => d.Status == "sent");
@@ -1985,22 +2456,11 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                         {
                                             res.signing = $"✓  {(Signin_percentage == "100" ? "Signed" : "Partially Signed")} - {Signin_percentage} %";
                                         }
-
-
                                     }
                                     else if (sent)
                                     {
                                         var percent = string.IsNullOrEmpty(Signin_percentage) ? "0" : Signin_percentage;
-
-                                        if (percent == "0")
-                                        {
-                                            res.signing = "Unsigned";
-                                        }
-                                        else if (percent != "0")
-                                        {
-                                            res.signing = $"Signed - {percent} %";
-                                        }
-                                       
+                                        res.signing = (percent == "0") ? "Unsigned" : $"Signed - {percent} %";
                                     }
                                     else if (unsigned)
                                     {
@@ -2051,20 +2511,20 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                         {
                                             res.action = (usertype == "EOX" || usertype == "EAX")
                                                 ? "No Action Required"
-                                                : (st.SigningStatus == "Signed"
+                                                : ((st != null && st.SigningStatus == "Signed")
                                                     ? "Completed"
                                                     : "Fill out and Electronically Sign");
-                                            res.status = st.SigningStatus == "Signed" ? "Signed Fully" : "Nobody signed yet";
+                                            res.status = (st != null && st.SigningStatus == "Signed") ? "Signed Fully" : "Nobody signed yet";
                                         }
                                         else if (res.access.Contains("E"))
                                         {
-                                            res.status = st.InputStatus;
-                                            res.action = st.InputStatus == "Input Completed" ? "Completed" : "Fill out";
+                                            res.status = st != null ? st.InputStatus : "Unread";
+                                            res.action = (st != null && st.InputStatus == "Input Completed") ? "Completed" : "Fill out";
                                         }
                                         else
                                         {
                                             res.action = "No action required";
-                                            res.status = st.ReadStatus == "Read" ? "Read by all" : "Read by none";
+                                            res.status = (st != null && st.ReadStatus == "Read") ? "Read by all" : "Read by none";
                                         }
                                     }
 
@@ -2182,42 +2642,140 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         }
 
 
-        ///<Summary>
+
+
+                ///<Summary>
         /// files and directories shown  for other documents
         ///</Summary>
         public object FileSystem1(string company, string subCompany, string escrow, string userId)
         {
             string rootPath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless");
-            string targetPath = Path.Combine(rootPath, company, subCompany, escrow, "Other");
-            if (!Directory.Exists(targetPath))
-                return new List<Result>();
-
-            var files = Directory.GetFiles(targetPath);
+            string escrowPath = Path.Combine(rootPath, company, subCompany, escrow);
+            
+            var allOtherFiles = new List<string>();
+            
+            if (Directory.Exists(escrowPath))
+            {
+                var escrowDir = new DirectoryInfo(escrowPath);
+                
+                // 1. Files in Escrow\Other (original)
+                string mainOther = Path.Combine(escrowPath, "Other");
+                if (Directory.Exists(mainOther))
+                {
+                    allOtherFiles.AddRange(Directory.GetFiles(mainOther));
+                }
+                
+                // 2. Files in Escrow\<USER>\Other (new flow)
+                foreach (var dir in escrowDir.GetDirectories())
+                {
+                    if (dir.Name.Equals("Other", StringComparison.OrdinalIgnoreCase)) continue;
+                    
+                    string userOther = Path.Combine(dir.FullName, "Other");
+                    if (Directory.Exists(userOther))
+                    {
+                        allOtherFiles.AddRange(Directory.GetFiles(userOther));
+                    }
+                }
+            }
+            
+            var files = allOtherFiles.ToArray();
             var checkPermission = _srfilemapRepository.GetAll();
+
+            int parsedUserId = 0;
+            int.TryParse(userId, out parsedUserId);
+            var usermap = checkPermission.FirstOrDefault(x => x.UserId == parsedUserId && x.FileName.Contains(company) && x.FileName.Contains(escrow) && x.Action != "READ");
+            string currentUserType = usermap?.Action ?? "";
+            int dashIdx = currentUserType.IndexOf("-");
+            if (dashIdx > 0)
+            {
+                currentUserType = currentUserType.Substring(0, dashIdx);
+            }
+            currentUserType = currentUserType.Replace("{", "").Replace("}", "");
+
+            var userObj = _userRepository.FirstOrDefault(parsedUserId);
+            string userEmail = userObj?.EmailAddress ?? "";
 
             List<Result> newFile = new List<Result>();
 
             foreach (var file in files)
             {
                 string fileName = Path.GetFileName(file);
+                var permission = checkPermission.FirstOrDefault(x => x.FileName.Contains(company) && x.FileName.Contains(fileName) && x.FileName.Contains("Other") && x.Action == "READ");
+                
+                string relativeFilePath = file.Replace(rootPath + "\\", "").Replace("\\", "/");
+                string parentFolderPath = relativeFilePath.Substring(0, relativeFilePath.LastIndexOf('/'));
 
-                var permission = checkPermission.FirstOrDefault(x =>
-                    x.FileName.Contains(company) &&
-                    x.FileName.Contains(fileName) &&
-                    x.FileName.Contains("Other") &&
-                    x.Action == "READ"
-                );
+                bool isAllowed = false;
+                if (currentUserType.StartsWith("EO") || currentUserType.StartsWith("EA"))
+                {
+                    isAllowed = true;
+                }
+                else
+                {
+                    // 1. Is it in their folder?
+                    if (!string.IsNullOrEmpty(userEmail) && parentFolderPath.Contains(userEmail, StringComparison.OrdinalIgnoreCase))
+                    {
+                        isAllowed = true;
+                    }
+                    // 2. Or is it explicitly assigned to them via tags?
+                    else if (fileName.Contains($"{{{currentUserType}}}") || fileName.Contains($"{{{currentUserType}-"))
+                    {
+                        isAllowed = true;
+                    }
+                    // 3. Or is it in the shared Other folder AND has no tags?
+                    else if (parentFolderPath.EndsWith(escrow + "/Other", StringComparison.OrdinalIgnoreCase) && !fileName.Contains("{"))
+                    {
+                        isAllowed = true;
+                    }
+                }
 
-                if (permission == null)
+                if (!isAllowed)
                     continue;
 
                 Result res = new Result();
-                res.name = fileName.Contains("~")
-                    ? fileName.Substring(0, fileName.IndexOf("~"))
-                    : fileName;
+                res.name = fileName;
+                
+                string uploaderRole = "";
+                var uploaderMapping = checkPermission.FirstOrDefault(x => x.FileName.Contains(company) && x.FileName.Contains(fileName) && x.FileName.Contains("Other") && x.Action == "READ");
+                if (uploaderMapping != null) {
+                    var uploaderRoleMap = checkPermission.FirstOrDefault(x => x.UserId == uploaderMapping.UserId && x.FileName.Contains(company) && x.FileName.Contains(escrow) && x.Action != "READ");
+                    if (uploaderRoleMap != null) {
+                        uploaderRole = uploaderRoleMap.Action; 
+                        int uDash = uploaderRole.IndexOf("-");
+                        if (uDash > 0) uploaderRole = uploaderRole.Substring(0, uDash);
+                        uploaderRole = uploaderRole.Replace("{", "").Replace("}", "");
+                    }
+                }
+                res.uploaderRole = uploaderRole;
+
+                int tildeIdx = fileName.IndexOf("~");
+                if (tildeIdx > 0)
+                {
+                    string extPart = Path.GetExtension(fileName);
+                    res.name = fileName.Substring(0, tildeIdx) + extPart;
+                }
 
                 res.key = fileName;
-                res.access = "READ";
+                res.parentPath = parentFolderPath;
+                
+                // Preserve the access tag {TAGS} for the UI 'Assign Users' modal
+                if (fileName.Contains("{") && fileName.Contains("}"))
+                {
+                    int start = fileName.IndexOf("{");
+                    int end = fileName.IndexOf("}") + 1;
+                    if (start >= 0 && end > start)
+                    {
+                        res.access = fileName.Substring(start, end - start);
+                    }
+                    else
+                    {
+                        res.access = "";
+                    }
+                }
+                else
+                {
+                    res.access = "";
+                }
 
                 string ext = Path.GetExtension(file).ToLowerInvariant();
                 res.fileType = ext switch
@@ -2245,7 +2803,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 if (tags.Any())
                     res.escrowFileTags = tags;
 
-                res.srAssignedFileId = permission.SrEscrowFileMasterId ?? 0;
+                res.srAssignedFileId = permission?.SrEscrowFileMasterId ?? 0;
                 newFile.Add(res);
             }
 
@@ -2533,6 +3091,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
     ///</Summary>
     public class Result
     {
+        public string uploaderRole { get; set; }
+
         ///<Summary>
         /// Parameter key
         ///</Summary>
@@ -2572,6 +3132,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         /// Parameter status
         ///</Summary>
         public string status { get; set; }
+
+        public string parentPath { get; set; }
 
         ///<Summary>
         /// Parameter signing
@@ -2876,3 +3438,5 @@ namespace SR.EscrowBaseWeb.Web.Controllers
     //}
 
 }
+
+

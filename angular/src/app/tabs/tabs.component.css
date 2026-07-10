@@ -89,7 +89,7 @@
 .nav-tabs .dashboard-tab.active .nav-link,
 .nav-tabs .dashboard-tab .nav-link.active {
     border: none !important; 
-    background: linear-gradient(135deg, #f43f5e, #fb7185) !important; /* Always vibrant coral/red */
+    background: linear-gradient(135deg, #18181b, #3f3f46) !important; /* Always sleek dark/black */
     color: #ffffff !important; /* Always white text */
     box-shadow: none !important; 
     padding: 2px 18px !important;
@@ -106,7 +106,7 @@
 /* Hover State - Slight lift and shadow */
 .nav-tabs .dashboard-tab:hover .nav-link {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(24, 24, 27, 0.4) !important;
 }
 
 /* Disable the sweep animation for dashboard since it's permanently colored */

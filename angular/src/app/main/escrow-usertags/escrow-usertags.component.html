@@ -117,9 +117,13 @@
                             <tbody>
                                 <tr *ngFor="let item of manageTagList">
                                     <td>
+                                        <i class="fas fa-tag mr-2" 
+                                           [ngStyle]="{
+                                            'color': item.escrowFileTags.tagColor ? item.escrowFileTags.tagColor.split(',')[0].trim() : '#6c757d'
+                                           }"></i>
                                         <button [ngStyle]="{
-                                            'background-color': item.escrowFileTags.tagColor.split(',')[0].trim(), 
-                                            'color': item.escrowFileTags.tagColor.includes(',') ? item.escrowFileTags.tagColor.split(',')[1].trim() : 'inherit',
+                                            'background-color': item.escrowFileTags.tagColor ? item.escrowFileTags.tagColor.split(',')[0].trim() : '#e9ecef', 
+                                            'color': item.escrowFileTags.tagColor && item.escrowFileTags.tagColor.includes(',') ? item.escrowFileTags.tagColor.split(',')[1].trim() : '#333',
                                             'border': 'none',
                                             'outline': 'none',
                                             'box-shadow': 'none',

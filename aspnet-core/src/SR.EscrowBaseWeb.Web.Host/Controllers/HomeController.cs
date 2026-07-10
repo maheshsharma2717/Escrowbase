@@ -82,6 +82,9 @@ using Twilio.Types;
 using SR.EscrowBaseWeb.GetCurrentEscrow;
 //using GrapeCity.Documents.Pdf;
 //using System.Text;
+using System.Security.Cryptography;
+using SR.EscrowBaseWeb.TagsAndFileMapping;
+using SR.EscrowBaseWeb.EscrowFileTag;
 
 namespace SR.EscrowBaseWeb.Web.Controllers
 {
@@ -2121,11 +2124,29 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                     var file = Request.Form.Files[0];
                     
-                    // Validate that only PDF files are uploaded through the EXE
-                    var extension = Path.GetExtension(file.FileName).ToLower();
-                    if (extension != ".pdf")
+                    // Validate that non-PDF files are only allowed for unassigned documents (Other section)
+                    var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                    bool isOtherFolder = Destination != null && (Destination.EndsWith("\\Other", StringComparison.OrdinalIgnoreCase) || Destination.EndsWith("/Other", StringComparison.OrdinalIgnoreCase));
+                    
+                    if (!isOtherFolder && extension != ".pdf")
                     {
-                        return Json(new { success = false, message = "Only PDF files are allowed for automated E-Sign processing." });
+                        return Json(new { success = false, message = "Only PDF files are allowed in this section." });
+                    }
+
+                    bool hasTags = file.FileName.Contains("~") || file.FileName.Contains("-'-") || file.FileName.Contains("_'_") || file.FileName.Contains("{");
+                    if (hasTags && extension != ".pdf")
+                    {
+                        return Json(new { success = false, message = "Only PDF files are allowed for assigned documents (files with tags)." });
+                    }
+                    
+                    if (isOtherFolder)
+                    {
+                        var normalizedDest = Destination.Replace("/", "\\").Replace("=", "\\").Replace(".\\", "\\");
+                        var parts = normalizedDest.Split('\\');
+                        if (parts.Length < 5)
+                        {
+                            return Json(new { success = false, message = "Invalid Destination path for Other folder. You must specify a target user folder (e.g., ...\\EscrowId\\TargetUser\\Other)." });
+                        }
                     }
                     
                     // Wrap upload in its own UnitOfWork so the DB transaction commits 
@@ -2143,8 +2164,11 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                     // Signal the UI to refresh the file list immediately
                     try {
+                        // Broadcast a refresh to all users so the file appears in the grid immediately
+                        await _hub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true });
+                        
                         var mappedUserIds = _srfilemapRepository.GetAll()
-                            .Where(x => x.SrEscrowFileMasterId == fileMasterId)
+                            .Where(x => x.SrEscrowFileMasterId == fileMasterId) // Include uploader by removing Action != "READ"
                             .Select(x => x.UserId.ToString())
                             .Distinct()
                             .ToList();
@@ -2268,6 +2292,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             MatchCollection matchesData = regexx.Matches(fileUpdateName);
             string BRXUserList = "", SRXUserList = "", BRXType = "", SRXType = "";
 
+            bool isOtherFolder = destination != null && (destination.EndsWith("\\Other", StringComparison.OrdinalIgnoreCase) || destination.EndsWith("/Other", StringComparison.OrdinalIgnoreCase));
+
             for (int i = 0; i < matchesData.Count; i++)
             {
                 string rep = matchesData[i].Value.Replace("{", "").Replace("}", "");
@@ -2284,9 +2310,50 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
             if (!string.IsNullOrWhiteSpace(BRXUserList) && fileNewName.Contains(BRXType)) fileNewName = fileNewName.Replace(BRXType, BRXUserList);
             if (!string.IsNullOrWhiteSpace(SRXUserList) && fileNewName.Contains(SRXType)) fileNewName = fileNewName.Replace(SRXType, SRXUserList);
-
-            var creds = await GetDocuSignCredentialsForEscrow(escrowId);
             
+            string targetUserStr = null;
+            if (isOtherFolder)
+            {
+                var parts = destination.Split('\\');
+                if (parts.Length >= 5) 
+                {
+                    targetUserStr = parts[parts.Length - 2]; 
+                }
+            }
+
+            if (!string.IsNullOrEmpty(targetUserStr))
+            {
+                string tagString = "";
+                foreach (var usr in usrid)
+                {
+                    string usrEmail = (usr.Email ?? "").ToUpper();
+                    string usrTypeUpp = (usr.Usertype ?? "").ToUpper();
+                    string targetCode = targetUserStr.ToUpper();
+                    
+                    bool isTargetUser = (targetCode == usrEmail || 
+                       targetCode == usrTypeUpp || 
+                       (targetCode == "BRX" && usrTypeUpp.StartsWith("BR")) || 
+                       (targetCode == "SRX" && usrTypeUpp.StartsWith("SR")) ||
+                       (targetCode == "RAX" && usrTypeUpp.StartsWith("RA")) ||
+                       (targetCode == "RBX" && usrTypeUpp.StartsWith("RB")) ||
+                       (targetCode == "TCX" && usrTypeUpp.StartsWith("TC")) ||
+                       (targetCode == "TRX" && usrTypeUpp.StartsWith("TR")));
+
+                    if (isTargetUser && !string.IsNullOrEmpty(usr.Usertype))
+                    {
+                        tagString += "{" + usr.Usertype.ToUpper() + "-READ}";
+                    }
+                }
+                
+                if (!string.IsNullOrEmpty(tagString))
+                {
+                    string ext = Path.GetExtension(fileNewName);
+                    string nameNoExt = Path.GetFileNameWithoutExtension(fileNewName);
+                    if (nameNoExt.Contains("~")) nameNoExt = nameNoExt.Substring(0, nameNoExt.IndexOf("~"));
+                    fileNewName = nameNoExt + "~" + tagString + ext;
+                }
+            }
+
             string destPath = Path.Combine(destDir, fileNewName);
             int retryCount = 10;
             while (retryCount > 0)
@@ -2298,9 +2365,9 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 }
                 catch (System.IO.IOException)
                 {
+                    await Task.Delay(1000);
                     retryCount--;
                     if (retryCount == 0) throw;
-                    await Task.Delay(1500);
                 }
             }
 
@@ -2317,15 +2384,47 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             }
             else masterId = dbMaster.Id;
 
+            // targetUserStr is already determined above
+
             foreach (var usr in usrid)
             {
-                // Strict Assignment Policy: Match permissions from tokens in the filename
-                // supporting various formats like ~{TAGS} or _{TAGS}_ (UI standard)
+                if (!string.IsNullOrEmpty(targetUserStr))
+                {
+                    string usrEmail = (usr.Email ?? "").ToUpper();
+                    string usrTypeUpp = (usr.Usertype ?? "").ToUpper();
+                    string targetCode = targetUserStr.ToUpper();
+                    
+                    bool isTargetUser = (targetCode == usrEmail || 
+                       targetCode == usrTypeUpp || 
+                       (targetCode == "BRX" && usrTypeUpp.StartsWith("BR")) || 
+                       (targetCode == "SRX" && usrTypeUpp.StartsWith("SR")) ||
+                       (targetCode == "RAX" && usrTypeUpp.StartsWith("RA")) ||
+                       (targetCode == "RBX" && usrTypeUpp.StartsWith("RB")) ||
+                       (targetCode == "TCX" && usrTypeUpp.StartsWith("TC")) ||
+                       (targetCode == "TRX" && usrTypeUpp.StartsWith("TR")));
+
+                    bool isAdminUser = usrTypeUpp.StartsWith("EO") || usrTypeUpp.StartsWith("EA");
+
+                    if (isTargetUser || isAdminUser)
+                    {
+                        var existingMap = _srfilemapRepository.GetAll().FirstOrDefault(x => x.FileName == destPath && x.Action == "READ" && x.UserId == usr.UserId);
+                        if (existingMap == null)
+                        {
+                            await _ISrFileMappingsAppService.CreateOrEdit(new CreateOrEditSrFileMappingDto {
+                                FileName = destPath, UserId = (int)usr.UserId, Action = "READ", EscrowiId = escrowId, IsActive = true, SrEscrowFileMasterId = masterId
+                            });
+                            DocumentRecord(fileNewName, "Read", (long)usr.UserId, masterId);
+                        }
+                    }
+                }
+
                 string acces = "";
-                if (fileNewName.Contains("{") && fileNewName.Contains("}")) 
-                    acces = fileNewName.Substring(fileNewName.IndexOf("{"));
-                else if (fileNewName.Contains("~")) 
+                if (fileNewName.Contains("~"))
                     acces = fileNewName.Substring(fileNewName.LastIndexOf("~") + 1);
+                else if (fileNewName.Contains("-'-"))
+                    acces = fileNewName.Substring(fileNewName.LastIndexOf("-'-") + 3);
+                else if (fileNewName.Contains("_'_"))
+                    acces = fileNewName.Substring(fileNewName.LastIndexOf("_'_") + 3);
 
                 if (!string.IsNullOrEmpty(acces))
                 {
@@ -2337,29 +2436,39 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         string targetCode = rep.Contains('-') ? rep.Substring(0, rep.IndexOf('-')).ToUpper() : rep.ToUpper();
                         string userTypeUpp = (usr.Usertype ?? "").ToUpper();
 
-                        // Check if this token belongs to the current user type exactly
-                        if (targetCode == userTypeUpp || 
+                        bool isTargetUser = (targetCode == userTypeUpp || 
                            (targetCode == "BRX" && userTypeUpp.StartsWith("BR")) || 
                            (targetCode == "SRX" && userTypeUpp.StartsWith("SR")) ||
                            (targetCode == "RAX" && userTypeUpp.StartsWith("RA")) ||
                            (targetCode == "RBX" && userTypeUpp.StartsWith("RB")) ||
                            (targetCode == "TCX" && userTypeUpp.StartsWith("TC")) ||
                            (targetCode == "EOX" && userTypeUpp.StartsWith("EO")) ||
-                           (targetCode == "EAX" && userTypeUpp.StartsWith("EA")))
+                           (targetCode == "EAX" && userTypeUpp.StartsWith("EA")));
+
+                        bool isAdminUser = userTypeUpp.StartsWith("EO") || userTypeUpp.StartsWith("EA");
+
+                        // If it's the Other folder, admins (EOX/EAX) must also receive a mapping so they can see it
+                        if (isTargetUser || (isOtherFolder && isAdminUser))
                         {
-                            // Create specific mapping for the matched user
+                            // If destined for Other, FORCE the "READ" action so it goes to Other Documents, ignoring the tag's action
+                            string mappingAction = isOtherFolder ? "READ" : m.Value;
+                            
+                            // Create specific mapping for the matched user (or admin)
                             await _ISrFileMappingsAppService.CreateOrEdit(new CreateOrEditSrFileMappingDto {
-                                FileName = destPath, UserId = (int)usr.UserId, Action = m.Value, EscrowiId = escrowId, IsActive = true, SrEscrowFileMasterId = masterId
+                                FileName = destPath, UserId = (int)usr.UserId, Action = mappingAction, EscrowiId = escrowId, IsActive = true, SrEscrowFileMasterId = masterId
                             });
 
                             // Detect permission level precisely (Prioritize Read to avoid READS matching Sign)
                             string docType = "Read";
-                            if (actionCode.Contains("SIGN") || actionCode == "S") {
-                                docType = "Sign";
-                                signers.Add(usr); // Track signers for secondary notification
+                            if (!isOtherFolder)
+                            {
+                                if (actionCode.Contains("SIGN") || actionCode == "S") {
+                                    docType = "Sign";
+                                    if (isTargetUser) signers.Add(usr); // Track signers for secondary notification
+                                }
+                                else if (actionCode.Contains("INPUT") || actionCode == "E" || actionCode == "I") docType = "Input";
+                                else if (actionCode.Contains("READ")) docType = "Read"; // Explicitly READS/READ
                             }
-                            else if (actionCode.Contains("INPUT") || actionCode == "E" || actionCode == "I") docType = "Input";
-                            else if (actionCode.Contains("READ")) docType = "Read"; // Explicitly READS/READ
                             
                             DocumentRecord(fileNewName, docType, (long)usr.UserId, masterId);
                         }
@@ -2367,8 +2476,51 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 }
                 else
                 {
-                    // Fallback: If no tokens are present, give READ permission to all users
-                    await CreateGenericReadMappingAsync(usr, destPath, fileNewName, escrowId, masterId);
+                    // Fallback: Only give generic READ permission (Other Documents) if the destination explicitly requests it
+                    if (isOtherFolder)
+                    {
+                        await CreateGenericReadMappingAsync(usr, destPath, fileNewName, escrowId, masterId);
+                    }
+                }
+            }
+
+            if (isOtherFolder)
+            {
+                try
+                {
+                    var tagsRepo = Abp.Dependency.IocManager.Instance.Resolve<Abp.Domain.Repositories.IRepository<EscrowFileTags>>();
+                    var mappingsRepo = Abp.Dependency.IocManager.Instance.Resolve<Abp.Domain.Repositories.IRepository<TagsAndFileMappings>>();
+
+                    var tag = await tagsRepo.FirstOrDefaultAsync(t => t.TagDescription != null && t.TagDescription.ToLower() == "general");
+                    int tagId;
+                    if (tag == null)
+                    {
+                        tagId = await tagsRepo.InsertAndGetIdAsync(new EscrowFileTags { TagDescription = "General", TagColor = "#00a651,white", TenantId = AbpSession.TenantId });
+                    }
+                    else
+                    {
+                        tagId = tag.Id;
+                        if (string.IsNullOrEmpty(tag.TagColor)) {
+                            tag.TagColor = "#00a651,white";
+                            await tagsRepo.UpdateAsync(tag);
+                        }
+                    }
+
+                    string mapName = fileNewName;
+                    string extPart = Path.GetExtension(fileNewName);
+                    if (mapName.Contains("~")) mapName = mapName.Substring(0, mapName.IndexOf("~")) + extPart;
+                    else if (mapName.Contains("-'-")) mapName = mapName.Substring(0, mapName.IndexOf("-'-")) + extPart;
+                    else if (mapName.Contains("_'_")) mapName = mapName.Substring(0, mapName.IndexOf("_'_")) + extPart;
+
+                    var existingMapping = await mappingsRepo.FirstOrDefaultAsync(m => m.FileName == mapName && m.TagId == tagId);
+                    if (existingMapping == null)
+                    {
+                        await mappingsRepo.InsertAsync(new TagsAndFileMappings { FileName = mapName, TagId = tagId });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Failed to add General tag during EXE upload to Other", ex);
                 }
             }
 
@@ -2419,6 +2571,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         string targetCode = rep.Contains('-') ? rep.Substring(0, rep.IndexOf('-')).ToUpper() : rep.ToUpper();
                         string userTypeUpp = (usr.Usertype ?? "").ToUpper();
  
+                        bool isOtherFolder = master.FileFullName != null && (master.FileFullName.Contains("\\Other\\", StringComparison.OrdinalIgnoreCase) || master.FileFullName.Contains("/Other/", StringComparison.OrdinalIgnoreCase));
+
                         if (targetCode == userTypeUpp || 
                            (targetCode == "BRX" && userTypeUpp.StartsWith("BR")) || 
                            (targetCode == "SRX" && userTypeUpp.StartsWith("SR")) ||
@@ -2429,24 +2583,32 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                            (targetCode == "EAX" && userTypeUpp.StartsWith("EA")))
                         {
                             // Classify permission precisely — READS = Read + Sign, SIGN = Sign, INPUT/E = Input
-                            if (actionCode.Contains("SIGN") || actionCode == "S") {
-                                DocumentRecord(fileName, "Sign", (long)usr.UserId, fileMasterId);
-                                signers.Add(usr);
-                            }
-                            else if (actionCode.Contains("INPUT") || actionCode == "E" || actionCode == "I") {
-                                DocumentRecord(fileName, "Input", (long)usr.UserId, fileMasterId);
-                            }
-                            
-                            // READS contains both READ and S — treat as Read WITH signing capability
-                            if (actionCode.Contains("READ")) {
-                                DocumentRecord(fileName, "Read", (long)usr.UserId, fileMasterId);
-                                // READS also grants signing
-                                if (actionCode.Contains("S")) {
+                            if (!isOtherFolder)
+                            {
+                                if (actionCode.Contains("SIGN") || actionCode == "S") {
                                     DocumentRecord(fileName, "Sign", (long)usr.UserId, fileMasterId);
-                                    if (!signers.Contains(usr)) signers.Add(usr);
+                                    signers.Add(usr);
+                                }
+                                else if (actionCode.Contains("INPUT") || actionCode == "E" || actionCode == "I") {
+                                    DocumentRecord(fileName, "Input", (long)usr.UserId, fileMasterId);
+                                }
+                                
+                                // READS contains both READ and S — treat as Read WITH signing capability
+                                if (actionCode.Contains("READ")) {
+                                    DocumentRecord(fileName, "Read", (long)usr.UserId, fileMasterId);
+                                    // READS also grants signing
+                                    if (actionCode.Contains("S")) {
+                                        DocumentRecord(fileName, "Sign", (long)usr.UserId, fileMasterId);
+                                        if (!signers.Contains(usr)) signers.Add(usr);
+                                    }
+                                }
+                                else if (actionCode == "R") {
+                                    DocumentRecord(fileName, "Read", (long)usr.UserId, fileMasterId);
                                 }
                             }
-                            else if (actionCode == "R") {
+                            else
+                            {
+                                // If it's the \Other folder, it's strictly a READ file regardless of tags.
                                 DocumentRecord(fileName, "Read", (long)usr.UserId, fileMasterId);
                             }
                             
@@ -2455,7 +2617,24 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     }
                 }
             }
-            await HandleESignIntegrationInternalAsync(fileMasterId, escrowId, creds, signers);
+            if (signers.Any())
+            {
+                await HandleESignIntegrationInternalAsync(fileMasterId, escrowId, creds, signers);
+            }
+            else
+            {
+                // Finalize ReadStatus for generic read mappings if no E-Sign is needed
+                var records = _srAssignedFilesDetailRepository.GetAll()
+                    .Where(x => x.SrEscrowFileMasterId == fileMasterId && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..."))
+                    .ToList();
+                foreach (var rec in records)
+                {
+                    if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "";
+                    if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Unread";
+                    rec.UpdatedOn = DateTime.UtcNow;
+                    _srAssignedFilesDetailRepository.Update(rec);
+                }
+            }
         }
 
         private async Task SendFileNotificationAsync(EscrowDetail user, string fileName, string escrowId)
@@ -2549,21 +2728,26 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     _srAssignedFilesDetailRepository.Update(rec);
                 }
 
+                // Broadcast refresh to all users to see the new file states
+                await _hub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true });
+
                 var mappedUserIdsSuccess = _srfilemapRepository.GetAll()
-                    .Where(x => x.SrEscrowFileMasterId == fileMasterId)
+                    .Where(x => x.SrEscrowFileMasterId == fileMasterId) // Include uploader
                     .Select(x => x.UserId.ToString())
                     .Distinct()
                     .ToList();
                 if (mappedUserIdsSuccess.Any()) {
-                    await _hub.Clients.Users(mappedUserIdsSuccess).SendAsync("getFileUploadMessage", new { refreshOnly = true });
+                    await _hub.Clients.Users(mappedUserIdsSuccess).SendAsync("getFileUploadMessage", "File processing complete.");
                 }
             } 
             catch (Exception ex) 
             { 
                 try
                 {
+                    await _hub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true });
+                    
                     var mappedUserIds = _srfilemapRepository.GetAll()
-                        .Where(x => x.SrEscrowFileMasterId == fileMasterId)
+                        .Where(x => x.SrEscrowFileMasterId == fileMasterId) // Include uploader
                         .Select(x => x.UserId.ToString())
                         .Distinct()
                         .ToList();
@@ -3400,17 +3584,35 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             try
             {
                 string fileFullPath = _hostingEnvironment.WebRootPath + "\\Common\\Paperless\\";
-                string fileNameOld = fileFullPath + Request.Headers["filenameold"];
-                string fileNameNew = fileFullPath + Request.Headers["filenamenew"];
+                string requestedOld = Request.Headers["filenameold"].ToString().Replace("/", "\\").Replace("\\\\", "\\");
+                string requestedNew = Request.Headers["filenamenew"].ToString().Replace("/", "\\").Replace("\\\\", "\\");
 
-                fileNameOld = fileNameOld.Replace("/", "\\").Replace("\\\\", "\\");
-                fileNameNew = fileNameNew.Replace("/", "\\").Replace("\\\\", "\\");
+                string fileNameOld = fileFullPath + requestedOld;
+                string fileNameNew = fileFullPath + requestedNew;
 
-                Console.WriteLine($"fileNameOld: {fileNameOld}");
-                Console.WriteLine($"fileNameNew: {fileNameNew}");
+                // FIX: EXE uploads are stored in EscrowId\UserEmail\Other\ instead of EscrowId\Other\
+                // The UI always sends the path as EscrowId\Other\, so we must resolve the true path from the DB.
+                string shortOldName = Path.GetFileName(fileNameOld);
+                string[] reqParts = requestedOld.Split('\\', StringSplitOptions.RemoveEmptyEntries);
+                string escrowId = reqParts.Length >= 3 ? reqParts[2] : "";
+
+                var master = _srEscrowFileMasterRepository.GetAll().FirstOrDefault(x => x.FileShortName == shortOldName && x.FileFullName.Contains(escrowId));
+                if (master != null && !string.IsNullOrEmpty(master.FileFullName))
+                {
+                    fileNameOld = master.FileFullName;
+                    fileNameNew = Path.Combine(Path.GetDirectoryName(fileNameOld), Path.GetFileName(fileNameNew));
+                    
+                    // Also update the master record so it reflects the new physical filename!
+                    master.FileShortName = Path.GetFileName(fileNameNew);
+                    master.FileFullName = fileNameNew;
+                    await _srEscrowFileMasterRepository.UpdateAsync(master);
+                }
+
+                Console.WriteLine($"Resolved fileNameOld: {fileNameOld}");
+                Console.WriteLine($"Resolved fileNameNew: {fileNameNew}");
 
                 var filefound = _srfilemapRepository.GetAll()
-                    .Where(x => x.FileName.ToLower().EndsWith("\\" + Path.GetFileName(fileNameOld.ToLower())))
+                    .Where(x => x.FileName.ToLower() == fileNameOld.ToLower())
                     .ToArray();
 
                 if (filefound.Length > 0)
@@ -3420,29 +3622,30 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         file.FileName = fileNameNew;
                         await _srfilemapRepository.UpdateAsync(file);
                     }
-
-                    if (System.IO.File.Exists(fileNameOld))
-                    {
-                        System.IO.File.Move(fileNameOld, fileNameNew);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"File not found on disk: {fileNameOld}");
-                    }
                 }
                 else
                 {
-                    Console.WriteLine("File not found in database!");
+                    Console.WriteLine("File not found in database! Proceeding with disk rename anyway.");
+                }
+
+                if (fileNameOld.Equals(fileNameNew, StringComparison.OrdinalIgnoreCase)) { return new responseBack { Success = true, message = "No changes made." }; } if (System.IO.File.Exists(fileNameOld))
+                {
+                    System.IO.File.Move(fileNameOld, fileNameNew);
+                    
+                    try {
+                        await _hub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true });
+                    } catch { }
+                }
+                else
+                {
+                    Console.WriteLine($"File not found on disk: {fileNameOld}");
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in DropAreaRename: {ex.Message}");
             }
-            return null;
-        }
-
-        public async Task<responseBack> Move()
+            return new responseBack { Success = true, message = "Success" }; } public async Task<responseBack> Move()
         {
             responseBack response = new responseBack();
             try
@@ -3516,7 +3719,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 var fileNameShort = System.IO.Path.GetFileName(filenamenews);
                 long SrFileId = 0;
                 SREscrowFileMaster sREscrowFileMaster = new SREscrowFileMaster();
-                sREscrowFileMaster.FileFullName = selectedfile.FirstOrDefault().FileName;
+                sREscrowFileMaster.FileFullName = selectedfile.FirstOrDefault()?.FileName ?? filenameolds;
 
                 sREscrowFileMaster.FileShortName = fileNameShort;
                 var SrEscrowFileMasterId = _srEscrowFileMasterRepository.InsertAndGetId(sREscrowFileMaster);
@@ -3614,15 +3817,13 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
 
                 System.IO.File.Move(filenameolds, filenamenews);
-                System.IO.File.Delete(filenameolds);
 
 
             }
             catch (Exception ex)
-
             {
                 response.statusCode = 409;
-                response.message = "File Alerady Exist with same name and permissions";
+                response.message = "Exception: " + ex.Message + " | StackTrace: " + ex.StackTrace;
                 return response;
             }
             response.statusCode = 200;
@@ -11034,3 +11235,5 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         public float PageHeight { get; set; }
     }
 }
+
+

@@ -161,6 +161,7 @@ export class FileViewComponent extends AppComponentBase {
   filenameold: any;
   filenamenew: any;
   fullnameold: any;
+  uploaderRole: any;
   parentpath: any;
   fullparentnew: any;
   fullparentold: any;
@@ -215,6 +216,7 @@ export class FileViewComponent extends AppComponentBase {
   @ViewChild('ViewPdfFile', { static: true }) viewPdfFileTemplate!: TemplateRef<any>;
   @ViewChild('otherAreaFileAction', { static: true }) otherAreaFileActionTemplate!: TemplateRef<any>;
   @ViewChild('Move', { static: true }) moveTemplateRef!: TemplateRef<any>;
+  @ViewChild('AssignOther', { static: true }) assignOtherTemplateRef!: TemplateRef<any>;
   pastedFileContent: any;
   pastedValue: string | null = null;
   showContextMenu = false;
@@ -956,8 +958,12 @@ export class FileViewComponent extends AppComponentBase {
         this.openrenameModal1(e.selectedFile, this.renameTemplateRef);
       }
       else if (e.templateRef == 'Move') {
-        this.parentpath = e.folderPath;
+        this.parentpath = e.selectedFile.dataItem?.parentPath || e.folderPath;
         this.openMoveModal(e.selectedFile, this.moveTemplateRef);
+      }
+      else if (e.templateRef == 'AssignOther') {
+        this.parentpath = e.selectedFile.dataItem?.parentPath || e.folderPath;
+        this.openMoveModal(e.selectedFile, this.assignOtherTemplateRef);
       }
       else if (e.templateRef == 'FullName1') {
         this.openFullName1(e.selectedFile, this.fullNameTemplateRef);
@@ -1066,6 +1072,19 @@ export class FileViewComponent extends AppComponentBase {
           const fileExtension = this.getFileExtension(this.fileName);
           //  fileName =  fileToUpload.name.slice(0,startIndex)+'.'+ fileExtension;
         }
+
+        const isOtherAreaUpload = uploadPath && (uploadPath.includes('/Other') || uploadPath.includes('\\Other'));
+        if (isOtherAreaUpload && this.Action) {
+            const lastDot = fileName.lastIndexOf('.');
+            if (lastDot !== -1) {
+                const namePart = fileName.substring(0, lastDot);
+                const extPart = fileName.substring(lastDot);
+                fileName = `${namePart}~{${this.Action}}${extPart}`;
+            } else {
+                fileName = `${fileName}~{${this.Action}}`;
+            }
+        }
+
         console.log("-------------" + this.folderPath + "ProcessRequest?path=" + uploadpath1 + "&useriD=" + abp.session.userId)
 
         formData.append('file', fileToUpload, fileName);
@@ -1901,7 +1920,7 @@ export class FileViewComponent extends AppComponentBase {
       if (this.items.length > 0) {
         this.items.forEach(element => {
           this.show(this.items[0].name)
-          let path = element.path;
+          let path = element.dataItem?.parentPath || element.path || this.folderPath;
           let key = element.key;
           let strng = path.replace(/#/g, "%23");
           let strng1 = key.replace(/#/g, "%23");
@@ -2199,7 +2218,7 @@ export class FileViewComponent extends AppComponentBase {
 
       this.btnstate = true;
       //this.items = this.fileManager1.instance.getSelectedItems();
-      let formattedPath = this.completeEnterprisePathOther.replace(/\//g, "\\");
+      let formattedPath = (this.parentpath || this.completeEnterprisePathOther).replace(/\//g, "\\");
 
       let fileNameOld = formattedPath + '\\' + this.filenameold;
       let fileNameNew = formattedPath + '\\' + this.filenames;
@@ -2249,6 +2268,64 @@ export class FileViewComponent extends AppComponentBase {
 
     this.datachanges = [];
     return;
+  }
+
+  isAlreadyAssigned(usertype: string): boolean {
+    if (!this.userpermissionsall) return false;
+    return this.userpermissionsall.some(x => x.first === usertype);
+  }
+
+  AssignOtherSave() {
+    this.datachanges = [];
+    let data = this.userpermissionsall;
+    for (let i = 0; i < data?.length; i++) {
+      this.typedata = data[i].first;
+      if (this.typedata == undefined || this.typedata == "Please Select") {
+        abp.notify.error("You need to select the User Type");
+        return;
+      }
+      this.datachange = "{" + this.typedata + "}";
+      this.datachanges.push(this.datachange);
+    }
+      
+      if (this.uploaderRole && !this.datachanges.includes("{" + this.uploaderRole + "}")) {
+          this.datachanges.push("{" + this.uploaderRole + "}");
+      }
+      let fulldata = this.datachanges.join('');
+      
+      let formattedPath = (this.parentpath || this.completeEnterprisePathOther).replace(/\//g, "\\");
+      let baseFolderPath = formattedPath.endsWith("\\") ? formattedPath : formattedPath + "\\";
+      
+      let fileNameOld = baseFolderPath + this.fullnameold;
+      
+      let extension = "";
+      if (this.fullnameold.includes(".")) {
+          extension = this.fullnameold.substring(this.fullnameold.lastIndexOf("."));
+      }
+      
+      let baseName = this.fullnameold;
+      if (this.fullnameold.includes("~")) {
+          baseName = this.fullnameold.substring(0, this.fullnameold.lastIndexOf("~"));
+      } else if (this.fullnameold.includes(".")) {
+          baseName = this.fullnameold.substring(0, this.fullnameold.lastIndexOf("."));
+      }
+      
+      let newFileName = baseName + "~" + fulldata + extension;
+      let fileNameNew = baseFolderPath + newFileName;
+
+      this.btnstate = true;
+      const headers = new HttpHeaders({ 'filenameold': fileNameOld, 'filenamenew': fileNameNew });
+    headers.append('Content-Type', 'application/json');
+
+    this.http.post<any>(this.path1 + "/Home/DropAreaRename", {}, { headers: headers })
+      .subscribe(
+        (response: any) => { this.fileOtherComponent.getAllFiles(); if (this.fileManager1 && this.fileManager1.instance) { this.fileManager1.instance.refresh().done(() => { this.check(); }); } this.HideRename(); this.btnstate = false; abp.notify.success('Users Assigned Successfully', 'Success'); },
+        (error) => {
+          this.btnstate = false;
+          console.error(error);
+          abp.notify.error("An error occurred while assigning users.");
+        }
+      );
   }
 
   Moved() {
@@ -2317,10 +2394,11 @@ export class FileViewComponent extends AppComponentBase {
     console.log(this.selectedGroup);
     this.btnstate = true;
     this.parentpath = this.completeEnterprisePathOther.replace(/\\/g, "/");
-    this.fullparentnew = this.parentpath.replace("/Other", "") + this.filenames + "~" + fulldata;
-    this.fullparentold = this.parentpath + this.filenameold + "~" + this.change;
+    let baseFolderPath = this.parentpath.endsWith("/") ? this.parentpath : this.parentpath + "/";
+    this.fullparentnew = this.parentpath.replace("/Other", "") + "/" + this.filenames + "~" + fulldata;
+    this.fullparentold = baseFolderPath + this.fullnameold;
     this.shortfilename = this.filenames + "~" + fulldata;
-    this.shortfilenameold = this.filenameold + "~" + this.change;
+    this.shortfilenameold = this.fullnameold;
 
     console.log("New Path: ", this.fullparentnew);
     console.log("Old Path: ", this.fullparentold);
@@ -2477,8 +2555,10 @@ export class FileViewComponent extends AppComponentBase {
             let path1 = encodeURIComponent(path + "/" + key);
             const token = 'my JWT';
             const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
+            let activeTab = localStorage.getItem("activeTab");
+            let userType = this.UsertypeModel || localStorage.getItem("accessTYpe" + activeTab);
 
-            this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
+            this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1 + "&userType=" + userType, {
               headers,
               observe: 'response'
             }).subscribe((response: any) => {
@@ -2550,18 +2630,24 @@ export class FileViewComponent extends AppComponentBase {
         let path1 = encodeURIComponent(path + "/" + key);
         const token = 'my JWT';
         const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
-        this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
+          let activeTab = localStorage.getItem("activeTab");
+          let userType = this.UsertypeModel || localStorage.getItem("accessTYpe" + activeTab) || "";
+          this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1 + "&userType=" + userType, {
           headers,
           observe: 'response'
         }).subscribe((response: any) => {
           this.fileMainComponent.getAllFiles();
           this.fileOtherComponent.getAllFiles();
 
-          this.fileManager.instance.refresh().done((result) => {
+          if (this.fileManager && this.fileManager.instance) {
+            this.fileManager.instance.refresh().done((result) => {
+              this.check();
+            }).fail(function (error) {
+              // handle error
+            });
+          } else {
             this.check();
-          }).fail(function (error) {
-            // handle error
-          });
+          }
 
           let fileRes: any = response;
           this.check();
@@ -2575,7 +2661,13 @@ export class FileViewComponent extends AppComponentBase {
               this.fileName = 'Select a file';
             }
             if (newResult === 200) {
-              Swal.fire('Deleted!', 'File deleted successfully :)', 'success');
+              let body = fileRes.body || {};
+              let successFlag = body.success !== undefined ? body.success : body.Success;
+              if (successFlag === false) {
+                Swal.fire('Error', body.message || 'Could not delete file', 'error');
+              } else {
+                Swal.fire('Result', body.message || 'File processed successfully :)', 'success');
+              }
               this.spinnerUpl = false;
               this.file = null;
               this.isFile = false;
@@ -2629,8 +2721,10 @@ export class FileViewComponent extends AppComponentBase {
           let path1 = encodeURIComponent(path + "/" + name);
           const token = 'my JWT';
           const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
+          let activeTab = localStorage.getItem("activeTab");
+          let userType = this.UsertypeModel || localStorage.getItem("accessTYpe" + activeTab);
 
-          this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
+          this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1 + "&userType=" + userType, {
             headers,
             responseType: 'blob' as 'json'
           }).subscribe((response: any) => {
@@ -2683,8 +2777,10 @@ export class FileViewComponent extends AppComponentBase {
           let path1 = encodeURIComponent(path + "/" + name);
           const token = 'my JWT';
           const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
+          let activeTab = localStorage.getItem("activeTab");
+          let userType = this.UsertypeModel || localStorage.getItem("accessTYpe" + activeTab);
 
-          this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
+          this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1 + "&userType=" + userType, {
             headers,
             responseType: 'blob' as 'json'
           }).subscribe((response: any) => {
@@ -2718,14 +2814,16 @@ export class FileViewComponent extends AppComponentBase {
       if (result.isConfirmed) {
         this.show(item.name);
 
-        let path = event.folderPath || this.folderPath;
+        let path = item.dataItem?.parentPath || event.folderPath || this.folderPath;
         let key = item.key;
         let strng1 = encodeURIComponent(key);
         let path1 = encodeURIComponent(path + "/" + key);
         const token = 'my JWT';
         const headers = new HttpHeaders().set('authorization', 'Bearer ' + token);
         
-        this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1, {
+          let activeTab = localStorage.getItem("activeTab");
+          let userType = this.UsertypeModel || localStorage.getItem("accessTYpe" + activeTab) || "";
+          this.http.get(this.folderPath + "DeleteFile" + "?path=" + path1 + "&key=" + strng1 + "&userType=" + userType, {
           headers,
           observe: 'response'
         }).subscribe((response: any) => {
@@ -2746,8 +2844,13 @@ export class FileViewComponent extends AppComponentBase {
             }
 
             if (newResult === 200) {
-
-              Swal.fire('Deleted!', 'File deleted successfully', 'success');
+              let body = fileRes.body || {};
+              let successFlag = body.success !== undefined ? body.success : body.Success;
+              if (successFlag === false) {
+                Swal.fire('Error', body.message || 'Could not delete file', 'error');
+              } else {
+                Swal.fire('Result', body.message || 'File processed successfully', 'success');
+              }
               this.spinnerUpl = false;
               this.file = null;
               this.isFile = false;
@@ -3022,6 +3125,7 @@ export class FileViewComponent extends AppComponentBase {
 
     const parentPath = selectedFile?.parentPath || '';
     const shortFileName = selectedFile?.name || '';
+    this.uploaderRole = selectedFile?.dataItem?.uploaderRole || selectedFile?.uploaderRole || '';
     const escrow = localStorage.getItem("activeTab");
 
     const headers = new HttpHeaders({
@@ -3250,6 +3354,7 @@ export class FileViewComponent extends AppComponentBase {
         this.filenamenew = this.filenames;
         this.filenameold = item['name'];
         this.fullnameold = item['key'];
+        this.uploaderRole = item.dataItem?.uploaderRole || item['uploaderRole'] || "";
         let splitname = this.fullnameold.split("~");
         this.change = splitname[1];
         this.lst = splitname[1];
@@ -3334,9 +3439,19 @@ export class FileViewComponent extends AppComponentBase {
       this.filenamenew = this.filenames;
       this.filenameold = fileName['name'];
       this.fullnameold = fileName['key'];
-      let splitname = this.fullnameold.split("~");
-      this.change = splitname[1];
-      this.lst = splitname[1];
+      this.uploaderRole = fileName.dataItem?.uploaderRole || fileName['uploaderRole'] || "";
+      let accessTokens = "";
+      if (this.fullnameold.includes("~'~")) {
+          accessTokens = this.fullnameold.substring(this.fullnameold.lastIndexOf("~'~") + 3);
+      } else if (this.fullnameold.includes("_'_")) {
+          accessTokens = this.fullnameold.substring(this.fullnameold.lastIndexOf("_'_") + 3);
+      } else if (this.fullnameold.includes("-'-")) {
+          accessTokens = this.fullnameold.substring(this.fullnameold.lastIndexOf("-'-") + 3);
+      } else if (this.fullnameold.includes("~")) {
+          accessTokens = this.fullnameold.substring(this.fullnameold.lastIndexOf("~") + 1);
+      }
+      this.change = accessTokens;
+      this.lst = accessTokens;
 
       let types = this.change.substring(0, this.change.lastIndexOf("}")).replaceAll("}", "").replace("{", "");
       let type = types.split("{");
@@ -3347,31 +3462,31 @@ export class FileViewComponent extends AppComponentBase {
         this.split = type[i].split('-');
         firstusertype.push(this.split[0]);
         userpermissions.push(this.split[1]);
-        if (this.split[1].includes("R")) {
+        if (this.split[1] && this.split[1].includes("R")) {
           this.checkR = true;
         }
         else {
           this.checkR = false;
         }
-        if (this.split[1].includes("E")) {
+        if (this.split[1] && this.split[1].includes("E")) {
           this.checkE = true;
         }
         else {
           this.checkE = false;
         }
-        if (this.split[1].includes("A")) {
+        if (this.split[1] && this.split[1].includes("A")) {
           this.checkA = true;
         }
         else {
           this.checkA = false;
         }
-        if (this.split[1].includes("D")) {
+        if (this.split[1] && this.split[1].includes("D")) {
           this.checkD = true;
         }
         else {
           this.checkD = false;
         }
-        if (this.split[1].includes("S")) {
+        if (this.split[1] && this.split[1].includes("S")) {
           this.checkS = true;
         }
         else {
@@ -3476,27 +3591,31 @@ export class FileViewComponent extends AppComponentBase {
       for (let i = 0; i < dir.length; i++) {
         let item = dir[i];
         this.filenames = item['name'];
-        this.oldfileName = this.currentpath1 + "/" + this.filenames;
+        this.oldfileName = this.currentpath1 + "/" + item['key'];
         this.filenamenew = this.filenames;
         this.filenameold = item['name'];
         this.fullnameold = item['key'];
+        this.uploaderRole = item.dataItem?.uploaderRole || item['uploaderRole'] || "";
 
         var dotPosition = this.fullnameold.lastIndexOf(".");
         var firstPart = this.fullnameold.substring(0, dotPosition);
-        var secondPart = this.fullnameold.substring(dotPosition + 1);
+        var secondPart = this.fullnameold.substring(dotPosition + 1).toLowerCase();
+
+        if (secondPart.includes("pdf")) {
+            this.typePDF = "true";
+        } else {
+            this.typePDF = "false";
+        }
+        
         localStorage.setItem("fileExtension", secondPart);
 
-        if (secondPart == "docx" || secondPart == "doc" || secondPart == "pdf") {
-
+        if (secondPart.includes("docx") || secondPart.includes("doc") || secondPart.includes("pdf")) {
           if (!firstPart.includes("~")) {
-            if (secondPart == "pdf") {
-              this.typePDF = "true";
-              this.oldfileName = this.currentpath1.replaceAll("/", "\\") + '\\' + this.filenames.replaceAll("/", "\\");
+            if (secondPart.includes("pdf")) {
+              this.oldfileName = this.currentpath1.replaceAll("/", "\\") + '\\' + this.fullnameold.replaceAll("/", "\\");
             }
-
-            secondPart = ".pdf";
             this.filenames = firstPart;
-            this.fullnameold = firstPart + "~" + secondPart;
+            this.fullnameold = firstPart + "~." + secondPart.replace(".", ""); 
           }
           localStorage.setItem('oldFileName', this.oldfileName);
           localStorage.setItem("typePdf", this.typePDF);
@@ -3513,65 +3632,50 @@ export class FileViewComponent extends AppComponentBase {
 
         this.parentpath = item.path;
         this.parentpath = this.parentpath.replace('/', '\\').replace('/', '\\');
-        let types = this.change.substring(0, this.change.lastIndexOf("}")).replaceAll("}", "").replace("{", "");
-        let type = types.split("{");
-        let firstusertype: any = [];
-        let userpermissions: any = [];
 
-        let userpermissionsall: any = [];
-        if (!userpermissions) {
-          this.split = type[i].split('-');
-          firstusertype.push(this.split[0]);
-          userpermissions.push(this.split[1]);
+        if (!this.uploaderRole) {
+          let pStr = (this.parentpath || "").replace(/\\/g, '/');
+          let pParts = pStr.split('/');
+          let otherIdx = pParts.findIndex(p => p.toLowerCase() === 'other');
+          if (otherIdx !== -1 && otherIdx + 1 < pParts.length) {
+             let possibleRole = pParts[otherIdx + 1];
+             if (possibleRole && !possibleRole.includes('.')) {
+                this.uploaderRole = possibleRole;
+             }
+          }
         }
-        else {
 
+        let firstusertype: any = [];
+        let userpermissionsall: any = [];
+        
+        if (this.change && this.change.includes("{") && this.change.includes("}")) {
+          let types = this.change.substring(0, this.change.lastIndexOf("}")).replaceAll("}", "").replace("{", "");
+          let type = types.split("{");
+          
           for (let i = 0; i < type.length; i++) {
             this.split = type[i].split('-');
             if (this.split.length != 1) {
               firstusertype.push(this.split[0]);
-              userpermissions.push(this.split[1]);
-              if (this.split[1].includes("R")) {
-                this.checkR = true;
-              }
-              else {
-                this.checkR = false;
-              }
-              if (this.split[1].includes("E")) {
-                this.checkE = true;
-              }
-              else {
-                this.checkE = false;
-              }
-              if (this.split[1].includes("A")) {
-                this.checkA = true;
-              }
-              else {
-                this.checkA = false;
-              }
-              if (this.split[1].includes("D")) {
-                this.checkD = true;
-              }
-              else {
-                this.checkD = false;
-              }
-              if (this.split[1].includes("S")) {
-                this.checkS = true;
-              }
-              else {
-                this.checkS = false;
-              }
+              this.checkR = this.split[1].includes("R");
+              this.checkE = this.split[1].includes("E");
+              this.checkA = this.split[1].includes("A");
+              this.checkD = this.split[1].includes("D");
+              this.checkS = this.split[1].includes("S");
               userpermissionsall.push({ first: this.split[0], R: this.checkR, E: this.checkE, A: this.checkA, D: this.checkD, S: this.checkS });
             }
-
             else {
-              userpermissionsall.push({});
+              userpermissionsall.push({ first: this.split[0] });
             }
           }
-
+        } else {
+          if (this.uploaderRole) {
+            userpermissionsall.push({ first: this.uploaderRole });
+          } else {
+            userpermissionsall.push({});
+          }
+          this.change = "";
         }
-
-
+        
         this.type = firstusertype;
 
         this.userpermissionsall = userpermissionsall;
@@ -4195,4 +4299,7 @@ export class GlobalService {
   oldPathSelectedFile = ""
   editor: any;
 }
+
+
+
 

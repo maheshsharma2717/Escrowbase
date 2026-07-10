@@ -120,6 +120,7 @@ export class FileOtherComponent extends AppComponentBase {
     let companyName = this.validFileName(atob(queryParams['c']))
     let EscrowTab = localStorage.getItem("activeTab")
     let userType = localStorage.getItem("accessTYpe" + EscrowTab);
+    this.userTypeFromStorage = userType;
     this.completeEnterprisePathOther = `${companyName}/${subCompanyName}/${EscrowTab}/Other/`
 
     this
@@ -553,6 +554,16 @@ export class FileOtherComponent extends AppComponentBase {
     this.getAllFiles();
   }
 
+  assignUsersToOther() {
+    this.showContextMenu = false;
+    this.selectedFile.path = this.completeEnterprisePathOther;
+    var obj = {
+      selectedFile: this.selectedFile,
+      templateRef: "AssignOther",
+    }
+    this.saveEvent.emit(obj);
+  }
+
   deleteFile(event) {
     debugger;
     this.selectedFile.path = this.completeEnterprisePathOther;
@@ -566,6 +577,42 @@ export class FileOtherComponent extends AppComponentBase {
   Opentags() {
     this.escrowUsertagsComponent.show();
     this.showContextMenuTags = false;
+  }
+
+  getAssignedUsers(key: string): string {
+    if (!key) return '';
+    const assignedUsers = [];
+    const regex = /\{([^}]+)\}/g;
+    let match;
+    while ((match = regex.exec(key)) !== null) {
+      const tagContent = match[1];
+      const targetCode = tagContent.indexOf('-') > -1 ? tagContent.split('-')[0] : tagContent;
+      if (targetCode && !assignedUsers.includes(targetCode)) {
+        assignedUsers.push(targetCode);
+      }
+    }
+    if (assignedUsers.length > 0) {
+      return ` <span class="text-muted ml-2 font-weight-normal small">(Assigned: ${assignedUsers.join(', ')})</span>`;
+    }
+    return '';
+  }
+
+  getAssignedUsersText(key: string): string {
+    if (!key) return '';
+    const assignedUsers = [];
+    const regex = /\{([^}]+)\}/g;
+    let match;
+    while ((match = regex.exec(key)) !== null) {
+      const tagContent = match[1];
+      const targetCode = tagContent.indexOf('-') > -1 ? tagContent.split('-')[0] : tagContent;
+      if (targetCode && !assignedUsers.includes(targetCode)) {
+        assignedUsers.push(targetCode);
+      }
+    }
+    if (assignedUsers.length > 0) {
+      return ` (Assigned: ${assignedUsers.join(', ')})`;
+    }
+    return '';
   }
 
   validFileName(folderName) {
@@ -638,7 +685,7 @@ export class FileOtherComponent extends AppComponentBase {
         (response: any) => {
           this.allTagsList = response.items.map(item => ({
             ...item.escrowFileTags,
-            tagColor: item.escrowFileTags.tagColor.split(',')[0],
+            tagColor: (item.escrowFileTags.tagColor || '#6c757d').split(',')[0],
           }));
           this.manageTagList = this.allTagsList;
         },
@@ -820,7 +867,7 @@ export class FileOtherComponent extends AppComponentBase {
         event.dataTransfer.effectAllowed = 'all';
 
         const dragIcon = document.createElement('div');
-        dragIcon.textContent = `📥 ${file.name}`;
+        dragIcon.textContent = ` ${file.name}`;
         //dragIcon.textContent = `📄 ${file.name}`;
         dragIcon.style.position = 'absolute';
         dragIcon.style.top = '-1000px';
@@ -849,7 +896,7 @@ export class FileOtherComponent extends AppComponentBase {
         event.dataTransfer.setData('text/html', '<span style="display:none;">\u200B</span>');
         event.dataTransfer.setData('application/x-escrow-file', file.name);
 
-        // Trick Windows File Explorer into accepting the drag (removes the 🚫 icon)
+        // Trick Windows File Explorer into accepting the drag (removes the  icon)
         // Only apply if not in Thunderbird mode to prevent blue links/0-byte attachments
         if (!this.isThunderbirdMode) {
           event.dataTransfer.setData('text/uri-list', '\\\\.\\NUL');
