@@ -2131,7 +2131,10 @@ export class FileViewComponent extends AppComponentBase {
     let fulldata = datas + sdata;
     console.log(this.selectedGroup);
     this.btnstate = true;
-    this.items = this.fileManager.instance.getSelectedItems();
+    if (this.fileManager && this.fileManager.instance) {
+      this.items = this.fileManager.instance.getSelectedItems();
+    }
+    
     this.fullparentnew = this.parentpath + '\\' + this.filenames + "~" + fulldata;
     this.fullparentold = this.parentpath + '\\' + this.filenameold + "~" + this.change;
     this.shortfilename = this.filenames + "~" + fulldata;
@@ -2151,18 +2154,23 @@ export class FileViewComponent extends AppComponentBase {
     //this.http.get<any>(this.path1 + "/Home/Rename", { headers: header1 });
     this.http.get<any>(this.path1 + "/Home/Rename?EscrowId=" + escrowNewId, { headers: header2 }).subscribe((response: any) => {
       this.HideRename();
-      this.fileManager1.instance.refresh().done((result) => {
-        this.check();
-      })
-        .fail(function (error) {
-          // handle error
-        });
-      this.fileManager.instance.refresh().done((result) => {
-        this.check();
-      })
-        .fail(function (error) {
-          // handle error
-        });
+      if (this.fileManager1 && this.fileManager1.instance) {
+        this.fileManager1.instance.refresh().done((result) => {
+          this.check();
+        })
+          .fail(function (error) {
+            // handle error
+          });
+      }
+
+      if (this.fileManager && this.fileManager.instance) {
+        this.fileManager.instance.refresh().done((result) => {
+          this.check();
+        })
+          .fail(function (error) {
+            // handle error
+          });
+      }
 
       this.btnstate = false;
       let fileRes: any = response;
@@ -2200,14 +2208,57 @@ export class FileViewComponent extends AppComponentBase {
         alert(error);
       }
     });
-    if (this.bs != "File Already Signed") {
-      const header = new HttpHeaders({ 'parentpath': this.parentpath, 'shortfilename': this.shortfilename });
-      // headers.append('Content-Type', 'application/json');
-      // this.http.get<any>(this.path1 + "/Home/SignRename", { headers: header }).subscribe((response: any) => {
-      // });
-      //this.datachanges=[];
-    }
-    else if (this.bs == "File Already Signed") {
+    let requiresSigning = this.datachanges.some((d: string) => d.endsWith('S}'));
+
+    if (requiresSigning && this.bs != "File Already Signed") {
+      this.isSigningReady = true;
+
+      let prepTimeoutId = setTimeout(() => {
+        try { abp.notify.info('File is being prepared for signing, please wait...', 'Processing'); } catch(e) {}
+      }, 2000);
+
+      let headers2 = new HttpHeaders({
+        'parentpath': this.parentpath || '',
+        'shortfilename': this.shortfilename || ''
+      });
+      headers2 = headers2.append('Content-Type', 'application/json');
+
+      this.http.get<any>(this.path1 + "/Home/SignRename?EscrowId=" + escrowNewId, { headers: headers2 })
+        .subscribe({
+          next: (response: any) => {
+            clearTimeout(prepTimeoutId);
+            this.isSigningReady = false;
+            console.log('SignRename response:', JSON.stringify(response));
+
+            let innerResult = response?.result || response;
+            let isSuccess = innerResult?.success === true || innerResult?.Success === true;
+
+            try {
+              if (isSuccess) {
+                let msg = innerResult?.message || innerResult?.Message || "File is ready to sign";
+                abp.notify.success(msg, 'Success');
+              } else {
+                let errorMsg = innerResult?.message || innerResult?.Message || 'Something went wrong during signing preparation.';
+                abp.notify.error(errorMsg, 'Error');
+              }
+            } catch(e) {
+               abp.notify.error('Failed to prepare file for signing.');
+            }
+            this.fileMainComponent?.getAllFiles();
+          },
+          error: (err) => {
+            clearTimeout(prepTimeoutId);
+            this.isSigningReady = false;
+            console.error('SignRename error:', err);
+            let errorMsg = 'Failed to prepare file for signing.';
+            try {
+              errorMsg = err?.error?.error?.message || err?.error?.result?.message || err?.error?.message || err?.message || errorMsg;
+              abp.notify.error(errorMsg, 'Error');
+            } catch (e) {
+            }
+          }
+        });
+    } else if (this.bs == "File Already Signed") {
       abp.notify.error('File Already Signed');
     }
     return;
@@ -2454,61 +2505,66 @@ export class FileViewComponent extends AppComponentBase {
         alert(error);
       }
 
-      this.isSigningReady = true;
+      let requiresSigning = this.datachanges.some((d: string) => d.endsWith('S}'));
 
-      setTimeout(() => {
-        try { abp.notify.info('File is being prepared for signing, please wait...', 'Processing'); } catch(e) {}
-      }, 2000);
+      if (requiresSigning) {
+        this.isSigningReady = true;
 
-      let headers2 = new HttpHeaders({ 'parentpath': this.parentpath, 'shortfilename': this.shortfilename });
-      headers2 = headers2.append('Content-Type', 'application/json');
+        let prepTimeoutId = setTimeout(() => {
+          try { abp.notify.info('File is being prepared for signing, please wait...', 'Processing'); } catch(e) {}
+        }, 2000);
 
-      this.http.get<any>(this.path1 + "/Home/SignRename?EscrowId=" + escrowNewId, { headers: headers2 })
-        .pipe(
-          finalize(() => {
-            // This ALWAYS runs - whether success, error, or unsubscribe
-            this.isSigningReady = false;
-          })
-        )
-        .subscribe({
-          next: (response: any) => {
-            console.log('SignRename response:', JSON.stringify(response));
-
-            // ABP wraps: { result: { success: false, message: "..." }, success: true }
-            // After camelCase serialization, C# 'Success' becomes 'success'
-            let innerResult = response?.result || response;
-            let isSuccess = innerResult?.success === true;
-
-            try {
-              if (isSuccess) {
-                let msg = innerResult?.message || "File is ready to sign";
-                abp.notify.success(msg, 'Success');
-                if (this.scrollContainer?.nativeElement) {
-                  this.scrollContainer.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-              } else {
-                let errorMsg = innerResult?.message || 'Something went wrong during signing preparation.';
-                abp.notify.error(errorMsg, 'Error');
-              }
-            } catch (e) {
-              console.error("Toast notification error:", e);
-            }
-            this.fileMainComponent?.getAllFiles();
-            this.fileOtherComponent?.getAllFiles();
-          },
-          error: (err) => {
-            console.error('SignRename error:', err);
-            let errorMsg = 'Failed to prepare file for signing.';
-            try {
-              errorMsg = err?.error?.error?.message || err?.error?.result?.message || err?.error?.message || err?.message || errorMsg;
-              abp.notify.error(errorMsg, 'Error');
-            } catch (e) {
-              console.error("Toast notification error:", e);
-            }
-            this.fileMainComponent?.getAllFiles();
-            this.fileOtherComponent?.getAllFiles();
-          }
+        let headers2 = new HttpHeaders({
+          'parentpath': this.parentpath || '',
+          'shortfilename': this.shortfilename || ''
         });
+        headers2 = headers2.append('Content-Type', 'application/json');
+
+        this.http.get<any>(this.path1 + "/Home/SignRename?EscrowId=" + escrowNewId, { headers: headers2 })
+          .subscribe({
+            next: (response: any) => {
+              clearTimeout(prepTimeoutId);
+              this.isSigningReady = false;
+              console.log('SignRename response:', JSON.stringify(response));
+
+              // ABP wraps: { result: { success: false, message: "..." }, success: true }
+              // Handle both camelCase 'success' and PascalCase 'Success' / 'Message'
+              let innerResult = response?.result || response;
+              let isSuccess = innerResult?.success === true || innerResult?.Success === true;
+
+              try {
+                if (isSuccess) {
+                  let msg = innerResult?.message || innerResult?.Message || "File is ready to sign";
+                  abp.notify.success(msg, 'Success');
+                  if (this.scrollContainer?.nativeElement) {
+                    this.scrollContainer.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                } else {
+                  let errorMsg = innerResult?.message || innerResult?.Message || 'Something went wrong during signing preparation.';
+                  abp.notify.error(errorMsg, 'Error');
+                }
+              } catch (e) {
+                console.error("Toast notification error:", e);
+              }
+              this.fileMainComponent?.getAllFiles();
+              this.fileOtherComponent?.getAllFiles();
+            },
+            error: (err) => {
+              clearTimeout(prepTimeoutId);
+              this.isSigningReady = false;
+              console.error('SignRename error:', err);
+              let errorMsg = 'Failed to prepare file for signing.';
+              try {
+                errorMsg = err?.error?.error?.message || err?.error?.result?.message || err?.error?.message || err?.message || errorMsg;
+                abp.notify.error(errorMsg, 'Error');
+              } catch (e) {
+                console.error("Toast notification error:", e);
+              }
+              this.fileMainComponent?.getAllFiles();
+              this.fileOtherComponent?.getAllFiles();
+            }
+          });
+      }
     },
     (moveError) => {
       // Error handler for the outer Move call

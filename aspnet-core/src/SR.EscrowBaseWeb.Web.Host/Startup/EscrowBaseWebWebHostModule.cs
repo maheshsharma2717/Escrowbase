@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Abp.AspNetZeroCore;
 using Abp.AspNetZeroCore.Web.Authentication.External;
 using Abp.AspNetZeroCore.Web.Authentication.External.Facebook;
@@ -17,6 +17,7 @@ using SR.EscrowBaseWeb.Auditing;
 using SR.EscrowBaseWeb.Configuration;
 using SR.EscrowBaseWeb.EntityFrameworkCore;
 using SR.EscrowBaseWeb.MultiTenancy;
+using SR.EscrowBaseWeb.Web.FilePermission;
 using SR.EscrowBaseWeb.Web.Startup.ExternalLoginInfoProviders;
 
 namespace SR.EscrowBaseWeb.Web.Startup
@@ -45,6 +46,9 @@ namespace SR.EscrowBaseWeb.Web.Startup
         public override void Initialize()
         {
             IocManager.RegisterAssemblyByConvention(typeof(EscrowBaseWebWebHostModule).GetAssembly());
+
+            // Register the file permission service for EOX/EOA auto-grant
+            IocManager.Register<IFilePermissionService, FilePermissionService>(DependencyLifeStyle.Transient);
         }
 
         public override void PostInitialize()

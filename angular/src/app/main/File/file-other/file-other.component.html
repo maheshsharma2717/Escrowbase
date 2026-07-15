@@ -149,7 +149,7 @@
                                     <li *ngIf="editPermissionOtherArea" (click)="onItemClickMain('view1')" class="ctx-item"><i class="fa fa-edit"></i> View/Edit</li>
                                     <li *ngIf="(userTypeFromStorage?.startsWith('EO') || userTypeFromStorage?.startsWith('EA'))" (click)="assignUsersToOther()" class="ctx-item"><i class="fa fa-user-plus"></i> Assign Users</li>
                                     <li (click)="onItemClickMain('renameFile')" class="ctx-item"><i class="fa fa-pencil-alt"></i> Rename</li>
-                                    <li (click)="onItemClickMain('deleteFile')" class="ctx-item text-danger"><i class="fa fa-trash"></i> Delete</li>
+                                    <li *ngIf="canDeleteFile(selectedFile)" (click)="onItemClickMain('deleteFile')" class="ctx-item text-danger"><i class="fa fa-trash"></i> Delete</li>
                                     <li *ngIf="downloadPermission" (click)="DownloadFile(file)" class="ctx-item"><i class="fa fa-download"></i> Download File</li>
                                     <li (click)="onItemClickMain('FullName1')" class="ctx-item"><i class="fa fa-file-signature"></i> View FullName</li>
                                     <li *ngIf="editPermissionOtherArea" (click)="moveToMain('Move')" class="ctx-item"><i class="fa fa-arrow-up"></i> Move to main</li>

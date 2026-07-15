@@ -1051,6 +1051,18 @@ export class FileOtherComponent extends AppComponentBase {
       });
   }
 
+  canDeleteFile(file: any): boolean {
+    console.log('canDeleteFile debug:', file, this.userTypeFromStorage);
+    if (!this.userTypeFromStorage) return false;
+    let uType = this.userTypeFromStorage.toUpperCase().replace('-READS', '').replace('-READ', '').replace('-SIGN', '').replace('-INPUT', '');
+    if (uType.startsWith('EO') || uType.startsWith('EA')) return true;
+    if (file && file.uploaderRole) {
+      let fType = file.uploaderRole.toUpperCase().replace('-READS', '').replace('-READ', '').replace('-SIGN', '').replace('-INPUT', '');
+      if (uType === fType || fType.startsWith(uType) || uType.startsWith(fType)) return true;
+    }
+    return false;
+  }
+
   deleteSelected() {
     if (this.selectedFiles.size === 0) {
       abp.notify.warn('Please select files to delete');
@@ -1059,8 +1071,13 @@ export class FileOtherComponent extends AppComponentBase {
 
     const filesToDelete = this.files.filter(file => {
       const id = file.srAssignedFileId || file.key;
-      return this.selectedFiles.has(id);
+      return this.selectedFiles.has(id) && this.canDeleteFile(file);
     });
+
+    if (filesToDelete.length === 0) {
+      abp.notify.warn('You do not have permission to delete the selected files.');
+      return;
+    }
 
     var obj = {
       selectedFiles: filesToDelete,
