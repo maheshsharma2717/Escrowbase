@@ -552,6 +552,21 @@ export class FileViewComponent extends AppComponentBase {
       }
     }, 1000)
     console.log(new Date() + " Escrow No:" + this.escrowname + " User Name:" + this.Name + " User Type:" + this.Action + " Company:" + atob(this.tempcompany) + " Sub Company:" + atob(this.tempsubcompany));
+
+    this._chatSignalrService.componentMethodCalled$.subscribe(() => {
+      let checkFirstFile = this.fileManager && this.fileManager.instance ? this.fileManager.instance.getCurrentDirectory() : null;
+      if (!checkFirstFile || checkFirstFile.path == "") {
+        //window.location.reload();
+      }
+      else {
+        this.fileMainComponent.getAllFiles();
+        this.fileOtherComponent.getAllFiles();
+      }
+    });
+    setTimeout(() => {
+      this.fileMainComponent.getAllFiles();
+      this.fileOtherComponent.getAllFiles();
+    }, 2000);
   }
 
   show(elem): void {
@@ -2145,7 +2160,7 @@ export class FileViewComponent extends AppComponentBase {
     console.log(filenameold);
     console.log(filenamenew);
     var userId = abp.session.userId.toString();
-    var escrowNewId = localStorage.getItem("escrowNewID");
+    var escrowNewId = localStorage.getItem("activeTab");
     const token = 'my JWT';
     const header1 = new HttpHeaders({ 'filenameold': this.fullparentold, 'filenamenew': this.fullparentnew, 'shortfilenameold': this.shortfilenameold, 'shortfilename': this.shortfilename, 'userType': this.datachanges, 'userId': abp.session.userId.toString(), 'escrowNewId': localStorage.getItem("activeTab") });
     header1.append('Content-Type', 'application/json');
@@ -3745,59 +3760,41 @@ export class FileViewComponent extends AppComponentBase {
 
 
     this.modalRef = this.modalService.show(
-      popupMove,
+    popupMove,
       Object.assign({}, { class: 'gray modal-lg' })
     );
   }
   ngAfterViewInit() {
-
-    let dir = this.fileManager1.instance.getSelectedItems();
-    let strng;
-    if (dir.length > 0) {
-      for (let i = 0; i < dir.length; i++) {
-        let item = dir[i];
-        let source = item['parentPath'] + "/" + item['key'];
-        strng = source.replace(/#/g, "%23");
-        var maindiv = document.getElementById('modal-content');
-        var newdiv = document.createElement('div');
-        newdiv.id = "viewer";
-        newdiv.className = "viewer";
-        var newdiv1 = document.createElement('div');
-        newdiv1.id = "headerH";
-        newdiv1.className = "headerH";
-        newdiv1.innerText = "WebViewer";
-        if (!document.getElementById('headerH')) {
-          maindiv.appendChild(newdiv1);
+    if (this.fileManager1 && this.fileManager1.instance) {
+      let dir = this.fileManager1.instance.getSelectedItems();
+      let strng;
+      if (dir.length > 0) {
+        for (let i = 0; i < dir.length; i++) {
+          let item = dir[i];
+          let source = item['parentPath'] + "/" + item['key'];
+          strng = source.replace(/#/g, "%23");
+          var maindiv = document.getElementById('modal-content');
+          var newdiv = document.createElement('div');
+          newdiv.id = "viewer";
+          newdiv.className = "viewer";
+          var newdiv1 = document.createElement('div');
+          newdiv1.id = "headerH";
+          newdiv1.className = "headerH";
+          newdiv1.innerText = "WebViewer";
+          if (!document.getElementById('headerH')) {
+            maindiv.appendChild(newdiv1);
+          }
+          if (!document.getElementById('viewer')) {
+            maindiv.appendChild(newdiv);
+          }
         }
-        if (!document.getElementById('viewer')) {
-          maindiv.appendChild(newdiv);
-        }
+        let url = AppConsts.appBaseUrl;
       }
-      let url = AppConsts.appBaseUrl;
-
     }
     void this.initializeWebViewer();
-
-    this._chatSignalrService.componentMethodCalled$.subscribe(() => {
-      //this.ngOnInit();
-      // window.location.reload();
-
-      let checkFirstFile = this.fileManager.instance.getCurrentDirectory();
-      if (checkFirstFile.path == "") {
-        //window.location.reload();
-      }
-      else {
-        this.fileMainComponent.getAllFiles();
-        this.fileOtherComponent.getAllFiles();
-      }
-    });
-    setTimeout(() => {
-
-      this.fileMainComponent.getAllFiles();
-      this.fileOtherComponent.getAllFiles();
-    }, 2000)
-
   }
+
+
 
   async msgFunction() {
     const MsgReaderCtor = await this.ensureMsgReaderCtor();
