@@ -80,7 +80,7 @@ namespace SR.EscrowBaseWeb.Web.FilePermission
             }
             catch (Exception ex)
             {
-                // Log but don't throw - permission granting should not break the upload flow
+                
                 try
                 {
                     string logs = Path.Combine(_hostingEnvironment.WebRootPath, @"Logs\Logs.txt");

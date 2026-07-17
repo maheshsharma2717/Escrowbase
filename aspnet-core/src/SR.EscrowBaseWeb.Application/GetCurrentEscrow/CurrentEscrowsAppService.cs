@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using Abp.Linq.Extensions;
@@ -30,9 +30,18 @@ namespace SR.EscrowBaseWeb.GetCurrentEscrow
 
         public async Task<PagedResultDto<GetCurrentEscrowForViewDto>> GetAll(GetAllCurrentEscrowsInput input)
         {
+            string targetUser = input.Filter;
+            string targetUserName = null;
+
+            if (string.IsNullOrWhiteSpace(targetUser) && AbpSession.UserId.HasValue)
+            {
+                var currentUser = await GetCurrentUserAsync();
+                targetUser = currentUser?.EmailAddress;
+                targetUserName = currentUser?.UserName;
+            }
 
             var filteredCurrentEscrows = _currentEscrowRepository.GetAll()
-                        .WhereIf(!string.IsNullOrWhiteSpace(input.Filter), e => false || e.EscrowNo.Contains(input.Filter) || e.CompanyName.Contains(input.Filter) || e.SubCompanyName.Contains(input.Filter))
+                        .WhereIf(!string.IsNullOrWhiteSpace(targetUser), e => e.UserName == targetUser || (!string.IsNullOrEmpty(targetUserName) && e.UserName == targetUserName))
                         .WhereIf(!string.IsNullOrWhiteSpace(input.EscrowNoFilter), e => e.EscrowNo == input.EscrowNoFilter)
                         .WhereIf(!string.IsNullOrWhiteSpace(input.CompanyNameFilter), e => e.CompanyName == input.CompanyNameFilter)
                         .WhereIf(!string.IsNullOrWhiteSpace(input.SubCompanyNameFilter), e => e.SubCompanyName == input.SubCompanyNameFilter)

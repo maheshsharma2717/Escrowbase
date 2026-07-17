@@ -256,7 +256,11 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
 
     populateRecentDropdown() {
         const url = AppConsts.remoteServiceBaseUrl + "/api/services/app/CurrentEscrows/GetAll";
-        this.http.get(url).subscribe((res: any) => {
+        let headers = new HttpHeaders();
+        if (abp.auth.getToken()) {
+            headers = headers.set('Authorization', 'Bearer ' + abp.auth.getToken());
+        }
+        this.http.get(url, { headers: headers }).subscribe((res: any) => {
             const items = res?.result?.items;
             if (items && items.length > 0) {
                 const currentEscrow = items[0].currentEscrow;
@@ -314,18 +318,14 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     }
 
     assembleDropdown(currentEscrowItem) {
-        this.availableEscrows = [];
-        setTimeout(() => {
-            this.selectedEscrow = null;
-            this._changeDetectorRef.detectChanges();
-        });
+        const list: any[] = [];
 
         // Add "Current/Selected" escrow item first if it exists and is valid
         if (currentEscrowItem && currentEscrowItem.value !== '') {
-            this.availableEscrows.push(currentEscrowItem);
+            list.push(currentEscrowItem);
         } else {
             // Keep the placeholder if no current escrow, but ensure it doesn't duplicate the HTML "Select Escrow"
-            this.availableEscrows.push({ label: 'Current escrow not sent', value: '', disabled: true });
+            list.push({ label: 'Current escrow not sent', value: '', disabled: true });
             this.selectedEscrow = "";
         }
 
@@ -344,17 +344,16 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
 
                 // Patch the current escrow item with the real ID if it matches one of the recent items
                 // This ensures LogAccess receives the ID even for the 'Current' selection
-                if (this.availableEscrows.length > 0 && this.availableEscrows[0].value && this.availableEscrows[0].value.e) {
-                    const currentNum = atob(this.availableEscrows[0].value.e);
+                if (list.length > 0 && list[0].value && list[0].value.e) {
+                    const currentNum = atob(list[0].value.e);
                     const match = items.find(i => i.escrowNumber === currentNum);
                     if (match) {
-                        this.availableEscrows[0].value.realId = btoa(match.escrowId.toString());
+                        list[0].value.realId = btoa(match.escrowId.toString());
                     }
                 }
 
                 items.forEach(item => {
                     const label = `${item.escrowNumber} - ${item.companyName}`;
-
 
                     // Skip invalid items (e.g. no escrowId)
                     if (!item.escrowId) {
@@ -367,6 +366,12 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                         return;
                     }
 
+                    // Avoid duplicate entries in the list
+                    const isDuplicate = list.some(x => x.label === label);
+                    if (isDuplicate) {
+                        return;
+                    }
+
                     const dataNew = {
                         c: btoa(item.companyName || ''),
                         e: btoa(item.escrowNumber || ''), // Use escrowNumber for correct tab labeling
@@ -376,12 +381,18 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                         isId: false
                     };
 
-                    this.availableEscrows.push({
+                    list.push({
                         label: label,
                         value: dataNew
                     });
                 });
             }
+
+            this.availableEscrows = list;
+            setTimeout(() => {
+                this.selectedEscrow = null;
+                this._changeDetectorRef.detectChanges();
+            });
         });
     }
 
@@ -457,8 +468,8 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                     //this._layoutTabService.openAbout(customObj.dataNew, true);
                 }
 
-                // Check if any record corresponds to an EOX user
-                this.isEOXUser = this.escrowList.some(x => x.type && x.type.includes("EOX"));
+                // Check if any record corresponds to an EO (EOX, EO1-10) or EA user
+                this.isEOXUser = this.escrowList.some(x => x.type && (x.type.includes("EO") || x.type.includes("EA")));
 
                 this.escrowList = this.escrowList.filter((test, index, array) =>
                     index === array.findIndex((findTest) =>

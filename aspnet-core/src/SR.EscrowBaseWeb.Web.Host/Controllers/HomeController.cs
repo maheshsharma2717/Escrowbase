@@ -2028,7 +2028,13 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     {
                         string fileName = file.FileName;
                         var rootPath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless");
-                        var destDir = Path.Combine(rootPath, Destination);
+                        
+                        var targetDestination = Destination;
+                        if (!string.IsNullOrEmpty(UserName))
+                        {
+                            targetDestination = Path.Combine(Destination, ValidFileName(UserName));
+                        }
+                        var destDir = Path.Combine(rootPath, targetDestination);
 
                         if (!Directory.Exists(destDir))
                         {
@@ -2048,12 +2054,14 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                             fileText = await reader.ReadToEndAsync();
                         }
 
+
+
                         var lines = fileText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
                         string secondLine = lines.Length > 1 ? lines[1] : "";
 
                         var input = new GetAllCurrentEscrowsInput
                         {
-                            Filter = "",
+                            Filter = UserName,
                             EscrowNoFilter = "",
                             CompanyNameFilter = "",
                             SubCompanyNameFilter = "",
