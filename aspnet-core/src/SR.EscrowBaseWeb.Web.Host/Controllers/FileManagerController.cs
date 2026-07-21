@@ -559,7 +559,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///<Summary>
         /// Delete files
         ///</Summary>
-        public responseBack DeleteFile(string path, string key, string userType = null)
+        public async Task<responseBack> DeleteFile(string path, string key, string userType = null)
         {
             try
             {
@@ -754,16 +754,33 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     // Fetch the uploader's role early to determine if they are an EOX
                     string uploaderRole = "";
                     if (uploaderMapping != null) {
-                        var uploaderRoleMap = _srfilemapRepository.GetAll().FirstOrDefault(x => x.UserId == uploaderMapping.UserId && x.Action != "READ");
-                        if (uploaderRoleMap != null) {
-                            uploaderRole = uploaderRoleMap.Action.Replace("{", "").Replace("}", "");
-                            int uDash = uploaderRole.IndexOf("-");
-                            if (uDash > 0) uploaderRole = uploaderRole.Substring(0, uDash);
+                        string escrowId = "";
+                        string[] folderParts = folderName.Split('/');
+                        if (folderParts.Length >= 5)
+                        {
+                            escrowId = folderParts[4];
+                        }
+                        
+                        var uploaderUser = _userRepository.FirstOrDefault(uploaderMapping.UserId);
+                        if (uploaderUser != null && !string.IsNullOrEmpty(escrowId)) {
+                            var uploaderEd = _escrowDetailRepository.GetAll().FirstOrDefault(x => x.EscrowId == escrowId && x.Email == uploaderUser.EmailAddress);
+                            if (uploaderEd != null && !string.IsNullOrEmpty(uploaderEd.Usertype)) {
+                                uploaderRole = uploaderEd.Usertype;
+                            }
+                        }
+                        
+                        if (string.IsNullOrEmpty(uploaderRole)) {
+                            var uploaderRoleMap = _srfilemapRepository.GetAll().FirstOrDefault(x => x.UserId == uploaderMapping.UserId && x.Action != "READ");
+                            if (uploaderRoleMap != null) {
+                                uploaderRole = uploaderRoleMap.Action.Replace("{", "").Replace("}", "");
+                                int uDash = uploaderRole.IndexOf("-");
+                                if (uDash > 0) uploaderRole = uploaderRole.Substring(0, uDash);
+                            }
                         }
                     }
                     bool uploaderIsEox = !string.IsNullOrEmpty(uploaderRole) && (uploaderRole.StartsWith("EO", StringComparison.OrdinalIgnoreCase) || uploaderRole.StartsWith("EA", StringComparison.OrdinalIgnoreCase));
 
-                    if (isEscrowOfficer && uploaderMapping != null && uploaderMapping.UserId != AbpSession.UserId && isOtherArea && !isGlobalAdmin && !uploaderIsEox)
+                    if (isEscrowOfficer && uploaderMapping != null && uploaderMapping.UserId != AbpSession.UserId && !isOtherArea && !isGlobalAdmin && !uploaderIsEox)
                     {
                         // EOX is deleting a file uploaded by a REGULAR user (BR/SR) → preserve for uploader
                         foreach (var assignedFile in assignedFiles)
@@ -820,7 +837,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         
                         res.message = "File assignments cleared and returned to uploader.";
                         res.Success = true;
-                        try { _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true }).Wait(); } catch {}
+                        try { await _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true }); } catch {}
                         return res;
                     }
                     else if (!isEscrowOfficer && !isGlobalAdmin)
@@ -933,7 +950,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
     
                             res.message = "File removed from your view successfully.";
                             res.Success = true;
-                            try { _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true }).Wait(); } catch {}
+                            try { await _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true }); } catch {}
                             return res;
                         }
                         
@@ -1037,7 +1054,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     }
                 }
                 if (res.Success) {
-                    try { _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true }).Wait(); } catch {}
+                    try { await _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { refreshOnly = true }); } catch {}
                 }
                 return res;
             }
@@ -1924,7 +1941,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         [HttpPost]
         [Microsoft.AspNetCore.Authorization.Authorize]
         [Abp.Web.Models.DontWrapResult]
-        public responseBack ProcessRequest(string path, string userId)
+        public async Task<responseBack> ProcessRequest(string path, string userId)
         {
             responseBack res = new responseBack();
 
@@ -1940,9 +1957,78 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 var file = Request.Form.Files[0];
                 var fileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
 
-                var folderPath = Path.Combine("wwwroot", "Common", "Paperless", path.Replace("/", "\\"));
+                string uploaderEmail = null;
+                string cleanPath = path;
+                string[] pathParts = path.Replace("\\", "/").Split('/', StringSplitOptions.RemoveEmptyEntries);
+                if (pathParts.Length > 0)
+                {
+                    string lastPart = pathParts[pathParts.Length - 1];
+                    if (lastPart.Contains("@") && lastPart.Contains("."))
+                    {
+                        uploaderEmail = lastPart;
+                        cleanPath = string.Join("/", pathParts.Take(pathParts.Length - 1));
+                    }
+                }
+
+                long parsedUserId = 0;
+                if (!string.IsNullOrEmpty(uploaderEmail))
+                {
+                    var userObj = _userRepository.GetAll().FirstOrDefault(x => x.EmailAddress == uploaderEmail);
+                    if (userObj != null)
+                    {
+                        parsedUserId = userObj.Id;
+                    }
+                }
+                
+                if (parsedUserId == 0)
+                {
+                    long.TryParse(userId, out parsedUserId);
+                }
+
+                // Resolve company, subcompany, escrowId from the cleaned path
+                string company = "";
+                string subCompany = "";
+                string escrowId = "";
+                
+                string[] cleanedParts = cleanPath.Replace("\\", "/").Split('/', StringSplitOptions.RemoveEmptyEntries);
+                if (cleanedParts.Length >= 3)
+                {
+                    company = cleanedParts[0];
+                    subCompany = cleanedParts[1];
+                    escrowId = cleanedParts[2];
+                }
+
+                string userRole = "";
+                if (parsedUserId > 0 && !string.IsNullOrEmpty(escrowId))
+                {
+                    var userObj = _userRepository.FirstOrDefault(parsedUserId);
+                    if (userObj != null)
+                    {
+                        var ed = _escrowDetailRepository.GetAll().FirstOrDefault(x => x.EscrowId == escrowId && x.Email == userObj.EmailAddress);
+                        if (ed != null && !string.IsNullOrEmpty(ed.Usertype))
+                        {
+                            userRole = ed.Usertype.ToUpper();
+                        }
+                    }
+                }
+
+                string finalFileName = fileName;
+                bool isOfficer = !string.IsNullOrEmpty(userRole) && (userRole.StartsWith("EO") || userRole.StartsWith("EA"));
+                bool isAdmin = parsedUserId == 1;
+
+                if (!isOfficer && !isAdmin && !string.IsNullOrEmpty(userRole))
+                {
+                    string ext = Path.GetExtension(fileName);
+                    string baseName = Path.GetFileNameWithoutExtension(fileName);
+                    int tildeIdx = baseName.IndexOf("~");
+                    if (tildeIdx > 0) baseName = baseName.Substring(0, tildeIdx);
+
+                    finalFileName = $"{baseName}~{{{userRole}-READ}}{{EOX-READ}}{{EAX-READ}}{ext}";
+                }
+
+                var folderPath = Path.Combine("wwwroot", "Common", "Paperless", cleanPath.Replace("/", "\\"));
                 var fullSavePath = Path.Combine(Directory.GetCurrentDirectory(), folderPath);
-                var fullFilePath = Path.Combine(fullSavePath, fileName);
+                var fullFilePath = Path.Combine(fullSavePath, finalFileName);
 
                 // Ensure directory exists
                 if (!Directory.Exists(fullSavePath))
@@ -1957,45 +2043,22 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     return res;
                 }
 
-                if (userId != "1")
-                {
-                    // Reject non-PDF files if they are not being uploaded to the Other directory
-                    if (!path.Contains("\\Other") && !path.Contains("/Other"))
-                    {
-                        var uploadExt = Path.GetExtension(fullFilePath).ToLowerInvariant();
-                        if (uploadExt != ".pdf")
-                        {
-                            res.message = "Only PDF files are allowed in this section.";
-                            res.statusCode = 400;
-                            return res;
-                        }
-                    }
-                }
-
                 using (Stream stream = new FileStream(fullFilePath, FileMode.Create))
                 {
                     file.CopyTo(stream);
                 }
 
-                if (userId != "1")
+                if (parsedUserId != 1)
                 {
-                    // Path format expected: Company/SubCompany/EscrowId/Other
-                    var splitPath = path.Replace("/", "\\").Split("\\");
-
-                    if (splitPath.Length < 3)
+                    if (cleanedParts.Length < 3)
                     {
                         res.message = "Invalid path format. Expected: Company/SubCompany/EscrowId/Other";
                         res.statusCode = 400;
                         return res;
                     }
 
-                    var company = splitPath[0];
-                    var subCompany = splitPath[1];
-                    var escrowId = splitPath[2];
-                    
                     // Logic to Create/Get Master File Record
                     long srEscrowFileMasterId = 0;
-                    // Note: file.FileName might just be name, fullFilePath is absolute path
                     var dbSREscrowFileMaster = _srEscrowFileMasterRepository.GetAll()
                         .Where(x => x.FileFullName == fullFilePath)
                         .FirstOrDefault();
@@ -2004,29 +2067,26 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     {
                         SREscrowFileMaster sREscrowFileMaster = new SREscrowFileMaster();
                         sREscrowFileMaster.FileFullName = fullFilePath; // Save full path
-                        sREscrowFileMaster.FileShortName = fileName; // Save just filename
+                        sREscrowFileMaster.FileShortName = finalFileName; // Save just filename
                         srEscrowFileMasterId = _srEscrowFileMasterRepository.InsertAndGetId(sREscrowFileMaster);
 
                         // Create History Record
                         CreateOrEditEscrowFileHistoryDto escrowFileHistory = new CreateOrEditEscrowFileHistoryDto();
                         escrowFileHistory.SrEscrowFileMasterId = srEscrowFileMasterId;
-                        escrowFileHistory.FileFullPath = fileName;
-                        escrowFileHistory.UserId = long.Parse(userId); 
+                        escrowFileHistory.FileFullPath = finalFileName;
+                        escrowFileHistory.UserId = parsedUserId; 
                         escrowFileHistory.Message = FileConstant.ADD_File;
                         escrowFileHistory.ActionType = FileConstantAction.ADD_File;
-                        // Use async method synchronously or Task.Run/Wait (be careful with deadlocks, but this is a controller)
-                        // _escrowFileHistoriesAppService.CreateOrEdit is async task.
-                        _escrowFileHistoriesAppService.CreateOrEdit(escrowFileHistory).Wait();
+                        await _escrowFileHistoriesAppService.CreateOrEdit(escrowFileHistory);
                     }
                     else
                     {
                         srEscrowFileMasterId = dbSREscrowFileMaster.Id;
                     }
 
-
                     var coesfm = new CreateOrEditSrFileMappingDto
                     {
-                        UserId = Convert.ToInt32(userId),
+                        UserId = Convert.ToInt32(parsedUserId),
                         FileName = fullFilePath,
                         IsActive = true,
                         EscrowiId = escrowId,
@@ -2034,41 +2094,30 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         SrEscrowFileMasterId = srEscrowFileMasterId
                     };
                     
-                    // Ensure we don't duplicate mapping if it exists? 
-                    // The original code didn't check for duplication before CreateOrEdit. 
-                    // SrFileMappingAppService.CreateOrEdit handles insert/update based on ID, but we don't pass ID here.
-                    // We should probably check if mapping exists to avoid duplicates or use logic from AutoUpdate.
-                    // AutoUpdate logic:
-                    /* 
-                       coesfm.SrEscrowFileMasterId = SrEscrowFileMasterId;
-                       var filemap = _ISrFileMappingsAppService.CreateOrEdit(coesfm);
-                    */
-
-                    // We will check if mapping exists for this user and file to avoid spamming the DB
                     var existingMapping = _srfilemapRepository.GetAll()
                         .FirstOrDefault(x => x.UserId == coesfm.UserId && x.FileName == fullFilePath);
                     
                     if (existingMapping == null)
                     {
-                         _ISrFileMappingsAppService.CreateOrEdit(coesfm).Wait();
+                         await _ISrFileMappingsAppService.CreateOrEdit(coesfm);
                     }
 
                     // Grant READ permission to EOX/EOA users so they can see the uploaded file
-                    _filePermissionService.GrantEoxEoaReadPermissionAsync(
-                        escrowId, srEscrowFileMasterId, fullFilePath, Convert.ToInt32(userId)).Wait();
+                    await _filePermissionService.GrantEoxEoaReadPermissionAsync(
+                        escrowId, srEscrowFileMasterId, fullFilePath, Convert.ToInt32(parsedUserId));
                     
                     // Assign General tag if uploading to Other
-                    if (path.Contains("\\Other") || path.Contains("/Other"))
+                    if (cleanPath.Contains("\\Other") || cleanPath.Contains("/Other"))
                     {
                         var generalTag = _escrowFileTagsRepository.GetAll().FirstOrDefault(x => x.TagDescription.ToLower() == "general");
                         if (generalTag != null)
                         {
-                            var cleanName = fileName;
-                            int tildeIdx = fileName.IndexOf("~");
+                            var cleanName = finalFileName;
+                            int tildeIdx = finalFileName.IndexOf("~");
                             if (tildeIdx > 0)
                             {
-                                string extPart = Path.GetExtension(fileName);
-                                string baseName = fileName.Substring(0, tildeIdx);
+                                string extPart = Path.GetExtension(finalFileName);
+                                string baseName = finalFileName.Substring(0, tildeIdx);
                                 if (baseName.EndsWith(extPart, StringComparison.OrdinalIgnoreCase))
                                 {
                                     cleanName = baseName;
@@ -2094,7 +2143,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     }
                 }
 
-                _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { fileFullName = fileName }).Wait();
+                await _chatHub.Clients.All.SendAsync("getFileUploadMessage", new { fileFullName = finalFileName });
 
                 res.statusCode = 200;
                 res.message = "File uploaded successfully.";
@@ -2649,25 +2698,11 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             
             if (Directory.Exists(escrowPath))
             {
-                var escrowDir = new DirectoryInfo(escrowPath);
-                
                 // 1. Files in Escrow\Other (original)
                 string mainOther = Path.Combine(escrowPath, "Other");
                 if (Directory.Exists(mainOther))
                 {
                     allOtherFiles.AddRange(Directory.GetFiles(mainOther));
-                }
-                
-                // 2. Files in Escrow\<USER>\Other (new flow)
-                foreach (var dir in escrowDir.GetDirectories())
-                {
-                    if (dir.Name.Equals("Other", StringComparison.OrdinalIgnoreCase)) continue;
-                    
-                    string userOther = Path.Combine(dir.FullName, "Other");
-                    if (Directory.Exists(userOther))
-                    {
-                        allOtherFiles.AddRange(Directory.GetFiles(userOther));
-                    }
                 }
             }
             
@@ -2695,12 +2730,22 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     currentUserType = ed.Usertype.ToUpper();
                 }
+                else
+                {
+                    var companyEd = _escrowDetailRepository.GetAll()
+                        .FirstOrDefault(x => x.Company == company && x.Email == userEmail && x.Usertype != null && (x.Usertype.StartsWith("EO") || x.Usertype.StartsWith("EA")));
+                    
+                    if (companyEd != null)
+                    {
+                        currentUserType = companyEd.Usertype.ToUpper();
+                    }
+                }
             }
 
             List<Result> newFile = new List<Result>();
 
             foreach (var file in files)
-            {
+{
                 string fileName = Path.GetFileName(file);
                 var permission = checkPermission.FirstOrDefault(x => x.FileName.Contains(company) && x.FileName.Contains(fileName) && x.FileName.Contains("Other") && x.Action == "READ");
                 
@@ -2710,7 +2755,37 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 bool isAllowed = false;
                 if (currentUserType.StartsWith("EO") || currentUserType.StartsWith("EA"))
                 {
-                    isAllowed = true;
+                    var enterprise = _enterpriseRepository.GetAll()
+                        .FirstOrDefault(x => x.EnterpriseName == company || x.Subcompany == company);
+                    
+                    bool restrictToAssigned = enterprise?.RestrictToAssignedOfficer ?? false;
+                    bool isEox = currentUserType.Equals("EOX", StringComparison.OrdinalIgnoreCase);
+                    
+                    if (restrictToAssigned && !isEox)
+                    {
+                        // Check if they are mapped in EscrowDetails for this escrow
+                        bool isAssigned = _escrowDetailRepository.GetAll()
+                            .Any(x => x.Email == userEmail && x.EscrowId == escrow);
+                        
+                        if (isAssigned)
+                        {
+                            isAllowed = true;
+                        }
+                        else
+                        {
+                            var srEscrow = _ISrEscrowRepository.GetAll()
+                                .FirstOrDefault(x => x.SubCompanyName == company && x.EscrowNo == escrow);
+                            
+                            if (srEscrow != null && !string.IsNullOrEmpty(srEscrow.EOEmail) && srEscrow.EOEmail.Equals(userEmail, StringComparison.OrdinalIgnoreCase))
+                            {
+                                isAllowed = true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        isAllowed = true;
+                    }
                 }
                 else
                 {
@@ -2754,12 +2829,22 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     var uploaderMapping = checkPermission.FirstOrDefault(x => x.FileName.Contains(company) && x.FileName.Contains(fileName) && x.FileName.Contains("Other") && x.Action == "READ");
                     if (uploaderMapping != null) {
-                        var uploaderRoleMap = checkPermission.FirstOrDefault(x => x.UserId == uploaderMapping.UserId && x.FileName.Contains(company) && x.FileName.Contains(escrow) && x.Action != "READ");
-                        if (uploaderRoleMap != null) {
-                            uploaderRole = uploaderRoleMap.Action; 
-                            int uDash = uploaderRole.IndexOf("-");
-                            if (uDash > 0) uploaderRole = uploaderRole.Substring(0, uDash);
-                            uploaderRole = uploaderRole.Replace("{", "").Replace("}", "");
+                        var uploaderUser = _userRepository.FirstOrDefault(uploaderMapping.UserId);
+                        if (uploaderUser != null) {
+                            var uploaderEd = _escrowDetailRepository.GetAll().FirstOrDefault(x => x.EscrowId == escrow && x.Email == uploaderUser.EmailAddress);
+                            if (uploaderEd != null && !string.IsNullOrEmpty(uploaderEd.Usertype)) {
+                                uploaderRole = uploaderEd.Usertype;
+                            }
+                        }
+                        
+                        if (string.IsNullOrEmpty(uploaderRole)) {
+                            var uploaderRoleMap = checkPermission.FirstOrDefault(x => x.UserId == uploaderMapping.UserId && x.FileName.Contains(company) && x.FileName.Contains(escrow) && x.Action != "READ");
+                            if (uploaderRoleMap != null) {
+                                uploaderRole = uploaderRoleMap.Action; 
+                                int uDash = uploaderRole.IndexOf("-");
+                                if (uDash > 0) uploaderRole = uploaderRole.Substring(0, uDash);
+                                uploaderRole = uploaderRole.Replace("{", "").Replace("}", "");
+                            }
                         }
                     }
                 }

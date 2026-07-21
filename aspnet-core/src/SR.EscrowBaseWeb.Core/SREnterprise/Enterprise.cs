@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Abp.Domain.Entities.Auditing;
@@ -75,6 +75,7 @@ namespace SR.EscrowBaseWeb.SREnterprise
 		public virtual string RefreshToken { get; set; }
 		public virtual string AccessToken { get; set; }
 		public virtual DateTime? AccessTokenTime { get; set; }
+		public virtual bool RestrictToAssignedOfficer { get; set; }
 
 	}
 }

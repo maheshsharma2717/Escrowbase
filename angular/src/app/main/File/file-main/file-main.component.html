@@ -20,7 +20,7 @@
                 <i class="fa fa-download"></i> Download
             </button>
             <button class="btn btn-danger radical-btn" (click)="deleteSelected()"
-                [class.visible]="selectedFiles.size > 0" [disabled]="selectedFiles.size === 0" style="border-radius: 8px !important;">
+                [class.visible]="selectedFiles.size > 0 && canDeleteSelected()" [disabled]="selectedFiles.size === 0 || !canDeleteSelected()" style="border-radius: 8px !important;">
                 <i class="fa fa-trash"></i> Delete
             </button>
             <button class="btn btn-light-dark btn-icon ml-2" (click)="toggleFullScreenMain(fullscreenElementMain)" 
@@ -107,7 +107,7 @@
                                     <li *ngIf="downloadPermission" (click)="DownloadFile($event)" class="ctx-item"><i class="fa fa-download"></i> Download</li>
                                 </ng-container>
                                 <li *ngIf="downloadPermission && selectedFiles.size > 1" (click)="downloadSelected()" class="ctx-item"><i class="fa fa-download"></i> Download Selected</li>
-                                <li *ngIf="deletePermission && selectedFiles.size > 1" (click)="deleteSelected()" class="ctx-item text-danger"><i class="fa fa-trash"></i> Delete Selected</li>
+                                <li *ngIf="canDeleteSelected() && selectedFiles.size > 1" (click)="deleteSelected()" class="ctx-item text-danger"><i class="fa fa-trash"></i> Delete Selected</li>
                             </ul>
                         </div>
                     </td>

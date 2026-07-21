@@ -249,10 +249,25 @@ debugger;
       return;
     }
 
+    const userRole = this.userTypeFromStorage || '';
+    const isOfficer = userRole.startsWith("EO") || userRole.startsWith("EA");
+
     const filesToDelete = this.tableData.filter(file => {
       const id = file.srAssignedFileId || file.key;
-      return this.selectedFiles.has(id);
+      if (!this.selectedFiles.has(id)) return false;
+
+      // Officers can always delete
+      if (isOfficer) return true;
+
+      // Regular users must have explicit delete permission
+      let accesstype = file.access || '';
+      return accesstype.includes("D") || accesstype.includes("DEL") || accesstype.includes("DELETE");
     });
+
+    if (filesToDelete.length === 0) {
+      abp.notify.warn('You do not have permission to delete the selected files');
+      return;
+    }
 
     var obj = {
       selectedFiles: filesToDelete,
@@ -432,22 +447,49 @@ debugger;
     }
   }
 
-  handleShownEvent(e) {
+  canDeleteSelected(): boolean {
+    const userRole = this.userTypeFromStorage || '';
+    const isOfficer = userRole.startsWith("EO") || userRole.startsWith("EA");
+    if (isOfficer) return true;
 
+    if (this.selectedFiles.size === 0) return false;
+
+    const selectedList = this.tableData.filter(file => {
+      const id = file.srAssignedFileId || file.key;
+      return this.selectedFiles.has(id);
+    });
+
+    if (selectedList.length === 0) return false;
+
+    return selectedList.every(file => {
+      let accesstype = file.access || '';
+      return accesstype.includes("D") || accesstype.includes("DEL") || accesstype.includes("DELETE");
+    });
+  }
+
+  handleShownEvent(e) {
     this.readPermission = false;
     this.editPermission = false;
+    this.viewHistoryPermission = false;
+    this.downloadPermission = false;
+    this.viewFullNamePermission = false;
+    this.renamePermission = false;
+    this.deletePermission = false;
+    this.esignPermission = false;
+    this.reminderPermission = false;
+    this.renameFileName = true;
 
-    let accesstype = e.access
+    let accesstype = e.access || '';
+
     if (accesstype.includes("R")) {
       this.readPermission = true;
       this.viewHistoryPermission = true;
       this.downloadPermission = true;
       this.viewFullNamePermission = true;
-
     }
-    if (accesstype.includes("E")) {
+    if (accesstype.includes("E") || accesstype.includes("INPUT")) {
       this.readPermission = true;
-      this.editPermission = true
+      this.editPermission = true;
       this.viewHistoryPermission = true;
       this.downloadPermission = true;
       this.viewFullNamePermission = true;
@@ -460,17 +502,21 @@ debugger;
       this.downloadPermission = true;
       this.viewFullNamePermission = true;
     }
-    if (accesstype.includes("D")) {
+
+    const userRole = this.userTypeFromStorage || '';
+    const isOfficer = userRole.startsWith("EO") || userRole.startsWith("EA");
+
+    if (isOfficer || accesstype.includes("D") || accesstype.includes("DEL") || accesstype.includes("DELETE")) {
       this.readPermission = true;
       this.editPermission = true;
       this.viewHistoryPermission = true;
-      this.renamePermission = true
+      this.renamePermission = true;
       this.downloadPermission = true;
       this.viewFullNamePermission = true;
       this.deletePermission = true;
       this.renameFileName = false;
     }
-    if (accesstype.includes("S")) {
+    if (accesstype.includes("S") || accesstype.includes("SIGN")) {
       this.esignPermission = true;
     }
 

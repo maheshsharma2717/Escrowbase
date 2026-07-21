@@ -102,6 +102,12 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     showESignModal: boolean = false;
     tempDataNew: any = null;
     isEOXUser: boolean = false;
+    isRealEOXAdmin: boolean = false;
+    restrictOfficers: boolean = false;
+    showOfficersModal: boolean = false;
+    selectedEscrowForPopup: string = '';
+    assignedOfficers: any[] = [];
+    loadingOfficers: boolean = false;
 
     constructor(
         injector: Injector,
@@ -223,6 +229,38 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
 
     isEscrowSelectedForEdit(escrowid: string): boolean {
         return this.selectedDashboardEscrow === escrowid;
+    }
+
+    openOfficersModal(escrowId: string) {
+        this.showOfficersModal = true;
+        this.selectedEscrowForPopup = escrowId;
+        this.loadingOfficers = true;
+        this.assignedOfficers = [];
+
+        let url = AppConsts.remoteServiceBaseUrl + "/Home/GetAssignedOfficersForEscrow?escrowId=" + encodeURIComponent(escrowId);
+        this.http.get(url).subscribe((res: any) => {
+            this.loadingOfficers = false;
+            if (res && res.success) {
+                if (res.result && Array.isArray(res.result.result)) {
+                    this.assignedOfficers = res.result.result;
+                } else if (Array.isArray(res.result)) {
+                    this.assignedOfficers = res.result;
+                } else {
+                    this.assignedOfficers = [];
+                }
+            } else {
+                abp.message.error('Failed to load assigned officers.', 'Error');
+            }
+        }, error => {
+            this.loadingOfficers = false;
+            abp.message.error('Failed to load assigned officers.', 'Error');
+        });
+    }
+
+    closeOfficersModal() {
+        this.showOfficersModal = false;
+        this.assignedOfficers = [];
+        this.selectedEscrowForPopup = '';
     }
 
     ngAfterViewInit(): void { }
@@ -446,6 +484,8 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                     customObj.type = this.output['type'];
                     customObj.company = this.output['company'];
                     customObj.subCompany = this.output['subCompany'];
+                    customObj.officerName = this.output['officerName'];
+                    customObj.officerEmail = this.output['officerEmail'];
                     store = this.output['type'].split(',');
                     for (let i = 0; i < store.length; i++) {
                         split = store[0];
@@ -470,6 +510,10 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
 
                 // Check if any record corresponds to an EO (EOX, EO1-10) or EA user
                 this.isEOXUser = this.escrowList.some(x => x.type && (x.type.includes("EO") || x.type.includes("EA")));
+                this.isRealEOXAdmin = this.escrowList.some(x => x.type && x.type.toUpperCase() === "EOX");
+                if (this.isRealEOXAdmin) {
+                    this.fetchOfficerRestriction();
+                }
 
                 this.escrowList = this.escrowList.filter((test, index, array) =>
                     index === array.findIndex((findTest) =>
@@ -908,6 +952,52 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         // Update admin flag based on selection
         this.isAdminAssigned = (this.selectedESignCompany === 'admin-suggested');
     }
+
+    fetchOfficerRestriction() {
+        const firstEscrow = this.escrowList.find(x => x.company);
+        if (!firstEscrow) return;
+
+        const url = AppConsts.remoteServiceBaseUrl + "/Home/GetRestrictToAssignedOfficer?companyName=" + encodeURIComponent(firstEscrow.company);
+        let headers = new HttpHeaders();
+        if (abp.auth.getToken()) {
+            headers = headers.set('Authorization', 'Bearer ' + abp.auth.getToken());
+        }
+        this.http.get(url, { headers: headers }).subscribe((res: any) => {
+            this.restrictOfficers = res?.result?.restrict || res?.restrict || false;
+            this._changeDetectorRef.detectChanges();
+        });
+    }
+
+    toggleOfficerRestriction() {
+        const firstEscrow = this.escrowList.find(x => x.company);
+        if (!firstEscrow) return;
+
+        const url = AppConsts.remoteServiceBaseUrl + "/Home/SetRestrictToAssignedOfficer";
+        let headers = new HttpHeaders();
+        if (abp.auth.getToken()) {
+            headers = headers.set('Authorization', 'Bearer ' + abp.auth.getToken());
+        }
+
+        this.http.post(url, null, {
+            headers: headers,
+            params: {
+                companyName: firstEscrow.company,
+                restrict: this.restrictOfficers.toString()
+            }
+        }).subscribe((res: any) => {
+            const body = res?.result || res;
+            if (body && body.success) {
+                abp.notify.success(this.restrictOfficers ? 'Restriction enabled successfully.' : 'Restriction disabled successfully.');
+                this.getEscrowClients(null, true);
+            } else {
+                abp.message.error(body?.message || 'Failed to update restriction setting.', 'Error');
+                this.restrictOfficers = !this.restrictOfficers;
+            }
+        }, error => {
+            abp.message.error('Failed to update restriction setting.', 'Error');
+            this.restrictOfficers = !this.restrictOfficers;
+        });
+    }
 }
 
 export class escrows {
@@ -919,6 +1009,8 @@ export class escrows {
     public address: string;
     public buyer: string;
     public seller: string;
+    public officerName: string;
+    public officerEmail: string;
     public dataNew: any = {}
     constructor() { }
 

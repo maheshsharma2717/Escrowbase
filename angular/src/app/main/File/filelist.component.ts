@@ -901,7 +901,7 @@ export class FileViewComponent extends AppComponentBase {
       this.readPermissionOtherArea = false;
       this.editPermissionDocOtherArea = false;
     }
-    else if (fileName.includes('.docx') || fileName.includes('.doc')) {
+    else if (fileName.includes('.docx') || fileName.includes('.doc') || fileName.includes('.txt')) {
       this.editPermissionOtherArea = true;
       this.readPermissionOtherArea = false;
       this.editPermissionDocOtherArea = true;
@@ -948,7 +948,7 @@ export class FileViewComponent extends AppComponentBase {
       this.readPermissionOtherArea = false;
       this.editPermissionDocOtherArea = false;
     }
-    else if (fileName.includes('.docx') || fileName.includes('.doc')) {
+    else if (fileName.includes('.docx') || fileName.includes('.doc') || fileName.includes('.txt')) {
       this.editPermissionOtherArea = true;
       this.readPermissionOtherArea = false;
       this.editPermissionDocOtherArea = true;

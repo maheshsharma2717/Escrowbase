@@ -128,6 +128,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         private readonly IDocuSignService _docuSignService;
         private readonly ICurrentEscrowsAppService _currentEscrowRepository;
         private readonly IFilePermissionService _filePermissionService;
+        private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
 
 
         ///<Summary>
@@ -182,7 +183,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             IFriendshipAppService friendshipAppService,
             IRepository<ESignCompany, long> esignCompanyRepository,
              ICurrentEscrowsAppService currentEscrowRepository,
-            IFilePermissionService filePermissionService)
+            IFilePermissionService filePermissionService,
+            Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory)
 
 
         {
@@ -217,6 +219,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             _esignCompanyRepository = esignCompanyRepository;
             _currentEscrowRepository = currentEscrowRepository;
             _filePermissionService = filePermissionService;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         [HttpGet]
@@ -1675,43 +1678,229 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///</Summary>
         public List<UserCompany> GetUserCompanyDetails(string username)
         {
-
             try
             {
                 List<UserCompany> getComp = new List<UserCompany>();
-                GetAllEscrowDetailsInput getAllEscrowDetailsInput = new GetAllEscrowDetailsInput();
-                GetAllSrEscrowsInput getAllSrEscrowsInput = new GetAllSrEscrowsInput();
-                getAllEscrowDetailsInput.EmailFilter = username;
                 var escrowDetails = _escrowDetailRepository.GetAll().Where(x => x.Email == username).ToList();
-                foreach (var detail in escrowDetails)
+                
+                // Identify the companies where the user is an EO/EA and check their role
+                var eoEaDetails = escrowDetails.Where(x => x.Usertype != null && (x.Usertype.StartsWith("EO") || x.Usertype.StartsWith("EA"))).ToList();
+                
+                // Group by company name (normalized)
+                var userCompanies = eoEaDetails.Select(x => x.Company).Distinct().ToList();
+                
+                // Keep track of specific escrows the user is invited to as a non-EO/EA
+                var regularEscrowIds = escrowDetails
+                    .Where(x => x.Usertype == null || (!x.Usertype.StartsWith("EO") && !x.Usertype.StartsWith("EA")))
+                    .Select(x => new { x.Company, x.EscrowId, x.Usertype })
+                    .ToList();
+
+                // Process companies where user is an EO/EA
+                foreach (var companyName in userCompanies)
                 {
-                    UserCompany userCompany = new UserCompany();
-                    getAllSrEscrowsInput.SubCompanyNameFilter = detail.Company;
-                    var srEscrow = _ISrEscrowRepository.GetAll().Where(x => x.SubCompanyName == detail.Company && x.EscrowNo == detail.EscrowId).ToList();
-
-                    foreach (var escrow in srEscrow)
+                    // Find if the user is an EOX user in this company
+                    bool isEox = eoEaDetails.Any(x => x.Company == companyName && x.Usertype.Equals("EOX", StringComparison.OrdinalIgnoreCase));
+                    
+                    // Fetch the Enterprise settings for this company/subcompany
+                    var enterprise = _enterpriseRepository.GetAll()
+                        .FirstOrDefault(x => x.EnterpriseName == companyName || x.Subcompany == companyName);
+                    
+                    bool restrictToAssigned = enterprise?.RestrictToAssignedOfficer ?? false;
+                    
+                    // Fetch all escrows for this company
+                    var companyEscrows = _ISrEscrowRepository.GetAll().Where(x => x.SubCompanyName == companyName).ToList();
+                    
+                    foreach (var escrow in companyEscrows)
                     {
-                        var company = _enterpriseRepository.GetAll().Where(x => x.Id == escrow.EnterpriseId).FirstOrDefault();
-                        userCompany.address = escrow.PropertyAddress;
-                        userCompany.buyer = null;
-                        userCompany.company = company.EnterpriseName;
-                        userCompany.subCompany = escrow.SubCompanyName;
-                        userCompany.escrowId = escrow.EscrowNo;
-                        userCompany.seller = null;
-
-                        userCompany.type = detail.Usertype;
-                        getComp.Add(userCompany);
+                        bool hasAccess = false;
+                        string displayUserType = "EOX";
+                        
+                        if (isEox)
+                        {
+                            // EOX Admin always has access to all escrows of their company
+                            hasAccess = true;
+                            displayUserType = "EOX";
+                        }
+                        else
+                        {
+                            // User is EO1-10 or EA1-10 (but not EOX)
+                            var specificDetail = eoEaDetails.FirstOrDefault(x => x.Company == companyName && x.EscrowId == escrow.EscrowNo);
+                            displayUserType = specificDetail?.Usertype ?? eoEaDetails.First(x => x.Company == companyName).Usertype;
+                            
+                            if (restrictToAssigned)
+                            {
+                                // Restriction is enabled: Only show if they are the assigned officer
+                                if (specificDetail != null)
+                                {
+                                    hasAccess = true;
+                                }
+                                else if (!string.IsNullOrEmpty(escrow.EOEmail) && escrow.EOEmail.Equals(username, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    hasAccess = true;
+                                }
+                            }
+                            else
+                            {
+                                // Restriction is disabled: Show all escrows in the company
+                                hasAccess = true;
+                            }
+                        }
+                        
+                        if (hasAccess)
+                        {
+                            var parentEnterprise = _enterpriseRepository.GetAll().FirstOrDefault(x => x.Id == escrow.EnterpriseId);
+                            UserCompany userCompany = new UserCompany
+                            {
+                                address = escrow.PropertyAddress,
+                                buyer = null,
+                                company = parentEnterprise?.EnterpriseName ?? companyName,
+                                subCompany = escrow.SubCompanyName,
+                                escrowId = escrow.EscrowNo,
+                                seller = null,
+                                type = displayUserType,
+                                officerName = escrow.EscrowOfficerName,
+                                officerEmail = escrow.EOEmail
+                            };
+                            
+                            // Prevent duplicates
+                            if (!getComp.Any(x => x.escrowId == userCompany.escrowId && x.subCompany == userCompany.subCompany))
+                            {
+                                getComp.Add(userCompany);
+                            }
+                        }
                     }
                 }
+                
+                // Process regular escrows (non-EO/EA)
+                foreach (var detail in regularEscrowIds)
+                {
+                    var srEscrows = _ISrEscrowRepository.GetAll().Where(x => x.SubCompanyName == detail.Company && x.EscrowNo == detail.EscrowId).ToList();
+                    foreach (var escrow in srEscrows)
+                    {
+                        var parentEnterprise = _enterpriseRepository.GetAll().FirstOrDefault(x => x.Id == escrow.EnterpriseId);
+                        UserCompany userCompany = new UserCompany
+                        {
+                            address = escrow.PropertyAddress,
+                            buyer = null,
+                            company = parentEnterprise?.EnterpriseName ?? detail.Company,
+                            subCompany = escrow.SubCompanyName,
+                            escrowId = escrow.EscrowNo,
+                            seller = null,
+                            type = detail.Usertype,
+                            officerName = escrow.EscrowOfficerName,
+                            officerEmail = escrow.EOEmail
+                        };
+                        
+                        if (!getComp.Any(x => x.escrowId == userCompany.escrowId && x.subCompany == userCompany.subCompany))
+                        {
+                            getComp.Add(userCompany);
+                        }
+                    }
+                }
+
                 return getComp.ToList();
             }
             catch (Exception ex)
             {
-
+                // log exception if needed
             }
             return null;
         }
 
+        [HttpGet]
+        public async Task<JsonResult> GetAssignedOfficersForEscrow(string escrowId)
+        {
+            var rawAssignments = await _escrowDetailRepository.GetAll()
+                .Where(x => x.EscrowId == escrowId && x.Usertype != null && (x.Usertype.StartsWith("EO") || x.Usertype.StartsWith("EA")))
+                .Select(x => new {
+                    email = x.Email,
+                    role = x.Usertype
+                })
+                .ToListAsync();
+
+            // Fetch the main Escrow Officer (EOX) from the SrEscrow repository
+            var escrow = await _ISrEscrowRepository.GetAll()
+                .FirstOrDefaultAsync(x => x.EscrowNo == escrowId);
+
+            if (escrow != null && !string.IsNullOrEmpty(escrow.EOEmail))
+            {
+                rawAssignments.Add(new {
+                    email = escrow.EOEmail,
+                    role = "EOX"
+                });
+            }
+
+            var distinctAssignments = new List<object>();
+
+            // Group to get distinct entries by Email and Role
+            var grouped = rawAssignments
+                .GroupBy(x => new { Email = (x.email ?? "").ToLower().Trim(), Role = (x.role ?? "").ToUpper().Trim() })
+                .ToList();
+
+            foreach (var g in grouped)
+            {
+                var email = g.Key.Email;
+                var role = g.Key.Role;
+
+                if (string.IsNullOrEmpty(email)) continue;
+
+                // Look up user's registered name by email to display it properly
+                var user = await _userRepository.GetAll()
+                    .FirstOrDefaultAsync(u => u.EmailAddress.ToLower() == email);
+
+                string displayName = "";
+                if (user != null)
+                {
+                    displayName = (user.Name + " " + user.Surname).Trim();
+                }
+
+                if (string.IsNullOrEmpty(displayName))
+                {
+                    displayName = email;
+                }
+
+                distinctAssignments.Add(new {
+                    name = displayName,
+                    email = email,
+                    role = role
+                });
+            }
+
+            return Json(new { success = true, result = distinctAssignments });
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> GetRestrictToAssignedOfficer(string companyName)
+        {
+            var enterprise = await _enterpriseRepository.GetAll()
+                .FirstOrDefaultAsync(x => x.EnterpriseName == companyName || x.Subcompany == companyName);
+            
+            return Json(new { restrict = enterprise?.RestrictToAssignedOfficer ?? false });
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> SetRestrictToAssignedOfficer(string companyName, bool restrict)
+        {
+            try
+            {
+                var enterprises = await _enterpriseRepository.GetAll()
+                    .Where(x => x.EnterpriseName == companyName || x.Subcompany == companyName)
+                    .ToListAsync();
+                
+                foreach (var enterprise in enterprises)
+                {
+                    enterprise.RestrictToAssignedOfficer = restrict;
+                    await _enterpriseRepository.UpdateAsync(enterprise);
+                }
+                
+                await CurrentUnitOfWork.SaveChangesAsync();
+                return Json(new { success = true, restrict = restrict });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
 
         ///<Summary>
         /// Read users details
@@ -1992,6 +2181,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         /// Upload file for Current User
         ///</Summary>
         [HttpPost]
+        [AbpAllowAnonymous]
+        [IgnoreAntiforgeryToken]
         public async Task<responseBack> CurrentUser(string Paths, string Destination, string UserName, string source)
         {
             var response = new responseBack();
@@ -2153,10 +2344,6 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     
                     if (isOtherFolder)
                     {
-                        if (!hasTags)
-                        {
-                            return Json(new { success = false, message = "Files uploaded to the Other folder must contain a tag (e.g. ~{BR1}). Untagged files are not allowed." });
-                        }
 
                         var normalizedDest = Destination.Replace("/", "\\").Replace("=", "\\").Replace(".\\", "\\");
                         var parts = normalizedDest.Split('\\');
@@ -2196,49 +2383,67 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     } catch { }
 
                     // Offload heavy processing to a fully detached background task.
-                    // Task.Run is used instead of Response.OnCompleted because on IIS/server,
-                    // OnCompleted callbacks run within the request scope which can expire
-                    // before the slow E-Sign API calls (PDF.co, DocuSign) complete.
-                    var capturedUowManager = _unitOfWorkManager;
+                    var capturedScopeFactory = _serviceScopeFactory;
                     _ = Task.Run(async () => {
                         try {
                             await Task.Delay(2000); // Safety buffer for DB commit
-                            LogAutoUpdateError("BackgroundStart", new Exception($"Starting background processing for file master {fileMasterId} in escrow {escrowId}"));
-                            using (var unitOfWork = capturedUowManager.Begin())
+                            using (var scope = capturedScopeFactory.CreateScope())
                             {
-                                await ProcessFileLogicInternalAsync(fileMasterId, escrowId);
-                                await unitOfWork.CompleteAsync();
+                                var scopedProvider = scope.ServiceProvider;
+                                var scopedUowManager = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<IUnitOfWorkManager>(scopedProvider);
+                                var scopedHomeController = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<HomeController>(scopedProvider);
+                                
+                                LogAutoUpdateError("BackgroundStart", new Exception($"Starting background processing for file master {fileMasterId} in escrow {escrowId}"));
+                                using (var unitOfWork = scopedUowManager.Begin())
+                                {
+                                    await scopedHomeController.ProcessFileLogicInternalAsync(fileMasterId, escrowId);
+                                    await unitOfWork.CompleteAsync();
+                                }
                             }
                             LogAutoUpdateError("BackgroundComplete", new Exception($"Successfully completed processing for file master {fileMasterId}"));
                         } catch (Exception ex) {
                             LogAutoUpdateError("BackgroundProcess", ex);
                             // Set error status so the spinner stops
                             try {
-                                using (var unitOfWork = capturedUowManager.Begin()) {
-                                    var records = _srAssignedFilesDetailRepository.GetAll()
-                                        .Where(x => x.SrEscrowFileMasterId == fileMasterId && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..."))
-                                        .ToList();
-                                    foreach (var rec in records) {
-                                        if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "Error";
-                                        if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Unread";
-                                        _srAssignedFilesDetailRepository.Update(rec);
+                                using (var scope = capturedScopeFactory.CreateScope())
+                                {
+                                    var scopedProvider = scope.ServiceProvider;
+                                    var scopedUowManager = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<IUnitOfWorkManager>(scopedProvider);
+                                    var scopedHomeController = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<HomeController>(scopedProvider);
+                                    
+                                    using (var unitOfWork = scopedUowManager.Begin()) {
+                                        var records = scopedHomeController._srAssignedFilesDetailRepository.GetAll()
+                                            .Where(x => x.SrEscrowFileMasterId == fileMasterId && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..."))
+                                            .ToList();
+                                        foreach (var rec in records) {
+                                            if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "Error";
+                                            if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Unread";
+                                            scopedHomeController._srAssignedFilesDetailRepository.Update(rec);
+                                        }
+                                        await unitOfWork.CompleteAsync();
                                     }
-                                    await unitOfWork.CompleteAsync();
                                 }
                             } catch { /* nested catch safety */ }
                         } finally {
                              // Final safety check to ensure no records are left in "Preparing..."
                              try {
-                                using (var unitOfWork = capturedUowManager.Begin()) {
-                                    var records = _srAssignedFilesDetailRepository.GetAll()
-                                        .Where(x => x.SrEscrowFileMasterId == fileMasterId && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..."))
-                                        .ToList();
-                                    foreach (var rec in records) {
-                                        if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "Unsigned";
-                                        if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Unread";
-                                        _srAssignedFilesDetailRepository.Update(rec);
+                                using (var scope = capturedScopeFactory.CreateScope())
+                                {
+                                    var scopedProvider = scope.ServiceProvider;
+                                    var scopedUowManager = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<IUnitOfWorkManager>(scopedProvider);
+                                    var scopedHomeController = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<HomeController>(scopedProvider);
+                                    
+                                    using (var unitOfWork = scopedUowManager.Begin()) {
+                                        var records = scopedHomeController._srAssignedFilesDetailRepository.GetAll()
+                                            .Where(x => x.SrEscrowFileMasterId == fileMasterId && (x.SigningStatus == "Preparing..." || x.ReadStatus == "Preparing..."))
+                                            .ToList();
+                                        foreach (var rec in records) {
+                                            if (rec.SigningStatus == "Preparing...") rec.SigningStatus = "Unsigned";
+                                            if (rec.ReadStatus == "Preparing...") rec.ReadStatus = "Unread";
+                                            scopedHomeController._srAssignedFilesDetailRepository.Update(rec);
+                                        }
+                                        await unitOfWork.CompleteAsync();
                                     }
-                                    await unitOfWork.CompleteAsync();
                                 }
                              } catch { }
                         }
@@ -8288,16 +8493,76 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             List<EscrowDetail> EscrowUserList = new List<EscrowDetail>();
             try
             {
-
                 using (var unit = _unitOfWorkManager.Begin())
                 {
-                    EscrowUserList = _escrowDetailRepository.GetAll().Where(x => x.EscrowId == EscrowId).ToList();
+                    var rawList = _escrowDetailRepository.GetAll()
+                        .Include(x => x.UserFk)
+                        .Where(x => x.EscrowId == EscrowId)
+                        .ToList();
+
+                    // Group by email and usertype to ensure distinct roles/users
+                    var distinctList = rawList
+                        .GroupBy(x => new { Email = (x.Email ?? "").ToLower().Trim(), Role = (x.Usertype ?? "").ToUpper().Trim() })
+                        .Select(g => {
+                            var first = g.First();
+                            var email = g.Key.Email;
+
+                            // Look up user's registered name by email synchronously
+                            var user = _userRepository.GetAll().FirstOrDefault(u => u.EmailAddress.ToLower() == email);
+                            
+                            string resolvedName = "";
+                            if (user != null)
+                            {
+                                resolvedName = (user.Name + " " + user.Surname).Trim();
+                            }
+
+                            if (string.IsNullOrEmpty(resolvedName))
+                            {
+                                resolvedName = email;
+                            }
+
+                            return new EscrowDetail
+                            {
+                                Id = first.Id,
+                                EscrowId = first.EscrowId,
+                                Email = email,
+                                Usertype = g.Key.Role,
+                                Company = first.Company,
+                                Name = resolvedName,
+                                UserId = first.UserId
+                            };
+                        })
+                        .ToList();
+
+                    // Fetch the main EOX from SrEscrow as well, in case they are not in EscrowDetails but need to be shown/assigned
+                    var escrow = _ISrEscrowRepository.GetAll().FirstOrDefault(x => x.EscrowNo == EscrowId);
+                    if (escrow != null && !string.IsNullOrEmpty(escrow.EOEmail))
+                    {
+                        var eoxEmail = escrow.EOEmail.ToLower().Trim();
+                        bool hasEox = distinctList.Any(x => x.Email.ToLower() == eoxEmail && x.Usertype == "EOX");
+                        if (!hasEox)
+                        {
+                            var eoxUser = _userRepository.GetAll().FirstOrDefault(u => u.EmailAddress.ToLower() == eoxEmail);
+                            string resolvedEoxName = eoxUser != null ? (eoxUser.Name + " " + eoxUser.Surname).Trim() : escrow.EscrowOfficerName;
+
+                            distinctList.Add(new EscrowDetail
+                            {
+                                Id = 0,
+                                EscrowId = EscrowId,
+                                Email = eoxEmail,
+                                Usertype = "EOX",
+                                Name = resolvedEoxName
+                            });
+                        }
+                    }
+
+                    EscrowUserList = distinctList;
                     unit.Complete();
                 }
             }
             catch (Exception ex)
             {
-
+                // log exception if needed
             }
             return EscrowUserList;
         }
@@ -9751,6 +10016,9 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         /// Parameter seller
         ///</Summary>
         public string seller { get; set; }
+
+        public string officerName { get; set; }
+        public string officerEmail { get; set; }
     }
 
     ///<Summary>

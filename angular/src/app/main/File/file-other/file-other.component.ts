@@ -530,7 +530,7 @@ export class FileOtherComponent extends AppComponentBase {
       this.editPermissionDocOtherArea = false;
     }
 
-    else if (fileName.includes('.docx') || fileName.includes('.doc')) {
+    else if (fileName.includes('.docx') || fileName.includes('.doc') || fileName.includes('.txt')) {
       this.editPermissionOtherArea = true;
       this.readPermissionOtherArea = false;
       this.editPermissionDocOtherArea = true;
