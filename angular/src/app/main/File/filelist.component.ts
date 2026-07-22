@@ -613,7 +613,7 @@ export class FileViewComponent extends AppComponentBase {
     this.renameFileName = false;
     this.reminderPermission = true;
 
-    let accesstype = e.access
+    let accesstype = e.access || '';
     if (accesstype.includes("R")) {
       this.readPermission = true;
       this.viewHistoryPermission = true;
@@ -658,16 +658,39 @@ export class FileViewComponent extends AppComponentBase {
     else {
       this.isRename = false;
     }
+
+    const EscrowTab = localStorage.getItem("activeTab");
+    const userRole = this.UsertypeModel || localStorage.getItem("accessTYpe" + EscrowTab) || '';
+    const isOfficer = userRole.startsWith("EO") || userRole.startsWith("EA");
+
     let signing = e.signing;
     if (signing != "Unsigned") {
-
       this.editPermission = false;
       this.renamePermission = false;
       this.renameFileName = true;
     } else {
-      this.renamePermission = true;
-      this.renameFileName = false;
+      let hasEditOrDeleteAccess = false;
+      if (accesstype) {
+        hasEditOrDeleteAccess = accesstype.includes("D") || accesstype.includes("DEL") || 
+                                accesstype.includes("DELETE") || accesstype.includes("E") || 
+                                accesstype.includes("INPUT");
+      }
+      if (isOfficer || hasEditOrDeleteAccess) {
+        this.renamePermission = true;
+        this.renameFileName = false;
+      } else {
+        this.renamePermission = false;
+        this.renameFileName = true;
+      }
     }
+    console.log("PARENT handleShownEvent details:", {
+      filename: e.name,
+      access: e.access,
+      signing: e.signing,
+      userRole: userRole,
+      isOfficer: isOfficer,
+      renamePermission: this.renamePermission
+    });
   }
 
   handelSaveMainFile(e) {
@@ -2189,93 +2212,99 @@ export class FileViewComponent extends AppComponentBase {
 
       this.btnstate = false;
       let fileRes: any = response;
+      let canProceed = false;
+
       if (fileRes === null) {
         abp.notify.success('File renamed successfully', 'success');
         this.fileMainComponent.getAllFiles();
-        return;
-      }
-      if (fileRes.result?.message === "File Already Signed") {
+        canProceed = true;
+      } else if (fileRes.result?.message === "File Already Signed") {
         abp.notify.error('You are not allowed to rename this file', 'error');
         this.fileMainComponent.getAllFiles();
         return;
+      } else {
+        abp.notify.success('File Renamed Successfully', 'Success');
+        this.fileMainComponent.getAllFiles();
+        canProceed = true;
       }
-      abp.notify.success('File Renamed Successfully', 'Success');
-      this.fileMainComponent.getAllFiles();
-      try {
-        let newResult = fileRes.status;
-        if (newResult == 500) {
-          this.spinnerUpl = false;
-          this.file = null
-          this.isFile = false;
-          this.fileName = 'Select a file'
+
+      if (canProceed) {
+        try {
+          let newResult = fileRes?.status || fileRes?.result?.statusCode;
+          if (newResult == 500) {
+            this.spinnerUpl = false;
+            this.file = null;
+            this.isFile = false;
+            this.fileName = 'Select a file';
+            return;
+          }
+          if (newResult == 200) {
+            alert("File Renamed successfully :)");
+            this.spinnerUpl = false;
+            this.file = null;
+            this.isFile = false;
+            this.fileName = 'Select a file';
+          }
         }
-        if (newResult == 200) {
-          alert("File Renamed successfully :)");
-          this.spinnerUpl = false;
-          this.file = null;
-          this.isFile = false;
-          this.fileName = 'Select a file'
+        catch (error) {
+          alert(error);
         }
-        else {
+
+        let requiresSigning = this.datachanges.some((d: string) => d.endsWith('S}'));
+
+        if (requiresSigning && this.bs != "File Already Signed") {
+          this.isSigningReady = true;
+
+          let prepTimeoutId = setTimeout(() => {
+            try { abp.notify.info('File is being prepared for signing, please wait...', 'Processing'); } catch(e) {}
+          }, 2000);
+
+          let headers2 = new HttpHeaders({
+            'parentpath': this.parentpath || '',
+            'shortfilename': this.shortfilename || ''
+          });
+          headers2 = headers2.append('Content-Type', 'application/json');
+
+          this.http.get<any>(this.path1 + "/Home/SignRename?EscrowId=" + escrowNewId, { headers: headers2 })
+            .subscribe({
+              next: (response: any) => {
+                clearTimeout(prepTimeoutId);
+                this.isSigningReady = false;
+                console.log('SignRename response:', JSON.stringify(response));
+
+                let innerResult = response?.result || response;
+                let isSuccess = innerResult?.success === true || innerResult?.Success === true;
+
+                try {
+                  if (isSuccess) {
+                    let msg = innerResult?.message || innerResult?.Message || "File is ready to sign";
+                    abp.notify.success(msg, 'Success');
+                  } else {
+                    let errorMsg = innerResult?.message || innerResult?.Message || 'Something went wrong during signing preparation.';
+                    abp.notify.error(errorMsg, 'Error');
+                  }
+                } catch(e) {
+                   abp.notify.error('Failed to prepare file for signing.');
+                }
+                this.fileMainComponent?.getAllFiles();
+              },
+              error: (err) => {
+                clearTimeout(prepTimeoutId);
+                this.isSigningReady = false;
+                console.error('SignRename error:', err);
+                let errorMsg = 'Failed to prepare file for signing.';
+                try {
+                  errorMsg = err?.error?.error?.message || err?.error?.result?.message || err?.error?.message || err?.message || errorMsg;
+                  abp.notify.error(errorMsg, 'Error');
+                } catch (e) {
+                }
+              }
+            });
+        } else if (this.bs == "File Already Signed") {
+          abp.notify.error('File Already Signed');
         }
-      }
-      catch (error) {
-        alert(error);
       }
     });
-    let requiresSigning = this.datachanges.some((d: string) => d.endsWith('S}'));
-
-    if (requiresSigning && this.bs != "File Already Signed") {
-      this.isSigningReady = true;
-
-      let prepTimeoutId = setTimeout(() => {
-        try { abp.notify.info('File is being prepared for signing, please wait...', 'Processing'); } catch(e) {}
-      }, 2000);
-
-      let headers2 = new HttpHeaders({
-        'parentpath': this.parentpath || '',
-        'shortfilename': this.shortfilename || ''
-      });
-      headers2 = headers2.append('Content-Type', 'application/json');
-
-      this.http.get<any>(this.path1 + "/Home/SignRename?EscrowId=" + escrowNewId, { headers: headers2 })
-        .subscribe({
-          next: (response: any) => {
-            clearTimeout(prepTimeoutId);
-            this.isSigningReady = false;
-            console.log('SignRename response:', JSON.stringify(response));
-
-            let innerResult = response?.result || response;
-            let isSuccess = innerResult?.success === true || innerResult?.Success === true;
-
-            try {
-              if (isSuccess) {
-                let msg = innerResult?.message || innerResult?.Message || "File is ready to sign";
-                abp.notify.success(msg, 'Success');
-              } else {
-                let errorMsg = innerResult?.message || innerResult?.Message || 'Something went wrong during signing preparation.';
-                abp.notify.error(errorMsg, 'Error');
-              }
-            } catch(e) {
-               abp.notify.error('Failed to prepare file for signing.');
-            }
-            this.fileMainComponent?.getAllFiles();
-          },
-          error: (err) => {
-            clearTimeout(prepTimeoutId);
-            this.isSigningReady = false;
-            console.error('SignRename error:', err);
-            let errorMsg = 'Failed to prepare file for signing.';
-            try {
-              errorMsg = err?.error?.error?.message || err?.error?.result?.message || err?.error?.message || err?.message || errorMsg;
-              abp.notify.error(errorMsg, 'Error');
-            } catch (e) {
-            }
-          }
-        });
-    } else if (this.bs == "File Already Signed") {
-      abp.notify.error('File Already Signed');
-    }
     return;
   }
 
@@ -2983,13 +3012,25 @@ export class FileViewComponent extends AppComponentBase {
     this.check();
     let config = { class: 'gray modal-lg', backdrop: false, ignoreBackdropClick: true };
     let file = selectedFile;
-    let strcheck;
+    let strcheck = "";
     let compare = "";
     let action = file.key;
     action = action.substring(action.indexOf("~") + 1);
-    compare = this.Action;
+    compare = this.Action || '';
     compare = compare.replace("{", "");
     compare = compare.replace("}", "");
+
+    const activeEscrow = localStorage.getItem("activeTab") || '';
+    const storedUserRole = localStorage.getItem("accessTYpe" + activeEscrow) || '';
+    
+    let wildcard = "";
+    if (compare.startsWith("SR")) wildcard = "SRX";
+    else if (compare.startsWith("BR")) wildcard = "BRX";
+    else if (compare.startsWith("TC")) wildcard = "TCX";
+    else if (compare.startsWith("RA")) wildcard = "RAX";
+    else if (compare.startsWith("RB")) wildcard = "RBX";
+    else if (compare.startsWith("EO")) wildcard = "EOX";
+    else if (compare.startsWith("EA")) wildcard = "EAX";
 
     const paramsPattern = /[^{\}]+(?=})/g;
     let extractParams = action.match(paramsPattern);
@@ -3000,7 +3041,7 @@ export class FileViewComponent extends AppComponentBase {
         let my1 = my;
         my = my.substring(0, my.indexOf('-'));
         my1 = my1.substring(my1.indexOf('-') + 1);
-        if (my == compare || (my == 'BRX' || my == 'SRX')) {
+        if (my == compare || (wildcard && my == wildcard)) {
           strcheck = my1;
         }
       }
@@ -3069,10 +3110,24 @@ export class FileViewComponent extends AppComponentBase {
     debugger
     this.check();
     let config = { class: 'gray modal-lg', backdrop: false, ignoreBackdropClick: true };
-    let strcheck;
+    let strcheck = "";
+    const activeEscrowDocu = localStorage.getItem("activeTab") || '';
+    const storedUserRoleDocu = localStorage.getItem("accessTYpe" + activeEscrowDocu) || '';
 
     let file = selectedFile;
-    let action = file.key.substring(file.key.indexOf("~") + 1);
+    let action = (file.key || file.name || '').substring((file.key || file.name || '').indexOf("~") + 1);
+
+    let compare = this.Action || '';
+    compare = compare.replace("{", "").replace("}", "");
+
+    let wildcard = "";
+    if (compare.startsWith("SR")) wildcard = "SRX";
+    else if (compare.startsWith("BR")) wildcard = "BRX";
+    else if (compare.startsWith("TC")) wildcard = "TCX";
+    else if (compare.startsWith("RA")) wildcard = "RAX";
+    else if (compare.startsWith("RB")) wildcard = "RBX";
+    else if (compare.startsWith("EO")) wildcard = "EOX";
+    else if (compare.startsWith("EA")) wildcard = "EAX";
 
     const paramsPattern = /[^{\}]+(?=})/g;
     let extractParams = action.match(paramsPattern);
@@ -3083,7 +3138,7 @@ export class FileViewComponent extends AppComponentBase {
         let my1 = my;
         my = my.substring(0, my.indexOf('-'));
         my1 = my1.substring(my1.indexOf('-') + 1);
-        if (my == this.Action || (my == 'BRX' || my == 'SRX')) {
+        if (my == compare || (wildcard && my == wildcard)) {
           strcheck = my1;
         }
       }
@@ -3130,10 +3185,24 @@ export class FileViewComponent extends AppComponentBase {
     debugger
     this.check();
     let config = { class: 'gray modal-lg', backdrop: false, ignoreBackdropClick: true };
-    let strcheck;
+    let strcheck = "";
+    const activeEscrowSuti = localStorage.getItem("activeTab") || '';
+    const storedUserRoleSuti = localStorage.getItem("accessTYpe" + activeEscrowSuti) || '';
 
     let file = selectedFile;
-    let action = file.key.substring(file.key.indexOf("~") + 1);
+    let action = (file.key || file.name || '').substring((file.key || file.name || '').indexOf("~") + 1);
+
+    let compare = this.Action || '';
+    compare = compare.replace("{", "").replace("}", "");
+
+    let wildcard = "";
+    if (compare.startsWith("SR")) wildcard = "SRX";
+    else if (compare.startsWith("BR")) wildcard = "BRX";
+    else if (compare.startsWith("TC")) wildcard = "TCX";
+    else if (compare.startsWith("RA")) wildcard = "RAX";
+    else if (compare.startsWith("RB")) wildcard = "RBX";
+    else if (compare.startsWith("EO")) wildcard = "EOX";
+    else if (compare.startsWith("EA")) wildcard = "EAX";
 
     const paramsPattern = /[^{\}]+(?=})/g;
     let extractParams = action.match(paramsPattern);
@@ -3144,7 +3213,7 @@ export class FileViewComponent extends AppComponentBase {
         let my1 = my;
         my = my.substring(0, my.indexOf('-'));
         my1 = my1.substring(my1.indexOf('-') + 1);
-        if (my == this.Action || (my == 'BRX' || my == 'SRX')) {
+        if (my == compare || (wildcard && my == wildcard)) {
           strcheck = my1;
         }
       }

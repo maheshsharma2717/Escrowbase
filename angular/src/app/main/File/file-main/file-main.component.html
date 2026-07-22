@@ -102,7 +102,7 @@
                                     <li *ngIf="esignPermission" (click)="onItemClickMain('esignDetails')" class="ctx-item"><i class="fa fa-info-circle"></i> E-Sign Details</li>
                                     <li *ngIf="viewHistoryPermission" (click)="onItemClickMain('ViewHistory')" class="ctx-item"><i class="fa fa-history"></i> View History</li>
                                     <li (click)="onItemClickMain('SendReminderMessage')" class="ctx-item"><i class="fa fa-bell"></i> Send Reminder</li>
-                                    <li (click)="onItemClickMain('Rename')" class="ctx-item"><i class="fa fa-pencil-alt"></i> Rename</li>
+                                    <li *ngIf="renamePermission" (click)="onItemClickMain('Rename')" class="ctx-item"><i class="fa fa-pencil-alt"></i> Rename</li>
                                     <li *ngIf="deletePermission" (click)="onItemClickMain('delete')" class="ctx-item text-danger"><i class="fa fa-trash"></i> Delete</li>
                                     <li *ngIf="downloadPermission" (click)="DownloadFile($event)" class="ctx-item"><i class="fa fa-download"></i> Download</li>
                                 </ng-container>

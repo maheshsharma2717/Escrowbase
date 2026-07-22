@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -65,7 +65,7 @@ namespace SR.EscrowBaseWeb.Web.Authentication.JwtBearer
             var tokenAuthConfiguration = IocManager.Instance.Resolve<TokenAuthConfiguration>();
             cacheManager
                 .GetCache(AppConsts.TokenValidityKey)
-                .Set(tokenValidityKeyClaim.Value, "", absoluteExpireTime: Convert.ToDateTime(tokenAuthConfiguration.AccessTokenExpiration));
+                .Set(tokenValidityKeyClaim.Value, "", absoluteExpireTime: DateTime.UtcNow.Add(tokenAuthConfiguration.AccessTokenExpiration));
 
             return principal;
         }

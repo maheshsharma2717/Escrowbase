@@ -195,6 +195,26 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 WebClient webClient = new WebClient();
                 string newpath = folderName.Replace("/", "\\");
                 string file = Path.Combine(_hostingEnvironment.WebRootPath + "\\" + newpath);
+
+                if (!System.IO.File.Exists(file))
+                {
+                    string searchFolder = Path.GetDirectoryName(file);
+                    if (Directory.Exists(searchFolder))
+                    {
+                        int tildeIndex = key.IndexOf('~');
+                        if (tildeIndex > 0)
+                        {
+                            string baseName = key.Substring(0, tildeIndex);
+                            string fileExt = Path.GetExtension(key);
+                            var matches = Directory.GetFiles(searchFolder, baseName + "*" + fileExt).OrderByDescending(f => f.Length).ToArray();
+                            if (matches.Length > 0)
+                            {
+                                file = matches[0];
+                            }
+                        }
+                    }
+                }
+
                 var memory = new MemoryStream();
                 using (var stream = new FileStream(file, FileMode.Open))
                 {
@@ -336,6 +356,25 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 string cleanKey = key.Replace("/", Path.DirectorySeparatorChar.ToString());
                 string relativePath = Path.Combine("Common", "Paperless", cleanPath, cleanKey);
                 string file = Path.Combine(_hostingEnvironment.WebRootPath, relativePath);
+
+                if (!System.IO.File.Exists(file))
+                {
+                    string searchFolder = Path.GetDirectoryName(file);
+                    if (Directory.Exists(searchFolder))
+                    {
+                        int tildeIndex = cleanKey.IndexOf('~');
+                        if (tildeIndex > 0)
+                        {
+                            string baseName = cleanKey.Substring(0, tildeIndex);
+                            string ext = Path.GetExtension(cleanKey);
+                            var matches = Directory.GetFiles(searchFolder, baseName + "*" + ext).OrderByDescending(f => f.Length).ToArray();
+                            if (matches.Length > 0)
+                            {
+                                file = matches[0];
+                            }
+                        }
+                    }
+                }
 
                 if (Path.GetExtension(file).ToLower() == ".doc" || Path.GetExtension(file).ToLower() == ".docx" || Path.GetExtension(file).ToLower() == ".rtf")
                 {
@@ -514,6 +553,26 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                 if (!System.IO.File.Exists(fullPath))
                 {
+                    string searchFolder = Path.GetDirectoryName(fullPath);
+                    if (Directory.Exists(searchFolder))
+                    {
+                        string fileName = Path.GetFileName(fullPath);
+                        int tildeIndex = fileName.IndexOf('~');
+                        if (tildeIndex > 0)
+                        {
+                            string baseName = fileName.Substring(0, tildeIndex);
+                            string ext2 = Path.GetExtension(fileName);
+                            var matches = Directory.GetFiles(searchFolder, baseName + "*" + ext2).OrderByDescending(f => f.Length).ToArray();
+                            if (matches.Length > 0)
+                            {
+                                fullPath = matches[0];
+                            }
+                        }
+                    }
+                }
+
+                if (!System.IO.File.Exists(fullPath))
+                {
                     return NotFound("File not found on server.");
                 }
 
@@ -646,7 +705,14 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                             string rootPath = Path.Combine(_hostingEnvironment.WebRootPath, "Common", "Paperless");
                             if (Directory.Exists(rootPath))
                             {
-                                string[] matchedFiles = Directory.GetFiles(rootPath, shortFileName, SearchOption.AllDirectories);
+                                string searchPattern = shortFileName;
+                                int tildeIndex = shortFileName.IndexOf('~');
+                                if (tildeIndex > 0)
+                                {
+                                    searchPattern = shortFileName.Substring(0, tildeIndex) + "*" + Path.GetExtension(shortFileName);
+                                }
+                                
+                                string[] matchedFiles = Directory.GetFiles(rootPath, searchPattern, SearchOption.AllDirectories).OrderByDescending(f => f.Length).ToArray();
                                 if (matchedFiles.Length == 1)
                                 {
                                     file = matchedFiles[0];
@@ -2550,7 +2616,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                                         if (string.IsNullOrEmpty(tempAccess) && (usertype.StartsWith("EO") || usertype.StartsWith("EA")))
                                         {
-                                            tempAccess = "READS";
+                                            tempAccess = "READ";
                                         }
 
                                         res.access = tempAccess.Replace("-", "");

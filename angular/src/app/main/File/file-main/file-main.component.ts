@@ -516,7 +516,7 @@ debugger;
       this.deletePermission = true;
       this.renameFileName = false;
     }
-    if (accesstype.includes("S") || accesstype.includes("SIGN")) {
+    if (isOfficer || accesstype.includes("S") || accesstype.includes("SIGN")) {
       this.esignPermission = true;
     }
 
@@ -529,15 +529,34 @@ debugger;
       this.isRename = false;
     }
     let signing = e.signing;
-    if (signing != "Unsigned") {
 
+    if (signing != "Unsigned") {
       this.editPermission = false;
       this.renamePermission = false;
       this.renameFileName = true;
     } else {
-      this.renamePermission = true;
-      this.renameFileName = false;
+      let hasEditOrDeleteAccess = false;
+      if (accesstype) {
+        hasEditOrDeleteAccess = accesstype.includes("D") || accesstype.includes("DEL") || 
+                                accesstype.includes("DELETE") || accesstype.includes("E") || 
+                                accesstype.includes("INPUT");
+      }
+      if (isOfficer || hasEditOrDeleteAccess) {
+        this.renamePermission = true;
+        this.renameFileName = false;
+      } else {
+        this.renamePermission = false;
+        this.renameFileName = true;
+      }
     }
+    console.log("CHILD handleShownEvent details:", {
+      filename: e.name,
+      access: e.access,
+      signing: e.signing,
+      userRole: userRole,
+      isOfficer: isOfficer,
+      renamePermission: this.renamePermission
+    });
   }
 
   @Output() fullScreenToggled = new EventEmitter<boolean>();
