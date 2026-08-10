@@ -1,5 +1,6 @@
 .richedit-shell {
-  height: 800px;
+  height: 100%;
+  max-height: 100%;
   width: 100%;
   overflow: hidden;
   background: #fff;
@@ -10,7 +11,10 @@
 .richedit-container {
   flex: 1;
   width: 100%;
-  height: 750px;
+  height: calc(100% - 45px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Ensure Quill toolbar is visible */
@@ -19,12 +23,24 @@
   border-left: none !important;
   border-right: none !important;
   background: #f8f9fa;
+  flex-shrink: 0;
 }
 
 .ql-container {
   border: none !important;
   font-size: 16px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  flex: 1;
+  height: calc(100% - 42px) !important;
+  overflow: hidden !important;
+}
+
+.ql-editor {
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  padding-bottom: 120px !important;
+  box-sizing: border-box !important;
 }
 
 .docx-preview-error {
@@ -42,7 +58,10 @@
   background: #fff;
   border: 1px solid #d9d9d9;
   padding: 20px;
+  padding-bottom: 120px;
   min-height: 70vh;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
   margin: 10px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
@@ -51,14 +70,16 @@
   background: #fff;
   border: 1px solid #d9d9d9;
   padding: 20px;
+  padding-bottom: 120px;
   min-height: 70vh;
-  overflow: auto;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
   margin: 10px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 ::ng-deep tx-document-editor {
   display: block;
-  height: 800px !important;
+  height: 100% !important;
   width: 100% !important;
 }

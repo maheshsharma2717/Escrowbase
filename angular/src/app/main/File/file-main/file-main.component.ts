@@ -532,8 +532,13 @@ debugger;
 
     if (signing != "Unsigned") {
       this.editPermission = false;
-      this.renamePermission = false;
-      this.renameFileName = true;
+      if (isOfficer) {
+        this.renamePermission = true;
+        this.renameFileName = false;
+      } else {
+        this.renamePermission = false;
+        this.renameFileName = true;
+      }
     } else {
       let hasEditOrDeleteAccess = false;
       if (accesstype) {

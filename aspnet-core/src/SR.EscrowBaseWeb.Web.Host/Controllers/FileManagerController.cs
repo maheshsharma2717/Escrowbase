@@ -50,9 +50,6 @@ using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 using System.IO.Compression;
 using IConfiguration = Microsoft.Extensions.Configuration.IConfiguration;
-//using NPOI.HWPF;
-//using FreeSpire.Doc;
-//using NPOI.HWPF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using NPOI.HSSF.UserModel;
@@ -1025,7 +1022,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     }
                     
                     // DEFAULT: For all other cases (uploader, EOX who uploaded, main area, unassigned files, etc.)
-                    // → Physically delete the file
+                    //  Physically delete the file
 
                     bool deletedPhysical = false;
                     if (System.IO.File.Exists(file))

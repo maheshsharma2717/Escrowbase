@@ -666,8 +666,13 @@ export class FileViewComponent extends AppComponentBase {
     let signing = e.signing;
     if (signing != "Unsigned") {
       this.editPermission = false;
-      this.renamePermission = false;
-      this.renameFileName = true;
+      if (isOfficer) {
+        this.renamePermission = true;
+        this.renameFileName = false;
+      } else {
+        this.renamePermission = false;
+        this.renameFileName = true;
+      }
     } else {
       let hasEditOrDeleteAccess = false;
       if (accesstype) {
@@ -772,30 +777,6 @@ export class FileViewComponent extends AppComponentBase {
 
     this.displayImagePopupFromMain(file);
   }
-
-  // openDocuSignPopUpFromMain(file: any) {
-  //   const dto: CreateOrEditDocuSignDto = new CreateOrEditDocuSignDto();
-  //   dto.escrowId = file.key;
-  //   dto.email = "signer@example.com";      // Replace with actual value
-  //   dto.name = "John Doe";                 // Replace with actual value
-  //   dto.base64Pdf = "";                    // Optional or "" if backend reads file
-  //   dto.fileName = file.shortFileName;     // If used
-  //   // dto.folderId = "";                     // Optional
-
-  //   this._docuSignService.sendEnvelopeAndGetUrl(dto).subscribe(res => {
-  //     this.embedUrl = this.sanitizer.bypassSecurityTrustResourceUrl(res);
-  //     this.eSign = true;
-
-  //     this.modalRef = this.modalService.show(
-  //       this.esignModelMainTemplateRef,
-  //       Object.assign({}, {
-  //         class: 'gray modal-xl',
-  //         backdrop: false,
-  //         ignoreBackdropClick: true
-  //       })
-  //     );
-  //   });
-  // }
 
   onItemClick(e) {
 
@@ -2017,12 +1998,62 @@ export class FileViewComponent extends AppComponentBase {
     this.newAttribute = {};
   }
 
+  canModifyPermission(targetUserType: string, actionVal?: string): boolean {
+    const EscrowTab = localStorage.getItem("activeTab");
+    const loggedInRole = (this.UsertypeModel || localStorage.getItem("accessTYpe" + EscrowTab) || '').toUpperCase().trim();
+
+    const isEOXLoggedIn = loggedInRole.startsWith('EOX');
+    const isOfficerLoggedIn = loggedInRole.startsWith('EO') || loggedInRole.startsWith('EA');
+
+    const targetRole = (targetUserType || '').toUpperCase().trim();
+    const isTargetEOX = targetRole.startsWith('EOX');
+
+    // 1. EOX can change permissions of all users
+    if (isEOXLoggedIn) {
+      return true;
+    }
+
+    // 2. EO / EA users cannot change permissions of EOX
+    if (isOfficerLoggedIn) {
+      if (isTargetEOX) {
+        abp.notify.warn('EO and EA users cannot change EOX permissions.', 'Permission Denied');
+        return false;
+      }
+      return true;
+    }
+
+    // 3. Regular users (not EOX/EO/EA):
+    // Regular users cannot change READ permissions
+    if (actionVal === 'R' || actionVal === 'All') {
+      abp.notify.warn('Users cannot change READ permissions.', 'Permission Denied');
+      return false;
+    }
+
+    // Regular users cannot change Officer permissions (EOX/EO/EA)
+    const isTargetOfficer = targetRole.startsWith('EO') || targetRole.startsWith('EA');
+    if (isTargetOfficer) {
+      abp.notify.warn('You do not have permission to change Officer permissions.', 'Permission Denied');
+      return false;
+    }
+
+    return true;
+  }
+
   deleteItem(index) {
-    this.userpermissionsall.splice(index, 1)
+    const selectedPermission = this.userpermissionsall[index];
+    const targetRole = selectedPermission?.first || '';
+    if (!this.canModifyPermission(targetRole, 'delete')) {
+      return;
+    }
+    this.userpermissionsall.splice(index, 1);
   }
 
   selectAll(index: number): void {
     const selectedPermission = this.userpermissionsall[index];
+    const targetRole = selectedPermission?.first || '';
+    if (!this.canModifyPermission(targetRole, 'All')) {
+      return;
+    }
     selectedPermission.selectAll = !selectedPermission.selectAll;
     selectedPermission.R = selectedPermission.selectAll;
     selectedPermission.E = selectedPermission.selectAll;
@@ -2033,6 +2064,10 @@ export class FileViewComponent extends AppComponentBase {
 
   selectAllup(index: number): void {
     const selectedPermission = this.userpermissionsall[index];
+    const targetRole = selectedPermission?.first || '';
+    if (!this.canModifyPermission(targetRole, 'All')) {
+      return;
+    }
     selectedPermission.selectAll = !selectedPermission.selectAll;
     selectedPermission.R = selectedPermission.selectAll;
     selectedPermission.E = selectedPermission.selectAll;
@@ -2042,6 +2077,13 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   ddldata(test: any, index, val: any) {
+    const selectedPermission = this.userpermissionsall[index];
+    if (selectedPermission && selectedPermission.first) {
+      if (!this.canModifyPermission(selectedPermission.first, val)) {
+        return;
+      }
+    }
+
     if (this.userpermissionsall.length > 1) {
       var checkSelectedUserType = this.userpermissionsall.find(x => x.first && x.first.includes(test));
       if (checkSelectedUserType != null) {
@@ -2076,9 +2118,13 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   checkBoxChange(test: any, index, val: any) {
-
-
     let data = this.userpermissionsall;
+    const targetRole = test || data[index]?.first || '';
+
+    if (!this.canModifyPermission(targetRole, val)) {
+      return;
+    }
+
     data[index].first = test;
 
     if (val == "R") {
@@ -2393,16 +2439,20 @@ export class FileViewComponent extends AppComponentBase {
       
       let fileNameOld = baseFolderPath + this.fullnameold;
       
-      let extension = "";
-      if (this.fullnameold.includes(".")) {
-          extension = this.fullnameold.substring(this.fullnameold.lastIndexOf("."));
+      let extension = ".pdf";
+      if (this.fullnameold && this.fullnameold.includes(".")) {
+          let extPart = this.fullnameold.substring(this.fullnameold.lastIndexOf("."));
+          if (!extPart.includes("~") && !extPart.includes("{")) {
+              extension = extPart;
+          }
       }
       
-      let baseName = this.fullnameold;
-      if (this.fullnameold.includes("~")) {
-          baseName = this.fullnameold.substring(0, this.fullnameold.lastIndexOf("~"));
-      } else if (this.fullnameold.includes(".")) {
-          baseName = this.fullnameold.substring(0, this.fullnameold.lastIndexOf("."));
+      let baseName = this.fullnameold || "";
+      if (baseName.includes("~")) {
+          baseName = baseName.substring(0, baseName.indexOf("~"));
+      }
+      if (baseName.includes(".")) {
+          baseName = baseName.substring(0, baseName.lastIndexOf("."));
       }
       
       let newFileName = baseName + "~" + fulldata + extension;
@@ -2482,17 +2532,32 @@ export class FileViewComponent extends AppComponentBase {
 
     this.bdata = JSON.stringify(this.datachanges);
     let datas = this.bdata.replaceAll('"', '').replaceAll(",", "").replaceAll("[", "").replaceAll("]", "");
-    datas = datas;
-    let sdata = this.change.substring(this.change.lastIndexOf("}") + 1, this.change.length);
-    //sdata;
-    let fulldata = datas + sdata;
+    
+    let cleanBase = this.filenames || "";
+    if (cleanBase.includes("~")) {
+      cleanBase = cleanBase.substring(0, cleanBase.indexOf("~"));
+    }
+    if (cleanBase.includes(".")) {
+      cleanBase = cleanBase.substring(0, cleanBase.lastIndexOf("."));
+    }
+
+    let moveExtension = ".pdf";
+    if (this.fullnameold && this.fullnameold.includes(".")) {
+      let extPart = this.fullnameold.substring(this.fullnameold.lastIndexOf("."));
+      if (!extPart.includes("~") && !extPart.includes("{")) {
+        moveExtension = extPart;
+      }
+    }
+
+    let cleanNewName = cleanBase + "~" + datas + moveExtension;
+
     console.log(this.selectedGroup);
     this.btnstate = true;
     this.parentpath = this.completeEnterprisePathOther.replace(/\\/g, "/");
     let baseFolderPath = this.parentpath.endsWith("/") ? this.parentpath : this.parentpath + "/";
-    this.fullparentnew = this.parentpath.replace("/Other", "") + "/" + this.filenames + "~" + fulldata;
+    this.fullparentnew = this.parentpath.replace("/Other", "") + "/" + cleanNewName;
     this.fullparentold = baseFolderPath + this.fullnameold;
-    this.shortfilename = this.filenames + "~" + fulldata;
+    this.shortfilename = cleanNewName;
     this.shortfilenameold = this.fullnameold;
 
     console.log("New Path: ", this.fullparentnew);
@@ -2558,8 +2623,9 @@ export class FileViewComponent extends AppComponentBase {
           try { abp.notify.info('File is being prepared for signing, please wait...', 'Processing'); } catch(e) {}
         }, 2000);
 
+        let targetParentPath = (this.parentpath || '').replace(/\/Other/gi, '').replace(/\\Other/gi, '');
         let headers2 = new HttpHeaders({
-          'parentpath': this.parentpath || '',
+          'parentpath': targetParentPath,
           'shortfilename': this.shortfilename || ''
         });
         headers2 = headers2.append('Content-Type', 'application/json');
@@ -3036,15 +3102,22 @@ export class FileViewComponent extends AppComponentBase {
     let extractParams = action.match(paramsPattern);
 
     if (extractParams) {
+      let specificPermission = "";
+      let wildcardPermission = "";
       for (let i = 0; i < extractParams.length; i++) {
         let my = extractParams[i].replace("{", "");
-        let my1 = my;
-        my = my.substring(0, my.indexOf('-'));
-        my1 = my1.substring(my1.indexOf('-') + 1);
-        if (my == compare || (wildcard && my == wildcard)) {
-          strcheck = my1;
+        let parts = my.split('-');
+        if (parts.length === 2) {
+          let code = parts[0];
+          let perm = parts[1];
+          if (code == compare) {
+            specificPermission = perm;
+          } else if (wildcard && code == wildcard) {
+            wildcardPermission = perm;
+          }
         }
       }
+      strcheck = specificPermission || wildcardPermission || "";
     }
 
     if (strcheck.indexOf("S") === -1) {
@@ -3133,15 +3206,22 @@ export class FileViewComponent extends AppComponentBase {
     let extractParams = action.match(paramsPattern);
 
     if (extractParams) {
+      let specificPermission = "";
+      let wildcardPermission = "";
       for (let i = 0; i < extractParams.length; i++) {
         let my = extractParams[i].replace("{", "");
-        let my1 = my;
-        my = my.substring(0, my.indexOf('-'));
-        my1 = my1.substring(my1.indexOf('-') + 1);
-        if (my == compare || (wildcard && my == wildcard)) {
-          strcheck = my1;
+        let parts = my.split('-');
+        if (parts.length === 2) {
+          let code = parts[0];
+          let perm = parts[1];
+          if (code == compare) {
+            specificPermission = perm;
+          } else if (wildcard && code == wildcard) {
+            wildcardPermission = perm;
+          }
         }
       }
+      strcheck = specificPermission || wildcardPermission || "";
     }
 
     if (!strcheck || strcheck.indexOf("S") === -1) {
@@ -3208,15 +3288,22 @@ export class FileViewComponent extends AppComponentBase {
     let extractParams = action.match(paramsPattern);
 
     if (extractParams) {
+      let specificPermission = "";
+      let wildcardPermission = "";
       for (let i = 0; i < extractParams.length; i++) {
         let my = extractParams[i].replace("{", "");
-        let my1 = my;
-        my = my.substring(0, my.indexOf('-'));
-        my1 = my1.substring(my1.indexOf('-') + 1);
-        if (my == compare || (wildcard && my == wildcard)) {
-          strcheck = my1;
+        let parts = my.split('-');
+        if (parts.length === 2) {
+          let code = parts[0];
+          let perm = parts[1];
+          if (code == compare) {
+            specificPermission = perm;
+          } else if (wildcard && code == wildcard) {
+            wildcardPermission = perm;
+          }
         }
       }
+      strcheck = specificPermission || wildcardPermission || "";
     }
 
     if (!strcheck || strcheck.indexOf("S") === -1) {
@@ -3730,16 +3817,28 @@ export class FileViewComponent extends AppComponentBase {
     if (dir.length > 0) {
       for (let i = 0; i < dir.length; i++) {
         let item = dir[i];
-        this.filenames = item['name'];
-        this.oldfileName = this.currentpath1 + "/" + item['key'];
-        this.filenamenew = this.filenames;
-        this.filenameold = item['name'];
-        this.fullnameold = item['key'];
+        let rawName = item['key'] || item['name'] || "";
+        this.fullnameold = rawName;
         this.uploaderRole = item.dataItem?.uploaderRole || item['uploaderRole'] || "";
 
-        var dotPosition = this.fullnameold.lastIndexOf(".");
-        var firstPart = this.fullnameold.substring(0, dotPosition);
-        var secondPart = this.fullnameold.substring(dotPosition + 1).toLowerCase();
+        let cleanBase = rawName;
+        if (cleanBase.includes("~")) {
+          cleanBase = cleanBase.substring(0, cleanBase.indexOf("~"));
+        }
+        if (cleanBase.includes(".")) {
+          cleanBase = cleanBase.substring(0, cleanBase.lastIndexOf("."));
+        }
+        this.filenames = cleanBase;
+        this.filenamenew = cleanBase;
+        this.filenameold = rawName;
+
+        let secondPart = "pdf";
+        if (rawName.includes(".")) {
+          let extStr = rawName.substring(rawName.lastIndexOf(".") + 1).toLowerCase();
+          if (!extStr.includes("~") && !extStr.includes("{")) {
+            secondPart = extStr;
+          }
+        }
 
         if (secondPart.includes("pdf")) {
             this.typePDF = "true";
@@ -3749,22 +3848,18 @@ export class FileViewComponent extends AppComponentBase {
         
         localStorage.setItem("fileExtension", secondPart);
 
-        if (secondPart.includes("docx") || secondPart.includes("doc") || secondPart.includes("pdf")) {
-          if (!firstPart.includes("~")) {
-            if (secondPart.includes("pdf")) {
-              this.oldfileName = this.currentpath1.replaceAll("/", "\\") + '\\' + this.fullnameold.replaceAll("/", "\\");
-            }
-            this.filenames = firstPart;
-            this.fullnameold = firstPart + "~." + secondPart.replace(".", ""); 
-          }
-          localStorage.setItem('oldFileName', this.oldfileName);
-          localStorage.setItem("typePdf", this.typePDF);
-        }
+        let parentOtherPath = item.path || item.parentPath || this.completeEnterprisePathOther || "";
+        parentOtherPath = parentOtherPath.replace(/\//g, "\\");
+        if (!parentOtherPath.endsWith("\\")) parentOtherPath += "\\";
+        this.oldfileName = parentOtherPath + rawName.replace(/\//g, "\\");
+
+        localStorage.setItem('oldFileName', this.oldfileName);
+        localStorage.setItem("typePdf", this.typePDF);
 
         let splitname = this.fullnameold.split("~");
         this.change = splitname[1];
         this.signForFile = "~";
-        if (firstPart.includes("~")) {
+        if (rawName.includes("~")) {
           this.lst = splitname[1];
           // this.change = '';
           // this.signForFile = '';
@@ -3981,150 +4076,30 @@ export class FileViewComponent extends AppComponentBase {
   }
 
   sendMessage(fileName): void {
-
     this.fileFullName = fileName;
-
     const tenancyName = this.appSession.tenant ? this.appSession.tenant.tenancyName : null;
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 8,
-      message: this.fileFullName + "File Edit Success.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
+    const currentUserId = this.appSession.userId;
 
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 9,
-      message: this.fileFullName + "File Edit Success.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
+    let targetUserIds: number[] = [];
 
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 141,
-      message: this.fileFullName + "File Edit Success.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
+    if (Array.isArray(this.myuser) && this.myuser.length > 0) {
+      targetUserIds = this.myuser
+        .map(u => u?.userId || u?.id)
+        .filter(id => id && id !== currentUserId && typeof id === 'number');
+    }
 
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 142,
-      message: this.fileFullName + "File Edit Success.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
+    targetUserIds = Array.from(new Set(targetUserIds));
 
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 143,
-      message: "File Edit Successful.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
-
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 144,
-      message: "File Edit Successful.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
-
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 145,
-      message: "File Edit Successful.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
-
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 146,
-      message: "File Edit Successful.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
-
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 147,
-      message: "File Edit Successful.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
-
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 148,
-      message: "File Edit Successful.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
-
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 149,
-      message: "File Edit Successful.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
-
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 150,
-      message: "File Edit Successful.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
-
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 151,
-      message: "File Edit Successful.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
-
-    });
-    this._chatSignalrService.sendMessage({
-      tenantId: null,
-      userId: 152,
-      message: "File Edit Successful.",
-      tenancyName: tenancyName,
-      userName: this.appSession.user.userName,
-      profilePictureId: this.appSession.user.profilePictureId
-    }, () => {
-
-    });
+    for (const uid of targetUserIds) {
+      this._chatSignalrService.sendMessage({
+        tenantId: null,
+        userId: uid,
+        message: (this.fileFullName || '') + " File Edit Success.",
+        tenancyName: tenancyName,
+        userName: this.appSession.user?.userName,
+        profilePictureId: this.appSession.user?.profilePictureId
+      }, () => {});
+    }
   }
 
   changeUserType() {
