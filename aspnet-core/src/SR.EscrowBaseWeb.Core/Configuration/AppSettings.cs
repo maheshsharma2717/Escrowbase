@@ -24,6 +24,8 @@ namespace SR.EscrowBaseWeb.Configuration
 
             public const string Theme = "App.UiManagement.Theme";
 
+            public const string FileSortingPreference = "App.UiManagement.FileSortingPreference";
+
             public const string SearchActive = "App.UiManagement.MenuSearch";
 
             public static class Header

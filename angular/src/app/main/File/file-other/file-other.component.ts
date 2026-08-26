@@ -60,7 +60,8 @@ export class FileOtherComponent extends AppComponentBase {
   readPermissionOtherArea: boolean;
   editPermissionDocOtherArea: boolean;
   downloadPermission: boolean = false;
-  currentSortField: string = '';
+  currentSortField: string = 'name';
+  defaultSortPreference: string = 'name';
   ascendingOrder: boolean = true;
   selectedIndex: number | null = null;
   selectedTagIndex2: number | null = null;
@@ -69,6 +70,13 @@ export class FileOtherComponent extends AppComponentBase {
   selectedFilterTagIds: Set<number> = new Set();
   allFiles: any[] = [];
   globalSearchQuery: string = '';
+  viewMode: 'list' | 'tag-drop' = 'list';
+  activeHoverTagId: number | null = null;
+  draggedFile: any = null;
+  tagSearchQuery: string = '';
+  isInternalTagDrop: boolean = false;
+  expandedTagIds: Set<number> = new Set([-1]);
+  isAllTagsExpanded: boolean = true;
 
 
   constructor(
@@ -87,7 +95,7 @@ export class FileOtherComponent extends AppComponentBase {
 
   private globalScrollListener = (event: Event) => {
     const targetElement = event.target as HTMLElement;
-    if (targetElement && targetElement.closest && targetElement.closest('.radical-context-menu')) {
+    if (targetElement && targetElement.closest && (targetElement.closest('.radical-context-menu') || targetElement.closest('.context-menu'))) {
       return;
     }
     
@@ -99,6 +107,14 @@ export class FileOtherComponent extends AppComponentBase {
 
   ngOnInit(): void {
     window.addEventListener('scroll', this.globalScrollListener, true);
+    
+    // Restore persisted viewMode selection across page refreshes
+    const savedViewMode = localStorage.getItem('fileOtherViewMode') as 'list' | 'tag-drop';
+    if (savedViewMode === 'list' || savedViewMode === 'tag-drop') {
+      this.viewMode = savedViewMode;
+    }
+
+    this.loadUserSortPreferenceFromDb();
     this.getAllFiles();
     this.getAllFileTags();
   }
@@ -129,14 +145,6 @@ export class FileOtherComponent extends AppComponentBase {
         (response) => {
           this.allFiles = response.result;
           this.files = [...this.allFiles];
-          
-          const savedField = localStorage.getItem('otherSortField');
-          const savedOrder = localStorage.getItem('otherSortOrder');
-
-          if (savedField) {
-            this.currentSortField = savedField;
-            this.ascendingOrder = savedOrder === 'asc';
-          }
           
           this.applyFilters();
           this.cdr.detectChanges();
@@ -498,7 +506,7 @@ export class FileOtherComponent extends AppComponentBase {
   @HostListener('document:contextmenu', ['$event'])
   onClickOutside(event: Event) {
     const targetElement = event.target as HTMLElement;
-    if (targetElement && !targetElement.closest('.context-menu')) {
+    if (targetElement && !targetElement.closest('.context-menu') && !targetElement.closest('.radical-context-menu')) {
       this.showContextMenu = false;
       this.showContextMenuTags = false;
     }
@@ -688,11 +696,44 @@ export class FileOtherComponent extends AppComponentBase {
             tagColor: (item.escrowFileTags.tagColor || '#6c757d').split(',')[0],
           }));
           this.manageTagList = this.allTagsList;
+          
+          // Expand General (Untagged) node by default
+          const generalTag = this.allTagsList.find(t => t.tagDescription?.toLowerCase() === 'general');
+          if (generalTag) {
+            this.expandedTagIds.add(generalTag.id);
+          }
+          this.expandedTagIds.add(-1);
         },
         (error) => {
           console.error('Error fetching tags:', error);
         }
       );
+  }
+
+  toggleTagExpand(tagId: number, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (this.expandedTagIds.has(tagId)) {
+      this.expandedTagIds.delete(tagId);
+    } else {
+      this.expandedTagIds.add(tagId);
+    }
+  }
+
+  isTagExpanded(tagId: number): boolean {
+    return this.expandedTagIds.has(tagId);
+  }
+
+  expandAllTags(): void {
+    this.expandedTagIds.add(-1);
+    (this.allTagsList || []).forEach(t => this.expandedTagIds.add(t.id));
+    this.isAllTagsExpanded = true;
+  }
+
+  collapseAllTags(): void {
+    this.expandedTagIds.clear();
+    this.isAllTagsExpanded = false;
   }
 
   selectTag2(item: any) {
@@ -752,49 +793,83 @@ export class FileOtherComponent extends AppComponentBase {
     this.getAllFileTags();
   }
 
+  refreshFilesAndTags(savedScrollTop?: number): void {
+    const scrollContainer = document.querySelector('.tag-dropzones-scroll-container');
+    const scrollTopToRestore = savedScrollTop !== undefined ? savedScrollTop : (scrollContainer ? scrollContainer.scrollTop : 0);
+
+    this.getAllFiles();
+    this.getAllFileTags();
+
+    setTimeout(() => {
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollTopToRestore;
+      }
+      this.cdr.detectChanges();
+    }, 50);
+  }
+
   removeTag(id: any, fileName: any) {
-    debugger;
+    const scrollContainer = document.querySelector('.tag-dropzones-scroll-container');
+    const savedScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+
     this.tagsAndFileMapping
       .deleteTagByFileNameAndTagId(id, fileName)
       .subscribe(
         (response: any) => {
           abp.notify.success('Tag removed successfully', 'Success');
-          this.getAllFiles();
-          this.getAllFileTags();
-        })
+          this.refreshFilesAndTags(savedScrollTop);
+        });
   }
 
   trackByTagId(index: number, item: any): any {
-    return item.id;
+    return item ? item.id : index;
   }
 
-  // sortTable(field: string) {
-  //   debugger;
-  //   if (this.currentSortField === field) {
-  //     this.ascendingOrder = !this.ascendingOrder;
-  //   } else {
-  //     this.currentSortField = field;
-  //     this.ascendingOrder = true;
-  //   }
+  trackByFileName(index: number, item: any): any {
+    return item ? (item.srAssignedFileId || item.key || item.name) : index;
+  }
 
-  //   this.files.sort((a, b) => {
-  //     let aValue = this.getSortValue(a, field);
-  //     let bValue = this.getSortValue(b, field);
+  saveUserSortPreferenceToDb(preference: string): void {
+    if (!preference) return;
+    const url = `${this.apiUrl}/api/services/app/UiCustomizationSettings/ChangeFileSortingPreference?preference=${encodeURIComponent(preference)}`;
+    this.http.post(url, {}).subscribe({
+      next: () => console.log(`Saved file sorting preference '${preference}' to DB`),
+      error: (err) => console.warn('Error saving file sorting preference to DB:', err)
+    });
+  }
 
-  //     // Normalize null/undefined/empty values
-  //     aValue = (aValue === null || aValue === undefined || aValue === '') ? null : aValue;
-  //     bValue = (bValue === null || bValue === undefined || bValue === '') ? null : bValue;
+  loadUserSortPreferenceFromDb(): void {
+    const url = `${this.apiUrl}/api/services/app/UiCustomizationSettings/GetFileSortingPreference`;
+    this.http.get<any>(url).subscribe({
+      next: (res) => {
+        const val = res?.result;
+        if (val) {
+          this.defaultSortPreference = val;
+          this.currentSortField = val;
+          localStorage.setItem('otherSortField', val);
+          this.applySorting();
+          this.cdr.detectChanges();
+        }
+      },
+      error: (err) => {
+        console.warn('Error loading file sorting preference from DB:', err);
+      }
+    });
+  }
 
-  //     // Handle nulls explicitly
-  //     if (aValue === null && bValue === null) return 0;
-  //     if (aValue === null) return this.ascendingOrder ? 1 : -1;
-  //     if (bValue === null) return this.ascendingOrder ? -1 : 1;
+  setSortField(field: string, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.defaultSortPreference = field;
+    this.currentSortField = field;
+    this.ascendingOrder = true;
+    localStorage.setItem('otherSortField', this.defaultSortPreference);
+    localStorage.setItem('otherSortOrder', 'asc');
 
-  //     // Standard comparison
-  //     if (aValue === bValue) return 0;
-  //     return (aValue > bValue ? 1 : -1) * (this.ascendingOrder ? 1 : -1);
-  //   });
-  // }
+    this.saveUserSortPreferenceToDb(field);
+    this.applySorting();
+  }
 
   sortTable(field: string) {
     debugger;
@@ -804,8 +879,6 @@ export class FileOtherComponent extends AppComponentBase {
       this.currentSortField = field;
       this.ascendingOrder = true;
     }
-    localStorage.setItem('otherSortField', this.currentSortField);
-    localStorage.setItem('otherSortOrder', this.ascendingOrder ? 'asc' : 'desc');
     this.applySorting();
   }
 
@@ -853,11 +926,153 @@ export class FileOtherComponent extends AppComponentBase {
     return (value === undefined || value === null || value === '') ? null : value;
   }
 
+  switchViewMode(mode: 'list' | 'tag-drop'): void {
+    this.viewMode = mode;
+    localStorage.setItem('fileOtherViewMode', mode);
+    this.cdr.detectChanges();
+  }
+
+  get filteredTagListForView(): any[] {
+    let tags = this.allTagsList || [];
+    if (this.tagSearchQuery?.trim()) {
+      const q = this.tagSearchQuery.toLowerCase().trim();
+      tags = tags.filter(t => t.tagDescription?.toLowerCase().includes(q));
+    }
+
+    const generalTags = tags.filter(t => t.tagDescription?.toLowerCase() === 'general');
+    const customTags = tags.filter(t => t.tagDescription?.toLowerCase() !== 'general');
+
+    // Sort custom tags alphabetically A to Z
+    customTags.sort((a, b) => {
+      const nameA = a.tagDescription || '';
+      const nameB = b.tagDescription || '';
+      return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+    });
+
+    // General tag is placed at the bottom of the tree
+    return [...customTags, ...generalTags];
+  }
+
+  getFilesForTag(tagId: number): any[] {
+    if (!this.allFiles) return [];
+
+    let fileList: any[] = [];
+    const tag = (this.allTagsList || []).find(t => t.id === tagId);
+    if (tag && tag.tagDescription?.toLowerCase() === 'general') {
+      fileList = [...this.allFiles];
+    } else {
+      fileList = this.allFiles.filter(file =>
+        Array.isArray(file.escrowFileTags) &&
+        file.escrowFileTags.some((t: any) => t.id === tagId)
+      );
+    }
+
+    // Sort files alphabetically A to Z
+    return fileList.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+  }
+
+  onTagDragOver(event: DragEvent, tagId: number): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+    if (this.activeHoverTagId !== tagId) {
+      this.activeHoverTagId = tagId;
+    }
+  }
+
+  onTagDragLeave(event: DragEvent, tagId: number): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Guard against child element dragleave triggers
+    const currentTarget = event.currentTarget as HTMLElement;
+    const relatedTarget = event.relatedTarget as Node;
+    if (currentTarget && relatedTarget && currentTarget.contains(relatedTarget)) {
+      return;
+    }
+
+    if (this.activeHoverTagId === tagId) {
+      this.activeHoverTagId = null;
+    }
+  }
+
+  onTagDrop(event: DragEvent, tag: any): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.activeHoverTagId = null;
+    this.isInternalTagDrop = true;
+
+    if (tag && tag.id !== undefined) {
+      this.expandedTagIds.add(tag.id);
+    }
+
+    if (tag.tagDescription?.toLowerCase() === 'general') {
+      return;
+    }
+
+    let fileToAssign = this.draggedFile;
+    if (!fileToAssign && event.dataTransfer) {
+      const dataStr = event.dataTransfer.getData('application/json');
+      if (dataStr) {
+        try {
+          const parsed = JSON.parse(dataStr);
+          fileToAssign = (this.allFiles || []).find(f => f.key === parsed.key || f.name === parsed.name);
+        } catch (e) {}
+      }
+    }
+
+    if (!fileToAssign && this.selectedFile) {
+      fileToAssign = this.selectedFile;
+    }
+
+    if (!fileToAssign) {
+      return;
+    }
+
+    if (fileToAssign.escrowFileTags && fileToAssign.escrowFileTags.some((t: any) => t.id === tag.id)) {
+      abp.notify.warn(`'${fileToAssign.name}' is already assigned to '${tag.tagDescription}'.`, 'Already Assigned');
+      return;
+    }
+
+    const tagData: CreateOrEditTagsAndFileMappingsDto = {
+      tagId: tag.id,
+      fileName: fileToAssign.name,
+      id: 0,
+      init: () => { },
+      toJSON: () => ({
+        tagId: tag.id,
+        fileName: fileToAssign.name,
+        id: 0,
+      })
+    };
+
+    this.tagsAndFileMapping.createOrEdit(tagData).subscribe({
+      next: (response: any) => {
+        if (response?.success === false) {
+          abp.notify.error(response.message || 'Failed to assign tag.', 'Error');
+          return;
+        }
+        abp.notify.success(`Assigned '${tag.tagDescription}' to '${fileToAssign.name}'`, 'Success');
+        const scrollContainer = document.querySelector('.tag-dropzones-scroll-container');
+        const savedScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+        this.refreshFilesAndTags(savedScrollTop);
+      },
+      error: (err) => {
+        console.error('Error saving tag:', err);
+        abp.notify.error('Tag is already assigned to the file', 'Error');
+      }
+    });
+  }
+
   onRowClick(index: number) {
     this.selectedRowIndex = index;
   }
 
   onDragStart(event: DragEvent, file: any) {
+    this.draggedFile = file;
+    this.isInternalTagDrop = false;
     if (!file || !file.key) {
       return;
     }
@@ -895,6 +1110,7 @@ export class FileOtherComponent extends AppComponentBase {
         event.dataTransfer.setData('text/plain', '\u200B');
         event.dataTransfer.setData('text/html', '<span style="display:none;">\u200B</span>');
         event.dataTransfer.setData('application/x-escrow-file', file.name);
+        event.dataTransfer.setData('application/json', JSON.stringify({ key: file.key, name: file.name }));
 
         // Trick Windows File Explorer into accepting the drag (removes the  icon)
         // Only apply if not in Thunderbird mode to prevent blue links/0-byte attachments
@@ -908,6 +1124,14 @@ export class FileOtherComponent extends AppComponentBase {
   }
 
   onDragEnd(event: DragEvent, file: any) {
+    this.draggedFile = null;
+    this.activeHoverTagId = null;
+
+    if (this.isInternalTagDrop) {
+      this.isInternalTagDrop = false;
+      return;
+    }
+
     // Instantly ping the C# background service to delete dummy shortcuts
     fetch('http://localhost:5123/cleanup', { method: 'DELETE' }).catch(e => console.log('Cleanup fetch failed:', e));
 
@@ -1087,22 +1311,20 @@ export class FileOtherComponent extends AppComponentBase {
     this.saveEvent.emit(obj);
   }
 
-  DownloadFile(file: any) {
-    // Trigger the download manually since onDragStart prepares it but might not execute it directly without a drag event context fully utilizing it for click
-    // Actually, looking at onDragStart, it constructs the URL but doesn't trigger a window.open or link click for the user to download immediately apart from drag data.
-    // We need to implement actual download logic here similar to what standard download does.
-    // Re-using logic from FileMain's DownloadFile or constructing it here.
+  DownloadFile(file?: any) {
+    let targetFile = file || this.selectedFile;
+    if (!targetFile) return;
 
-    let path = file.path;
-    let key = file.key;
+    let path = targetFile.path;
+    let key = targetFile.key;
     let encodedPath = (path || this.completeEnterprisePathOther).replace(/#/g, "%23");
     let encodedKey = key.replace(/#/g, "%23");
-    let srId = file.srAssignedFileId || this.files[0]?.dataItem?.srAssignedFileId || 0;
+    let srId = targetFile.srAssignedFileId || this.files[0]?.dataItem?.srAssignedFileId || 0;
     let userId = this.appSession.userId;
     const token = abp.auth.getToken();
 
     const downloadUrl = this.apiUrl + "/FileManager/DownloadFile" +
-      "?path=" + encodeURIComponent(encodedPath + file.name) +
+      "?path=" + encodeURIComponent(encodedPath + targetFile.name) +
       "&key=" + encodeURIComponent(encodedKey) +
       "&srAssignedFileId=" + srId +
       "&userId=" + userId +

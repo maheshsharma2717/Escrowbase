@@ -323,3 +323,101 @@ tbody tr:nth-child(even) {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
     filter: brightness(1.1);
 }
+
+/* Tag Drag & Drop View Styles */
+.tag-view-container {
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.tag-dropzone-card {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 120px;
+    background-color: #ffffff;
+}
+
+.tag-dropzone-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+.tag-dropzone-card.active-hover {
+    background-color: #e8f4ff !important;
+    border-color: #3699FF !important;
+    box-shadow: 0 0 0 3px rgba(54, 153, 255, 0.35) !important;
+    transform: scale(1.02);
+}
+
+.tag-assigned-files-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.tag-assigned-files-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.tag-dropzones-scroll-container {
+    max-height: 520px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 6px;
+}
+
+.tag-dropzones-scroll-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tag-dropzones-scroll-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.tag-dropzones-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Tree View Styles */
+.tag-tree-node {
+    background-color: #f9fafb;
+    transition: all 0.2s ease-in-out;
+}
+
+.tag-tree-node:hover {
+    background-color: #f1f5f9;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.tag-tree-node.active-hover {
+    background-color: #e8f4ff !important;
+    border-color: #3699FF !important;
+    box-shadow: 0 0 0 3px rgba(54, 153, 255, 0.35) !important;
+    transform: translateX(4px);
+}
+
+.tag-tree-node.node-expanded {
+    background-color: #ffffff;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.tag-tree-children {
+    border-left: 2px dashed #cbd5e1 !important;
+    margin-left: 20px !important;
+    width: calc(100% - 20px) !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s ease;
+}
+
+.tag-tree-file-child {
+    transition: all 0.15s ease-in-out;
+}
+
+.tag-tree-file-child:hover {
+    background-color: #f8fafc !important;
+    border-color: #3699FF !important;
+    transform: translateX(3px);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}

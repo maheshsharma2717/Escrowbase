@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Abp.Authorization;
@@ -95,6 +95,16 @@ namespace SR.EscrowBaseWeb.Configuration
                 var settings = await themeCustomizer.GetHostUiManagementSettings();
                 await themeCustomizer.UpdateUserUiManagementSettingsAsync(AbpSession.ToUserIdentifier(), settings);
             }
+        }
+
+        public async Task ChangeFileSortingPreference(string preference)
+        {
+            await _settingManager.ChangeSettingForUserAsync(AbpSession.ToUserIdentifier(), AppSettings.UiManagement.FileSortingPreference, preference);
+        }
+
+        public async Task<string> GetFileSortingPreference()
+        {
+            return await _settingManager.GetSettingValueForUserAsync(AppSettings.UiManagement.FileSortingPreference, AbpSession.ToUserIdentifier());
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using Abp.Configuration;
 using Abp.Json;
@@ -167,7 +167,10 @@ namespace SR.EscrowBaseWeb.Configuration
                     isVisibleToClients: true, scopes: SettingScopes.Application | SettingScopes.Tenant),
                 new SettingDefinition(AppSettings.UserManagement.UseGravatarProfilePicture,
                     GetFromAppSettings(AppSettings.UserManagement.UseGravatarProfilePicture, "false"),
-                    isVisibleToClients: true, scopes: SettingScopes.User)
+                    isVisibleToClients: true, scopes: SettingScopes.User),
+                new SettingDefinition(AppSettings.UiManagement.FileSortingPreference,
+                    GetFromAppSettings(AppSettings.UiManagement.FileSortingPreference, "name"),
+                    isVisibleToClients: true, scopes: SettingScopes.Application | SettingScopes.Tenant | SettingScopes.User)
             };
         }
 

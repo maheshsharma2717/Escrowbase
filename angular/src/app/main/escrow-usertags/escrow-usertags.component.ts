@@ -70,8 +70,8 @@ export class EscrowUsertagsComponent extends AppComponentBase {
   noteMessage: string = '';
   showValidation: boolean = false;
   isSaving: boolean = false;
-  secondaryColor: string = '#000000';
-  primaryColor: string = '#ffffff';
+  secondaryColor: string = '#ffffff';
+  primaryColor: string = '#000000';
   isBackgroundPickerOpen: boolean = false;
   isDescriptionPickerOpen: boolean = false;
   selectedColor: any;
@@ -99,6 +99,11 @@ export class EscrowUsertagsComponent extends AppComponentBase {
   }
   show() {
     this.modal.show();
+    if (!this.editMode) {
+      this.primaryColor = '#000000';
+      this.secondaryColor = '#ffffff';
+      this.textinput();
+    }
     this.getAllFileTags();
   }
 
@@ -159,8 +164,8 @@ export class EscrowUsertagsComponent extends AppComponentBase {
         this.tagSaved.emit(); // Notify parent to refresh search dropdowns
         this.noteMessage = '';
         this.showValidation = false;
-        this.primaryColor = '#ffffff';      // reset to default or any desired color
-        this.secondaryColor = '#000000';
+        this.primaryColor = '#000000';      // reset to default black background
+        this.secondaryColor = '#ffffff';     // reset to default white text
         this.selectedColor = null;
         this.editMode = false;
         this.editingTagId = null;
@@ -178,15 +183,6 @@ export class EscrowUsertagsComponent extends AppComponentBase {
   }
 
   deleteTag(id: number) {
-    debugger;
-    let EscrowTab = localStorage.getItem("activeTab")
-    let userType = localStorage.getItem("accessTYpe" + EscrowTab);
-    const disallowedTypes = ['EOX', 'EA1', 'EO1', 'EAX'];
-    if (disallowedTypes.includes(userType)) {
-      abp.notify.error("You are not allowed to delete the tags.");
-      return;
-    }
-
     Swal.fire({
       title: 'Are you sure?',
       text: 'Do you really want to delete this tag?',
@@ -245,8 +241,8 @@ export class EscrowUsertagsComponent extends AppComponentBase {
     //this.modalClosed.emit();
     this.modal.hide();
     this.noteMessage = '';
-    this.primaryColor = '#ffffff';
-    this.secondaryColor = '#000000';
+    this.primaryColor = '#000000';
+    this.secondaryColor = '#ffffff';
     this.selectedColor = {
       bgColor: this.primaryColor,
       fontColor: this.secondaryColor

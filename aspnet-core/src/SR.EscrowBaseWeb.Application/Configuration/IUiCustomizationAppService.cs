@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Abp.Application.Services;
 using SR.EscrowBaseWeb.Configuration.Dto;
@@ -14,5 +14,9 @@ namespace SR.EscrowBaseWeb.Configuration
         Task UpdateDefaultUiManagementSettings(ThemeSettingsDto settings);
 
         Task UseSystemDefaultSettings();
+
+        Task ChangeFileSortingPreference(string preference);
+
+        Task<string> GetFileSortingPreference();
     }
 }

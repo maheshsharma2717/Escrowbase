@@ -3155,26 +3155,37 @@ export class FileViewComponent extends AppComponentBase {
         let userType = localStorage.getItem("accessTYpe" + escrow);
 
         this.selectedFileForDownload = strng;
-        this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetEmbeddedLink?filePath=" + strng + "&escrow=" + escrow + "&userType=" + userType + "&srAssignedFileId=" + srId).subscribe((response: any) => {
-          if (response.result) {
-            this.embedUrl = response.result;
-            this.eSign = true;
+        this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetEmbeddedLink?filePath=" + strng + "&escrow=" + escrow + "&userType=" + userType + "&srAssignedFileId=" + srId)
+          .subscribe({
+            next: (response: any) => {
+              const embeddedLink = response?.result?.result || response?.result?.link || response?.result;
 
-            this.modalReff = this.modalService.show(
-              popupesign, config
-            );
-            console.log("signing test" + this.embedUrl);
-            this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(this.embedUrl);
-
-          } else {
-            Swal.fire({
-              title: 'No signature required for this file.',
-              text: '',
-              icon: '',
-              confirmButtonText: 'OK'
-            });
-          }
-        });
+              if (embeddedLink && typeof embeddedLink === 'string' && (embeddedLink.toLowerCase().startsWith('error') || embeddedLink.toLowerCase().includes('error:'))) {
+                const cleanMsg = embeddedLink.replace(/^Error:\s*/i, '');
+                abp.notify.error(cleanMsg, 'E-Sign Error');
+              } else if (embeddedLink && typeof embeddedLink === 'string' && (embeddedLink.startsWith('http://') || embeddedLink.startsWith('https://'))) {
+                this.embedUrl = embeddedLink;
+                this.eSign = true;
+                this.modalReff = this.modalService.show(popupesign, config);
+                this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(this.embedUrl);
+              } else {
+                Swal.fire({
+                  title: 'No signature required for this file.',
+                  text: '',
+                  icon: 'info',
+                  confirmButtonText: 'OK'
+                });
+              }
+            },
+            error: (error: any) => {
+              console.error('E-Sign Error:', error);
+              let message = error?.error?.result?.result || error?.error?.result || error?.error?.error?.message || error?.error?.message || error?.message || "Error fetching e-sign embedded link.";
+              if (typeof message === 'string') {
+                message = message.replace(/^Error:\s*/i, '');
+              }
+              abp.notify.error(message, 'E-Sign Error');
+            }
+          });
       }
     }
   }
@@ -3237,25 +3248,34 @@ export class FileViewComponent extends AppComponentBase {
 
       this.selectedFileForDownload = strng;
       this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetEmbeddedLinkDocuSign?filePath=" + strng + "&escrow=" + escrow + "&userType=" + userType + "&srAssignedFileId=" + srId)
-        .subscribe((response: any) => {
+        .subscribe({
+          next: (response: any) => {
+            const embeddedLink = response?.result?.result || response?.result?.link || response?.result;
 
-          const embeddedLink = response?.result?.result || response?.result?.link;
-
-          if (embeddedLink) {
-            this.embedUrl = embeddedLink;
-
-            this.eSign = true;
-            this.docuSign = true;
-
-            this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(this.embedUrl);
-            debugger
-            this.modalReff = this.modalService.show(popupesign, config);
-          } else {
-            Swal.fire({
-              title: 'No signature required for this file.',
-              icon: 'info',
-              confirmButtonText: 'OK'
-            });
+            if (embeddedLink && typeof embeddedLink === 'string' && (embeddedLink.toLowerCase().startsWith('error') || embeddedLink.toLowerCase().includes('error:'))) {
+              const cleanMsg = embeddedLink.replace(/^Error:\s*/i, '');
+              abp.notify.error(cleanMsg, 'DocuSign Session Error');
+            } else if (embeddedLink && typeof embeddedLink === 'string' && (embeddedLink.startsWith('http://') || embeddedLink.startsWith('https://'))) {
+              this.embedUrl = embeddedLink;
+              this.eSign = true;
+              this.docuSign = true;
+              this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(this.embedUrl);
+              this.modalReff = this.modalService.show(popupesign, config);
+            } else {
+              Swal.fire({
+                title: 'No signature required for this file.',
+                icon: 'info',
+                confirmButtonText: 'OK'
+              });
+            }
+          },
+          error: (error: any) => {
+            console.error('DocuSign API Error:', error);
+            let message = error?.error?.result?.result || error?.error?.result || error?.error?.error?.message || error?.error?.message || error?.message || "Your DocuSign session expired. Please reconnect.";
+            if (typeof message === 'string') {
+              message = message.replace(/^Error:\s*/i, '');
+            }
+            abp.notify.error(message, 'DocuSign Session Error');
           }
         });
     }
@@ -3321,16 +3341,17 @@ export class FileViewComponent extends AppComponentBase {
       this.http.get(AppConsts.remoteServiceBaseUrl + "/Home/GetEmbeddedLinkDocuSign?filePath=" + strng + "&escrow=" + escrow + "&userType=" + userType + "&srAssignedFileId=" + srId)
         .subscribe({
           next: (response: any) => {
-            const embeddedLink = response?.result?.result || response?.result?.link;
+            const embeddedLink = response?.result?.result || response?.result?.link || response?.result;
 
-            if (embeddedLink) {
+            if (embeddedLink && typeof embeddedLink === 'string' && (embeddedLink.toLowerCase().startsWith('error') || embeddedLink.toLowerCase().includes('error:'))) {
+              const cleanMsg = embeddedLink.replace(/^Error:\s*/i, '');
+              abp.notify.error(cleanMsg, 'DocuSign Session Error');
+            } else if (embeddedLink && typeof embeddedLink === 'string' && (embeddedLink.startsWith('http://') || embeddedLink.startsWith('https://'))) {
               this.embedUrl = embeddedLink;
               this.eSign = true;
               this.docuSign = true;
-
               this.EMBED_SESSION_URL = this.sanitizer.bypassSecurityTrustResourceUrl(embeddedLink);
               this.modalReff = this.modalService.show(popupesign, config);
-              console.log(this.EMBED_SESSION_URL)
             } else {
               Swal.fire({
                 title: 'No signature required for this file.',
@@ -3339,9 +3360,13 @@ export class FileViewComponent extends AppComponentBase {
               });
             }
           },
-          error: (error) => {
-            const message = error?.error?.result.result || "Something went wrong while fetching the embedded link.";
-            abp.notify.error(message)
+          error: (error: any) => {
+            console.error('DocuSign API Error:', error);
+            let message = error?.error?.result?.result || error?.error?.result || error?.error?.error?.message || error?.error?.message || error?.message || "Your DocuSign session expired. Please reconnect.";
+            if (typeof message === 'string') {
+              message = message.replace(/^Error:\s*/i, '');
+            }
+            abp.notify.error(message, 'DocuSign Session Error');
           }
         });
     }
