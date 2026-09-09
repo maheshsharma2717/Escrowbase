@@ -359,12 +359,8 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         const list: any[] = [];
 
         // Add "Current/Selected" escrow item first if it exists and is valid
-        if (currentEscrowItem && currentEscrowItem.value !== '') {
+        if (currentEscrowItem && currentEscrowItem.value && currentEscrowItem.value !== '') {
             list.push(currentEscrowItem);
-        } else {
-            // Keep the placeholder if no current escrow, but ensure it doesn't duplicate the HTML "Select Escrow"
-            list.push({ label: 'Current escrow not sent', value: '', disabled: true });
-            this.selectedEscrow = "";
         }
 
         // Fetch recent escrows from backend
@@ -404,8 +400,8 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                         return;
                     }
 
-                    // Avoid duplicate entries in the list
-                    const isDuplicate = list.some(x => x.label === label);
+                    // Avoid duplicate entries in the list (by label or matching escrowNumber)
+                    const isDuplicate = list.some(x => x.label === label || (x.value && x.value.e && atob(x.value.e) === item.escrowNumber));
                     if (isDuplicate) {
                         return;
                     }
@@ -426,6 +422,12 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                 });
             }
 
+            this.availableEscrows = list;
+            setTimeout(() => {
+                this.selectedEscrow = null;
+                this._changeDetectorRef.detectChanges();
+            });
+        }, error => {
             this.availableEscrows = list;
             setTimeout(() => {
                 this.selectedEscrow = null;
@@ -452,7 +454,7 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
         }
 
         this.loading = false;
-        if (this.primengTableHelper.shouldResetPaging(event) && !IsRefresh) {
+        if (this.paginator && this.primengTableHelper.shouldResetPaging(event) && !IsRefresh) {
 
             this.paginator.changePage(0);
             return;
@@ -525,8 +527,11 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
                 if (this.searchText) {
                     this.filterGrid()
                 } else {
+                    this.primengTableHelper.records = [...this.escrowList];
+                    if (this.currentSortField) {
+                        this.sortRecords(this.currentSortField, this.currentSortOrder);
+                    }
                     this.primengTableHelper.totalRecordsCount = this.escrowList.length;
-                    this.primengTableHelper.records = this.escrowList;
                 }
                 this.primengTableHelper.hideLoadingIndicator();
 
@@ -733,29 +738,58 @@ export class UserDashboardComponent extends AppComponentBase implements OnInit {
     }
 
 
+    currentSortField: string = '';
+    currentSortOrder: number = 1;
+
+    onSort(event: any) {
+        if (event && event.field) {
+            this.currentSortField = event.field;
+            this.currentSortOrder = event.order || 1;
+            this.sortRecords(this.currentSortField, this.currentSortOrder);
+        }
+    }
+
+    sortRecords(field: string, order: number) {
+        if (!field || !this.primengTableHelper.records) return;
+        this.primengTableHelper.records.sort((a, b) => {
+            const valA = (a[field] || '').toString();
+            const valB = (b[field] || '').toString();
+            return valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' }) * order;
+        });
+    }
+
     SearchChange() {
-        this.searchText = "";
         this.filterGrid();
     }
 
     filterGrid() {
-        if (this.filterLabel) {
-            if (this.searchText) {
-                const find = this.escrowList;
-                let data = find.filter(x => x[this.filterLabel].toLowerCase().includes(this.searchText.toLowerCase()))
-
-                this.primengTableHelper.records = data;
-                this.primengTableHelper.totalRecordsCount = data.length;
-
-            } else {
-
-                this.primengTableHelper.records = this.escrowList;
-                this.primengTableHelper.totalRecordsCount = this.escrowList.length;
-            }
+        if (!this.searchText || !this.searchText.trim()) {
+            this.primengTableHelper.records = [...this.escrowList];
         } else {
-            this.primengTableHelper.records = this.escrowList;
-            this.primengTableHelper.totalRecordsCount = this.escrowList.length;
+            const query = this.searchText.trim().toLowerCase();
+
+            if (this.filterLabel) {
+                this.primengTableHelper.records = this.escrowList.filter(x => {
+                    const val = x[this.filterLabel];
+                    return val ? val.toString().toLowerCase().includes(query) : false;
+                });
+            } else {
+                // All Categories: search across all grid fields
+                const fields = ['subCompany', 'escrowid', 'type', 'address', 'buyer', 'seller'];
+                this.primengTableHelper.records = this.escrowList.filter(x => {
+                    return fields.some(field => {
+                        const val = x[field];
+                        return val ? val.toString().toLowerCase().includes(query) : false;
+                    });
+                });
+            }
         }
+
+        if (this.currentSortField) {
+            this.sortRecords(this.currentSortField, this.currentSortOrder);
+        }
+
+        this.primengTableHelper.totalRecordsCount = this.primengTableHelper.records.length;
     }
 
     setListOfOpenTab(item) {
