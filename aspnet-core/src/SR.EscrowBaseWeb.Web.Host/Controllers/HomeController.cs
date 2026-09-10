@@ -82,6 +82,7 @@ using System.Security.Cryptography;
 using SR.EscrowBaseWeb.TagsAndFileMapping;
 using SR.EscrowBaseWeb.EscrowFileTag;
 using SR.EscrowBaseWeb.Web.FilePermission;
+using SR.EscrowBaseWeb.Storage;
 
 namespace SR.EscrowBaseWeb.Web.Controllers
 {
@@ -125,6 +126,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         private readonly ICurrentEscrowsAppService _currentEscrowRepository;
         private readonly IFilePermissionService _filePermissionService;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
+        private readonly IFileEncryptionService _fileEncryptionService;
 
 
         ///<Summary>
@@ -180,7 +182,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             IRepository<ESignCompany, long> esignCompanyRepository,
              ICurrentEscrowsAppService currentEscrowRepository,
             IFilePermissionService filePermissionService,
-            Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory)
+            Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory,
+            IFileEncryptionService fileEncryptionService)
 
 
         {
@@ -216,6 +219,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             _currentEscrowRepository = currentEscrowRepository;
             _filePermissionService = filePermissionService;
             _serviceScopeFactory = serviceScopeFactory;
+            _fileEncryptionService = fileEncryptionService;
         }
 
         [HttpGet]
@@ -253,7 +257,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 }
 
                 // 1. Read file
-                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                var fileBytes = await _fileEncryptionService.ReadAndDecryptFileBytesAsync(filePath);
 
                 // 2. Find EOX user for this escrow to assign as recipient
                 // We check for "EOX" case-insensitively and handle potential brackets, plus a general match for 'EO'
@@ -2253,6 +2257,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                             await file.CopyToAsync(stream);
                             isUploaded = true;
                         }
+                        await _fileEncryptionService.EncryptFileAsync(destPath);
 
                         string fileText;
                         using (var reader = new StreamReader(new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
@@ -2740,6 +2745,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 try
                 {
                     using (var stream = new FileStream(destPath, FileMode.Create)) { await file.CopyToAsync(stream); }
+                    await _fileEncryptionService.EncryptFileAsync(destPath);
                     break;
                 }
                 catch (System.IO.IOException)
@@ -3643,7 +3649,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                 using (var content = new MultipartFormDataContent())
                 {
-                    var fileContent = new ByteArrayContent(System.IO.File.ReadAllBytes(filePath));
+                    var fileBytes = new FileEncryptionService(conf).DecryptBytes(System.IO.File.ReadAllBytes(filePath));
+                    var fileContent = new ByteArrayContent(fileBytes);
                     fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/pdf");
                     content.Add(fileContent, "file", Path.GetFileName(filePath));
                     content.Add(new StringContent($"{Path.GetFileName(filePath)}"), "name");
@@ -6316,7 +6323,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     }
                 }
 
-                byte[] finalBytes = await System.IO.File.ReadAllBytesAsync(originalPdf);
+                byte[] finalBytes = await _fileEncryptionService.ReadAndDecryptFileBytesAsync(originalPdf);
                 string base64File = Convert.ToBase64String(finalBytes);
                 var envelopeDefinition = new
                 {
@@ -6731,7 +6738,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     var multipartContent = new MultipartFormDataContent();
 
                     // Read the PDF file and add it to the content
-                    byte[] pdfBytes = System.IO.File.ReadAllBytes(pdfFilePath);
+                    byte[] pdfBytes = await _fileEncryptionService.ReadAndDecryptFileBytesAsync(pdfFilePath);
                     ByteArrayContent fileContent = new ByteArrayContent(pdfBytes);
                     fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
                     string fileName = "esignFile.pdf";
@@ -8323,7 +8330,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                     var multipartContent = new MultipartFormDataContent();
 
-                    byte[] pdfBytes = System.IO.File.ReadAllBytes(pdfFilePath);
+                    byte[] pdfBytes = await _fileEncryptionService.ReadAndDecryptFileBytesAsync(pdfFilePath);
                     ByteArrayContent fileContent = new ByteArrayContent(pdfBytes);
                     fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
                     string fileName = "esignFile.pdf";
@@ -8525,7 +8532,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                 using (var content = new MultipartFormDataContent())
                 {
-                    var fileContent = new ByteArrayContent(System.IO.File.ReadAllBytes(filePath));
+                    var fileBytes = new FileEncryptionService(conf).DecryptBytes(System.IO.File.ReadAllBytes(filePath));
+                    var fileContent = new ByteArrayContent(fileBytes);
                     fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/pdf");
                     content.Add(fileContent, "file", Path.GetFileName(filePath));
                     content.Add(new StringContent($"{Path.GetFileName(filePath)}"), "name");
@@ -8879,7 +8887,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                 using (var content = new MultipartFormDataContent())
                 {
-                    var fileContent = new ByteArrayContent(System.IO.File.ReadAllBytes(filePath));
+                    var fileBytes = await _fileEncryptionService.ReadAndDecryptFileBytesAsync(filePath);
+                    var fileContent = new ByteArrayContent(fileBytes);
                     fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
                     content.Add(fileContent, "file", Path.GetFileName(filePath));
 
@@ -9174,7 +9183,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     setExpiryDate = new[] { "0", "0 Days" },
                     signatureVerificationRequired = "NA",
                     transactionId = "001",
-                    documentContent = Convert.ToBase64String(await System.IO.File.ReadAllBytesAsync(pdfFilePath)),
+                    documentContent = Convert.ToBase64String(await _fileEncryptionService.ReadAndDecryptFileBytesAsync(pdfFilePath)),
                     redirectUri = conf["SutiSign:RedirectUri"],
                     sendNotifications = "Y",
                     notificationSubject = "Escrow Document Signature Request",

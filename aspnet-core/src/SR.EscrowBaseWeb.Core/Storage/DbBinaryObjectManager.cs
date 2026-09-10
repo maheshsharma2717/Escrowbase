@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Abp.Dependency;
 using Abp.Domain.Repositories;
@@ -8,20 +8,33 @@ namespace SR.EscrowBaseWeb.Storage
     public class DbBinaryObjectManager : IBinaryObjectManager, ITransientDependency
     {
         private readonly IRepository<BinaryObject, Guid> _binaryObjectRepository;
+        private readonly IFileEncryptionService _fileEncryptionService;
 
-        public DbBinaryObjectManager(IRepository<BinaryObject, Guid> binaryObjectRepository)
+        public DbBinaryObjectManager(
+            IRepository<BinaryObject, Guid> binaryObjectRepository,
+            IFileEncryptionService fileEncryptionService)
         {
             _binaryObjectRepository = binaryObjectRepository;
+            _fileEncryptionService = fileEncryptionService;
         }
 
-        public Task<BinaryObject> GetOrNullAsync(Guid id)
+        public async Task<BinaryObject> GetOrNullAsync(Guid id)
         {
-            return _binaryObjectRepository.FirstOrDefaultAsync(id);
+            var item = await _binaryObjectRepository.FirstOrDefaultAsync(id);
+            if (item != null && item.Bytes != null)
+            {
+                item.Bytes = _fileEncryptionService.DecryptBytes(item.Bytes);
+            }
+            return item;
         }
 
-        public Task SaveAsync(BinaryObject file)
+        public async Task SaveAsync(BinaryObject file)
         {
-            return _binaryObjectRepository.InsertAsync(file);
+            if (file != null && file.Bytes != null)
+            {
+                file.Bytes = _fileEncryptionService.EncryptBytes(file.Bytes);
+            }
+            await _binaryObjectRepository.InsertAsync(file);
         }
 
         public Task DeleteAsync(Guid id)

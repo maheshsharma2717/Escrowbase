@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Threading.Tasks;
 using Abp.Auditing;
@@ -12,14 +12,17 @@ namespace SR.EscrowBaseWeb.Web.Controllers
     {
         private readonly ITempFileCacheManager _tempFileCacheManager;
         private readonly IBinaryObjectManager _binaryObjectManager;
+        private readonly IFileEncryptionService _fileEncryptionService;
 
         public FileController(
             ITempFileCacheManager tempFileCacheManager,
-            IBinaryObjectManager binaryObjectManager
+            IBinaryObjectManager binaryObjectManager,
+            IFileEncryptionService fileEncryptionService
         )
         {
             _tempFileCacheManager = tempFileCacheManager;
             _binaryObjectManager = binaryObjectManager;
+            _fileEncryptionService = fileEncryptionService;
         }
 
         [DisableAuditing]
@@ -31,6 +34,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 return NotFound(L("RequestedFileDoesNotExists"));
             }
 
+            fileBytes = _fileEncryptionService.DecryptBytes(fileBytes);
             return File(fileBytes, file.FileType, file.FileName);
         }
 

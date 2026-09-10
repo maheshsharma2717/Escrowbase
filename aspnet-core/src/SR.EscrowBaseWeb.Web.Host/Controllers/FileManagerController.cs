@@ -54,6 +54,8 @@ using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using NPOI.HSSF.UserModel;
 
+using SR.EscrowBaseWeb.Storage;
+
 namespace SR.EscrowBaseWeb.Web.Controllers
 {
     ///<Summary>
@@ -88,6 +90,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         private readonly IRepository<EscrowFileTags> _escrowFileTagsRepository;
         private readonly IRepository<TagsAndFileMappings> _tagsAndFileMappingsRepository;
         private readonly IFilePermissionService _filePermissionService;
+        private readonly IFileEncryptionService _fileEncryptionService;
 
 
         ///<Summary>
@@ -142,7 +145,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             IRepository<EscrowFileTags> escrowFileTagsRepository,
             IRepository<TagsAndFileMappings> tagsAndFileMappingsRepository,
             IHubContext<ChatHub> chatHub,
-            IFilePermissionService filePermissionService
+            IFilePermissionService filePermissionService,
+            IFileEncryptionService fileEncryptionService
             )
         {
             _chatHub = chatHub;
@@ -167,6 +171,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             _escrowFileTagsRepository = escrowFileTagsRepository;
             _tagsAndFileMappingsRepository = tagsAndFileMappingsRepository;
             _filePermissionService = filePermissionService;
+            _fileEncryptionService = fileEncryptionService;
         }
 
         ///<Summary>
@@ -212,12 +217,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     }
                 }
 
-                var memory = new MemoryStream();
-                using (var stream = new FileStream(file, FileMode.Open))
-                {
-                    await stream.CopyToAsync(memory);
-                }
-                memory.Position = 0;
+                var rawBytes = await _fileEncryptionService.ReadAndDecryptFileBytesAsync(file);
+                var memory = new MemoryStream(rawBytes);
                 var ext = Path.GetExtension(file).ToLowerInvariant();
                 CreateOrEditEscrowFileHistoryDto escrowFileHistory = new CreateOrEditEscrowFileHistoryDto();
                 escrowFileHistory.SrEscrowFileMasterId = srAssignedFileId;
@@ -278,7 +279,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                                     using (var entryStream = entry.Open())
                                     using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                                     {
-                                        await fileStream.CopyToAsync(entryStream);
+                                        await _fileEncryptionService.DecryptStreamAsync(fileStream, entryStream);
                                     }
                                 }
                             }
@@ -373,16 +374,22 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     }
                 }
 
+                if (!System.IO.File.Exists(file))
+                {
+                    return NotFound(new { error = "File not found" });
+                }
+
+                byte[] decryptedBytes = await _fileEncryptionService.ReadAndDecryptFileBytesAsync(file);
+
                 if (Path.GetExtension(file).ToLower() == ".doc" || Path.GetExtension(file).ToLower() == ".docx" || Path.GetExtension(file).ToLower() == ".rtf")
                 {
                     try
                     {
-                        if (!System.IO.File.Exists(file))
-                        {
-                            return NotFound(new { error = "File not found" });
-                        }
                         Document document = new Document();
-                        document.LoadFromFile(file);
+                        using (var ms = new MemoryStream(decryptedBytes))
+                        {
+                            document.LoadFromStream(ms, FileFormat.Auto);
+                        }
                         document.HtmlExportOptions.ImageEmbedded = true;
                         document.HtmlExportOptions.CssStyleSheetType = CssStyleSheetType.Internal;
 
@@ -417,7 +424,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                 if (Path.GetExtension(file).Equals(".eml", StringComparison.OrdinalIgnoreCase))
                 {
-                    using var stream = new FileStream(file, FileMode.Open, FileAccess.Read);
+                    using var stream = new MemoryStream(decryptedBytes);
                     var message = await MimeMessage.LoadAsync(stream);
                     string emailContent = message.HtmlBody ?? message.TextBody;
                     return Ok(new { Base64 = emailContent, fileType = "eml" });
@@ -425,16 +432,13 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                 if (Path.GetExtension(file).ToLower() == ".pdf")
                 {
-                    using var pdfStream = new FileStream(file, FileMode.Open, FileAccess.Read);
-                    using var memory = new MemoryStream();
-                    await pdfStream.CopyToAsync(memory);
-                    string base64String = Convert.ToBase64String(memory.ToArray());
+                    string base64String = Convert.ToBase64String(decryptedBytes);
                     return Ok(new { Base64 = base64String, fileType = "pdf" });
                 }
 
                 if (Path.GetExtension(file).ToLower() == ".txt")
                 {
-                    var textContent = await System.IO.File.ReadAllTextAsync(file);
+                    string textContent = System.Text.Encoding.UTF8.GetString(decryptedBytes);
                     byte[] textBytes = System.Text.Encoding.UTF8.GetBytes(textContent);
                     string base64String = Convert.ToBase64String(textBytes);
                     return Ok(new { Base64 = base64String, fileType = "docx" });
@@ -443,7 +447,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 if (Path.GetExtension(file).ToLower() == ".msg")
                 {
                     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-                    using var fileStream = System.IO.File.OpenRead(file);
+                    using var fileStream = new MemoryStream(decryptedBytes);
                     var reader = new MsgReader.Outlook.Storage.Message(fileStream);
                     string emailContent = reader.BodyHtml ?? reader.BodyText ?? "No content available";
                     byte[] textBytes = System.Text.Encoding.UTF8.GetBytes(emailContent);
@@ -456,7 +460,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     try
                     {
                         IWorkbook workbook;
-                        using (var fileStream = new FileStream(file, FileMode.Open, FileAccess.Read))
+                        using (var fileStream = new MemoryStream(decryptedBytes))
                         {
                             if (Path.GetExtension(file).ToLower() == ".xlsx") workbook = new XSSFWorkbook(fileStream);
                             else workbook = new HSSFWorkbook(fileStream);
@@ -597,6 +601,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     await System.IO.File.WriteAllBytesAsync(fullPath, fileBytes);
                 }
 
+                await _fileEncryptionService.EncryptFileAsync(fullPath);
                 return Ok(new { success = true });
             }
             catch (Exception ex)
@@ -2110,6 +2115,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     file.CopyTo(stream);
                 }
+                await _fileEncryptionService.EncryptFileAsync(fullFilePath);
 
                 if (parsedUserId != 1)
                 {

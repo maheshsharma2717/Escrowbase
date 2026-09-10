@@ -1,29 +1,3 @@
-// import { Component, Injector, OnInit } from '@angular/core';
-// import { AppComponentBase } from '@shared/common/app-component-base';
-// import { EscrowFileTagsesServiceProxy } from '@shared/service-proxies/service-proxies';
-
-// @Component({
-//   selector: 'app-escrow-usertags',
-//   templateUrl: './escrow-usertags.component.html',
-//   styleUrls: ['./escrow-usertags.component.css']
-// })
-// export class EscrowUsertagsComponent extends AppComponentBase {
-//   show() {
-//     throw new Error('Method not implemented.');
-//   }
-
-//   constructor(
-//     private escrowFileTagsesServiceProxy: EscrowFileTagsesServiceProxy,
-//      injector: Injector,
-//   ) {
-//     super(injector);
-//   }
-
-//   ngOnInit(): void {
-//   }
-
-// }
-
 
 import { Component, EventEmitter, Injector, Input, NgModule, OnInit, Output, ViewChild } from '@angular/core';
 import { PrimengTableHelper } from '@shared/helpers/PrimengTableHelper';
