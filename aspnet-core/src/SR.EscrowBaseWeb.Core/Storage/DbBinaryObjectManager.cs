@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Abp.Dependency;
 using Abp.Domain.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace SR.EscrowBaseWeb.Storage
 {
@@ -20,7 +21,7 @@ namespace SR.EscrowBaseWeb.Storage
 
         public async Task<BinaryObject> GetOrNullAsync(Guid id)
         {
-            var item = await _binaryObjectRepository.FirstOrDefaultAsync(id);
+            var item = await _binaryObjectRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
             if (item != null && item.Bytes != null)
             {
                 item.Bytes = _fileEncryptionService.DecryptBytes(item.Bytes);

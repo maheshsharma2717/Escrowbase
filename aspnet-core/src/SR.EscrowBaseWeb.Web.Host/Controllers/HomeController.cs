@@ -2260,10 +2260,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                         await _fileEncryptionService.EncryptFileAsync(destPath);
 
                         string fileText;
-                        using (var reader = new StreamReader(new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
-                        {
-                            fileText = await reader.ReadToEndAsync();
-                        }
+                        byte[] decryptedTextBytes = await _fileEncryptionService.ReadAndDecryptFileBytesAsync(destPath);
+                        fileText = System.Text.Encoding.UTF8.GetString(decryptedTextBytes);
 
 
 
@@ -3649,7 +3647,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                 using (var content = new MultipartFormDataContent())
                 {
-                    var fileBytes = new FileEncryptionService(conf).DecryptBytes(System.IO.File.ReadAllBytes(filePath));
+                    var fileBytes = await new FileEncryptionService(conf).ReadAndDecryptFileBytesAsync(filePath);
                     var fileContent = new ByteArrayContent(fileBytes);
                     fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/pdf");
                     content.Add(fileContent, "file", Path.GetFileName(filePath));
@@ -8532,7 +8530,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                 using (var content = new MultipartFormDataContent())
                 {
-                    var fileBytes = new FileEncryptionService(conf).DecryptBytes(System.IO.File.ReadAllBytes(filePath));
+                    var fileBytes = await new FileEncryptionService(conf).ReadAndDecryptFileBytesAsync(filePath);
                     var fileContent = new ByteArrayContent(fileBytes);
                     fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/pdf");
                     content.Add(fileContent, "file", Path.GetFileName(filePath));
