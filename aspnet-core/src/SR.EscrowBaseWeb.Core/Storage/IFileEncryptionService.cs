@@ -7,11 +7,11 @@ namespace SR.EscrowBaseWeb.Storage
 {
     public interface IFileEncryptionService : ISingletonDependency
     {
-        byte[] EncryptBytes(byte[] plainBytes);
-        byte[] DecryptBytes(byte[] inputBytes);
-        Task EncryptStreamAsync(Stream inputStream, Stream outputStream);
-        Task DecryptStreamAsync(Stream inputStream, Stream outputStream);
-        Task EncryptFileAsync(string filePath);
-        Task<byte[]> ReadAndDecryptFileBytesAsync(string filePath);
+        byte[] EncryptBytes(byte[] plainBytes, string escrowNumber = null);
+        byte[] DecryptBytes(byte[] inputBytes, string escrowNumber = null);
+        Task EncryptStreamAsync(Stream inputStream, Stream outputStream, string escrowNumber = null);
+        Task DecryptStreamAsync(Stream inputStream, Stream outputStream, string escrowNumber = null);
+        Task EncryptFileAsync(string filePath, string escrowNumber = null);
+        Task<byte[]> ReadAndDecryptFileBytesAsync(string filePath, string escrowNumber = null);
     }
 }

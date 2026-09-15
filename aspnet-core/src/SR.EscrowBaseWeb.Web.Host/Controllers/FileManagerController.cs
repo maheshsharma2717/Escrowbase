@@ -601,7 +601,9 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     await System.IO.File.WriteAllBytesAsync(fullPath, fileBytes);
                 }
 
-                await _fileEncryptionService.EncryptFileAsync(fullPath);
+                string[] pathParts = (input.filePath ?? "").Replace("/", "\\").Split('\\', StringSplitOptions.RemoveEmptyEntries);
+                string escrowFromPath = pathParts.Length >= 3 ? pathParts[2] : null;
+                await _fileEncryptionService.EncryptFileAsync(fullPath, escrowFromPath);
                 return Ok(new { success = true });
             }
             catch (Exception ex)
@@ -2115,7 +2117,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     file.CopyTo(stream);
                 }
-                await _fileEncryptionService.EncryptFileAsync(fullFilePath);
+                await _fileEncryptionService.EncryptFileAsync(fullFilePath, escrowId);
 
                 if (parsedUserId != 1)
                 {

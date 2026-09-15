@@ -143,7 +143,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         ///</Summary>
         public static int Idno, getid = 0;
         Regex regexx = new Regex(@"\{.*?\}");
-        static IConfiguration conf = (new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json").Build());
+        static IConfiguration conf = (new ConfigurationBuilder().SetBasePath(AppDomain.CurrentDomain.BaseDirectory).AddJsonFile("appsettings.json", optional: true).Build());
         static readonly SemaphoreSlim _eSignSemaphore = new SemaphoreSlim(10, 10);
 
 
@@ -2257,7 +2257,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                             await file.CopyToAsync(stream);
                             isUploaded = true;
                         }
-                        await _fileEncryptionService.EncryptFileAsync(destPath);
+                        string escrowForEnc = (subs.Length > 2) ? subs[2] : null;
+                        await _fileEncryptionService.EncryptFileAsync(destPath, escrowForEnc);
 
                         string fileText;
                         byte[] decryptedTextBytes = await _fileEncryptionService.ReadAndDecryptFileBytesAsync(destPath);
@@ -2743,7 +2744,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 try
                 {
                     using (var stream = new FileStream(destPath, FileMode.Create)) { await file.CopyToAsync(stream); }
-                    await _fileEncryptionService.EncryptFileAsync(destPath);
+                    await _fileEncryptionService.EncryptFileAsync(destPath, escrowId);
                     break;
                 }
                 catch (System.IO.IOException)
