@@ -2014,6 +2014,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
         public async Task<responseBack> ProcessRequest(string path, string userId)
         {
             responseBack res = new responseBack();
+            string fullFilePath = null;
 
             try
             {
@@ -2098,7 +2099,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
 
                 var folderPath = Path.Combine("wwwroot", "Common", "Paperless", cleanPath.Replace("/", "\\"));
                 var fullSavePath = Path.Combine(Directory.GetCurrentDirectory(), folderPath);
-                var fullFilePath = Path.Combine(fullSavePath, finalFileName);
+                fullFilePath = Path.Combine(fullSavePath, finalFileName);
 
                 // Ensure directory exists
                 if (!Directory.Exists(fullSavePath))
@@ -2109,7 +2110,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 if (System.IO.File.Exists(fullFilePath))
                 {
                     res.message = "!Oops same name file already exists, please change file name first.";
-                    res.statusCode = 500;
+                    res.statusCode = 400;
                     return res;
                 }
 
@@ -2117,6 +2118,8 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                 {
                     file.CopyTo(stream);
                 }
+
+                // Encrypt file strictly before creating DB records
                 await _fileEncryptionService.EncryptFileAsync(fullFilePath, escrowId);
 
                 if (parsedUserId != 1)
@@ -2125,6 +2128,7 @@ namespace SR.EscrowBaseWeb.Web.Controllers
                     {
                         res.message = "Invalid path format. Expected: Company/SubCompany/EscrowId/Other";
                         res.statusCode = 400;
+                        if (System.IO.File.Exists(fullFilePath)) { try { System.IO.File.Delete(fullFilePath); } catch { } }
                         return res;
                     }
 
@@ -2222,9 +2226,18 @@ namespace SR.EscrowBaseWeb.Web.Controllers
             }
             catch (Exception ex)
             {
+                if (!string.IsNullOrEmpty(fullFilePath) && System.IO.File.Exists(fullFilePath))
+                {
+                    try { System.IO.File.Delete(fullFilePath); } catch { }
+                }
+
                 string logPath = Path.Combine(_hostingEnvironment.WebRootPath, "Logs", "Logs.txt");
-                Directory.CreateDirectory(Path.GetDirectoryName(logPath)); // ensure Logs folder exists
-                                                                           // File.AppendAllText(logPath, $"[{DateTime.Now}] Error in ProcessRequest: {ex}\n");
+                try
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(logPath));
+                    System.IO.File.AppendAllText(logPath, $"[{DateTime.Now}] Error in ProcessRequest: {ex}\n");
+                }
+                catch { }
 
                 res.message = ex.Message;
                 res.statusCode = 500;

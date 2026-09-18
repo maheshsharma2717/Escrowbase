@@ -48,7 +48,7 @@ namespace SR.EscrowBaseWeb.Storage
 
             if (string.IsNullOrWhiteSpace(keyStr))
             {
-                throw new InvalidOperationException("App:FileEncryption:MasterSecretKey is missing from appsettings.json. Please configure a Master Secret Key.");
+                throw new InvalidOperationException("MasterSecretKey is not configured, please contact admin.");
             }
 
             if (!string.IsNullOrWhiteSpace(escrowNumber))

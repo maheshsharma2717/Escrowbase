@@ -1068,7 +1068,7 @@ export class FileViewComponent extends AppComponentBase {
     }
 
     if (this.currentpath1 == "") {
-      alert("Other file upload restricted due to zero file in main fileview");
+      Swal.fire('Warning', "Other file upload restricted due to zero file in main fileview", 'warning');
     } else {
       const oldPath = this.currentpath1;
       var uploadPath = this.currentpath1;
@@ -1115,14 +1115,24 @@ export class FileViewComponent extends AppComponentBase {
               try {
                 // Support both response formats: body.result.statusCode (legacy) and body.statusCode (ProcessRequest API)
                 const statusCode = fileRes.body?.result?.statusCode ?? fileRes.body?.statusCode;
-                if (statusCode == 500) {
+                const errorMsg = fileRes.body?.result?.message ?? fileRes.body?.message;
+
+                if (statusCode == 400 || (statusCode == 500 && errorMsg && (errorMsg.includes('already exists') || errorMsg.includes('same name')))) {
                   this.spinnerUpl = false;
-                  this.file = null
+                  this.file = null;
                   this.isFile = false;
-                  this.fileName = 'Select a file'
-                  alert("This name file is already exists please change file name");
-                  abp.notify.error('File already exists', 'Error');
+                  this.fileName = 'Select a file';
+                  Swal.fire('Error', errorMsg || "This name file already exists, please change file name", 'error');
+                  abp.notify.error(errorMsg || 'File already exists', 'Error');
+                } else if (statusCode != 200) {
+                  this.spinnerUpl = false;
+                  this.file = null;
+                  this.isFile = false;
+                  this.fileName = 'Select a file';
+                  Swal.fire('Error', errorMsg || 'Failed to upload file', 'error');
+                  abp.notify.error(errorMsg || 'Failed to upload file', 'Error');
                 }
+
                 if (statusCode == 200) {
                   this.spinnerUpl = false;
                   this.file = null
@@ -1208,6 +1218,14 @@ export class FileViewComponent extends AppComponentBase {
               catch (error) { }
             }
             this.fileInputVariable.nativeElement.value = "";
+          }, (err: any) => {
+            this.spinnerUpl = false;
+            this.file = null;
+            this.isFile = false;
+            this.fileName = 'Select a file';
+            const serverMsg = err?.error?.message || err?.error?.result?.message || err?.message || 'Error uploading file';
+            Swal.fire('Error', serverMsg, 'error');
+            abp.notify.error(serverMsg, 'Error');
           });
 
         this.deleteAttachment(0);
